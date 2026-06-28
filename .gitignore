@@ -1,0 +1,38 @@
+# Runtime secrets
+.env
+.env.*
+!.env.example
+
+# Traefik / Let's Encrypt state
+traefik/acme.json
+traefik/acme-staging.json
+
+# Local data and backups
+data/
+volumes/
+backups/
+*.dump
+*.sql
+*.sql.gz
+*.rdb
+*.aof
+
+# Logs
+logs/
+*.log
+
+# Tool caches
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.DS_Store
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Graphify generated output
+graphify-out/
