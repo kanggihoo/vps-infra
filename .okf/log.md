@@ -1,6 +1,7 @@
 # 변경 기록
 
 ## 2026-06-28
+* **생성**: 전체 배포/런타임/네트워크 구조를 담는 [시스템 아키텍처 개요](/architecture/system-overview.md)를 추가했다.
 * **생성**: AI 작업 진입점인 repository root `AGENTS.md`를 추가했다.
 * **생성**: public 운영 메타데이터를 담는 [Hostinger VPS](/environments/hostinger-vps.md) 환경 개념을 추가했다.
 * **생성**: VPS 인프라 설계 지식을 OKF 번들로 정리했다.
