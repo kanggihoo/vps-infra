@@ -1,0 +1,30 @@
+name: Deploy VPS Infra
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            bash -lc '
+              set -euo pipefail
+              cd /opt/vps-infra
+              git pull --ff-only origin main
+              chmod +x scripts/deploy.sh scripts/healthcheck.sh
+              ./scripts/deploy.sh
+            '
