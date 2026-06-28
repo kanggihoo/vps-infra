@@ -8,6 +8,10 @@ test -f .env
 test -f compose.yml
 test -f traefik/acme.json
 
+set -a
+. ./.env
+set +a
+
 echo "[deploy] validating compose"
 docker compose config >/dev/null
 

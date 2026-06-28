@@ -3,6 +3,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+if [ -f .env ]; then
+  set -a
+  . ./.env
+  set +a
+fi
+
 echo "[healthcheck] docker compose config"
 docker compose config >/dev/null
 
