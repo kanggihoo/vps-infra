@@ -3,7 +3,7 @@ type: Architecture
 title: 시스템 아키텍처 개요
 description: Hostinger VPS 1대에서 GitHub Actions, Traefik, Docker Compose, PostgreSQL, Redis가 연결되는 전체 구조.
 tags: [architecture, vps, docker-compose, traefik, deployment]
-timestamp: 2026-06-28T00:00:00+09:00
+timestamp: 2026-06-29T00:00:00+09:00
 ---
 
 # 개요
@@ -39,6 +39,13 @@ Internet
           -> PostgreSQL
           -> Redis
 ```
+
+# Docker 네트워크
+
+| Compose network | Docker network | 용도 |
+|-----------------|----------------|------|
+| `proxy` | `vps_proxy` | Traefik과 public HTTP backend가 연결되는 라우팅 경계. |
+| `data` | `vps_data` | PostgreSQL과 Redis가 외부 port publish 없이 연결되는 내부 데이터 경계. |
 
 # 라우팅 구조
 

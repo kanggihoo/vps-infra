@@ -1,5 +1,8 @@
 # 변경 기록
 
+## 2026-06-29
+* **갱신**: [시스템 아키텍처 개요](/architecture/system-overview.md)에 구현된 Docker network 이름 `vps_proxy`, `vps_data`를 명시했다.
+
 ## 2026-06-28
 * **생성**: 전체 배포/런타임/네트워크 구조를 담는 [시스템 아키텍처 개요](/architecture/system-overview.md)를 추가했다.
 * **생성**: AI 작업 진입점인 repository root `AGENTS.md`를 추가했다.
