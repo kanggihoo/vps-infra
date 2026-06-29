@@ -23,7 +23,13 @@ jobs:
           script: |
             bash -lc '
               set -euo pipefail
-              cd /opt/vps-infra
+              DEPLOY_DIR="$HOME/vps-infra"
+              REPO_URL="https://github.com/${{ github.repository }}.git"
+              if [ ! -d "$DEPLOY_DIR/.git" ]; then
+                rm -rf "$DEPLOY_DIR"
+                git clone "$REPO_URL" "$DEPLOY_DIR"
+              fi
+              cd "$DEPLOY_DIR"
               git pull --ff-only origin main
               chmod +x scripts/deploy.sh scripts/healthcheck.sh
               ./scripts/deploy.sh

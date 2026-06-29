@@ -3,7 +3,7 @@ type: Environment
 title: Hostinger VPS
 description: 현재 인프라가 배포될 VPS와 public 운영 메타데이터.
 tags: [hostinger, vps, environment, deployment]
-timestamp: 2026-06-28T00:00:00+09:00
+timestamp: 2026-06-29T00:00:00+09:00
 ---
 
 # 개요
@@ -19,7 +19,7 @@ timestamp: 2026-06-28T00:00:00+09:00
 | Public IP | `187.77.114.68` |
 | Domain | `kkh-hub.tech` |
 | SSH user | `kkh` |
-| Deploy path | `/opt/vps-infra` |
+| Deploy path | `/home/kkh/vps-infra` |
 | Public ports | `80`, `443` |
 
 # DNS Records

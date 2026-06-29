@@ -18,14 +18,14 @@ Redis는 Docker internal network 안에서만 접근한다.
 GitHub main
   -> GitHub Actions
     -> SSH as kkh
-      -> /opt/vps-infra
+      -> /home/kkh/vps-infra
         -> git pull origin main
         -> docker compose up -d
 ```
 
 [GitHub Actions 배포](/services/github-actions-deploy.md)는 `main` 변경을 트리거로
-VPS에 접속한다. VPS 안의 `/opt/vps-infra` repository를 갱신하고 Docker Compose를
-적용한다.
+VPS에 접속한다. VPS 안의 `/home/kkh/vps-infra` repository를 준비/갱신하고 Docker
+Compose를 적용한다.
 
 # 런타임 구조
 
