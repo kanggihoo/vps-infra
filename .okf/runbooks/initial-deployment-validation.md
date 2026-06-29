@@ -3,7 +3,7 @@ type: Runbook
 title: 초기 배포 검증
 description: 첫 인프라 배포 성공 기준.
 tags: [validation, deployment, operations]
-timestamp: 2026-06-29T00:00:00+09:00
+timestamp: 2026-06-28T00:00:00+09:00
 ---
 
 # 실행 시점
@@ -14,7 +14,7 @@ timestamp: 2026-06-29T00:00:00+09:00
 # 성공 기준
 
 1. GitHub Actions가 `main` push에서 성공한다.
-2. `/home/kkh/vps-infra`가 최신 `main`으로 갱신된다.
+2. `/opt/vps-infra`가 최신 `main`으로 갱신된다.
 3. `docker compose config`가 통과한다.
 4. [Traefik](/services/traefik.md), [PostgreSQL](/services/postgresql.md),
    [Redis](/services/redis.md), [whoami](/services/whoami.md)가 running 상태다.

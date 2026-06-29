@@ -3,12 +3,12 @@ type: Decision
 title: SSH Git-Pull 배포
 description: GitHub Actions가 SSH로 VPS에 접속하고 VPS에서 git pull을 실행한다.
 tags: [deployment, github-actions, ssh]
-timestamp: 2026-06-29T00:00:00+09:00
+timestamp: 2026-06-28T00:00:00+09:00
 ---
 
 # 결정
 
-GitHub Actions에서 Hostinger VPS에 SSH로 접속한 뒤 `/home/kkh/vps-infra`에서
+GitHub Actions에서 Hostinger VPS에 SSH로 접속한 뒤 `/opt/vps-infra`에서
 `git pull`과 Docker Compose 명령을 실행한다.
 
 # 이유
@@ -20,7 +20,7 @@ GitHub Actions에서 Hostinger VPS에 SSH로 접속한 뒤 `/home/kkh/vps-infra`
 
 # 결과
 
-- VPS에 `/home/kkh/vps-infra` repository clone이 필요하다.
+- VPS에 `/opt/vps-infra` repository clone이 필요하다.
 - GitHub Actions 전용 배포 SSH key가 필요하다.
 - 런타임 secret은 VPS의 `.env`에 둔다.
 

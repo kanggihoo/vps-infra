@@ -1,7 +1,6 @@
 # 변경 기록
 
 ## 2026-06-29
-* **갱신**: passwordless sudo 없이 GitHub Actions가 배포할 수 있도록 deploy path를 `/home/kkh/vps-infra`로 바꿨다.
 * **갱신**: [시스템 아키텍처 개요](/architecture/system-overview.md)에 구현된 Docker network 이름 `vps_proxy`, `vps_data`를 명시했다.
 
 ## 2026-06-28
