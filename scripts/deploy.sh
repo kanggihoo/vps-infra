@@ -19,7 +19,7 @@ echo "[deploy] pulling images"
 docker compose pull
 
 echo "[deploy] applying stack"
-docker compose up -d
+docker compose up -d --wait --wait-timeout 120
 
 echo "[deploy] compose status"
 docker compose ps
