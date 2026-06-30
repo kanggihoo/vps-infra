@@ -1,6 +1,11 @@
 # 변경 기록
 
+## 2026-07-01
+* **생성**: React+nginx 포털 UI와 Go net/http 기반 경량 상태 API를 사용하는 [서비스 포털 대시보드 후보 아키텍처](/architecture/portal-dashboard-proposal.md)를 추가했다.
+
 ## 2026-06-29
+* **갱신**: [앞으로 할 일](/roadmap/next-work.md)에 CI/CD 실패 텔레그램 알림, Traefik SSO 연동, 브랜치 보호 작업 후보를 추가했다.
+* **생성**: 앞으로 진행할 작업 후보를 기록하는 [앞으로 할 일](/roadmap/next-work.md) 로드맵 concept를 추가했다.
 * **갱신**: [시스템 아키텍처 개요](/architecture/system-overview.md)에 구현된 Docker network 이름 `vps_proxy`, `vps_data`를 명시했다.
 
 ## 2026-06-28
