@@ -1,6 +1,7 @@
 # 변경 기록
 
 ## 2026-07-03
+* **갱신**: [GitHub Actions 배포](/services/github-actions-deploy.md)에 `portal/**` 변경만 있을 때 포털 service만 rebuild/recreate하는 target 배포 흐름을 추가했다.
 * **생성**: [공용 인프라 포털](/services/portal.md) service concept를 추가했다.
 * **갱신**: [공용 인프라 포털 MVP 아키텍처](/architecture/portal-dashboard-proposal.md)를 Services와 Skills 중심의 React+Go 단일 포털 구조로 정리하고, 운영 관측 기능을 MVP 범위에서 제외했다.
 

@@ -24,7 +24,21 @@ jobs:
             bash -lc '
               set -euo pipefail
               cd /opt/vps-infra
+
+              BEFORE="${{ github.event.before }}"
+              SHA="${{ github.sha }}"
+              target="all"
+
+              git fetch origin main
+              if [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+                changed="$(git diff --name-only "$BEFORE" "$SHA" || true)"
+                # Use targeted deploy only when every changed file is under portal/.
+                if [ -n "$changed" ] && ! printf "%s\n" "$changed" | grep -qv "^portal/"; then
+                  target="portal"
+                fi
+              fi
+
               git pull --ff-only origin main
               chmod +x scripts/deploy.sh scripts/healthcheck.sh
-              ./scripts/deploy.sh
+              ./scripts/deploy.sh "$target"
             '

@@ -3,7 +3,7 @@ type: Deployment Service
 title: GitHub Actions 배포
 description: main 변경 시 GitHub Actions가 SSH로 VPS에 접속해 배포한다.
 tags: [deployment, github-actions, ssh, docker-compose]
-timestamp: 2026-06-28T00:00:00+09:00
+timestamp: 2026-07-03T00:00:00+09:00
 ---
 
 # 개요
@@ -27,16 +27,36 @@ on:
 
 # 흐름
 
+기본 흐름은 push diff를 확인한 뒤 배포 범위를 고른다.
+
 ```txt
 main 변경
 -> GitHub Actions 실행
 -> VPS에 kkh 사용자로 SSH 접속
 -> cd /opt/vps-infra
+-> git diff --name-only <before> <sha>
+-> 변경 파일이 모두 portal/** 이면 target=portal
+-> 그 외 변경이 있으면 target=all
 -> git pull origin main
--> docker compose config
--> docker compose pull
--> docker compose up -d
--> docker compose ps
+-> ./scripts/deploy.sh <target>
+```
+
+`target=portal`은 포털 service만 rebuild/recreate한다.
+
+```txt
+docker compose up -d --build --no-deps portal
+docker compose ps portal
+```
+
+`target=all`은 전체 Compose stack을 적용하고 PostgreSQL/Redis local check까지 실행한다.
+
+```txt
+docker compose config
+docker compose pull --ignore-buildable
+docker compose up -d --build --wait
+docker compose ps
+postgres pg_isready
+redis ping
 ```
 
 # Secrets
@@ -51,7 +71,7 @@ main 변경
 # 관계
 
 이 workflow는 [Traefik](/services/traefik.md), [PostgreSQL](/services/postgresql.md),
-[Redis](/services/redis.md), [whoami](/services/whoami.md)를 시작하고 갱신한다.
+[Redis](/services/redis.md), [whoami](/services/whoami.md), [공용 인프라 포털](/services/portal.md)을 시작하고 갱신한다.
 
 # Citations
 

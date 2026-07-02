@@ -25,11 +25,24 @@ markdown 파일을 정적 파일로 제공한다.
 
 ```txt
 portal/
-  cmd/portal/
+  main.go
   src/
   public/config/services.json
   public/skills/
 ```
+
+# 배포
+
+`portal/` 아래 파일만 변경된 push는 GitHub Actions가 `./scripts/deploy.sh portal`을
+실행한다. 이 경로는 포털 image만 rebuild하고 `--no-deps`로 다른 Compose service 재생성을
+피한다.
+
+```txt
+docker compose up -d --build --no-deps portal
+```
+
+`compose.yml`, Traefik, DB, Redis, 배포 script 같은 인프라 파일이 함께 변경되면 전체
+배포 경로를 사용한다.
 
 # 범위
 
@@ -61,4 +74,3 @@ portal/
 
 - [공용 인프라 포털 MVP 아키텍처](/architecture/portal-dashboard-proposal.md)
 - [시스템 아키텍처 개요](/architecture/system-overview.md)
-
