@@ -10,8 +10,8 @@ RUN npm run build
 FROM golang:1.22-alpine AS backend
 WORKDIR /src
 COPY go.mod ./
-COPY cmd ./cmd
-RUN CGO_ENABLED=0 go build -o /portal ./cmd/portal
+COPY main.go ./
+RUN CGO_ENABLED=0 go build -o /portal .
 
 FROM alpine:3.20
 WORKDIR /app
@@ -21,4 +21,3 @@ ENV PORTAL_STATIC_DIR=/app/dist
 ENV PORTAL_ADDR=:8080
 EXPOSE 8080
 CMD ["/app/portal"]
-
