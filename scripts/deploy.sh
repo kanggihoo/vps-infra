@@ -16,10 +16,10 @@ echo "[deploy] validating compose"
 docker compose config >/dev/null
 
 echo "[deploy] pulling images"
-docker compose pull
+docker compose pull --ignore-buildable
 
 echo "[deploy] applying stack"
-docker compose up -d --wait --wait-timeout 120
+docker compose up -d --build --wait --wait-timeout 120
 
 echo "[deploy] compose status"
 docker compose ps

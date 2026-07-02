@@ -1,0 +1,21 @@
+[
+  {
+    "id": "traefik",
+    "title": "Traefik dashboard",
+    "url": "https://traefik.kkh-hub.tech",
+    "description": "VPS public HTTP/HTTPS entrypoint dashboard.",
+    "protection": "Basic Auth"
+  },
+  {
+    "id": "health",
+    "title": "Health/whoami",
+    "url": "https://health.kkh-hub.tech",
+    "description": "DNS, TLS, Traefik routing 검증용 public endpoint."
+  },
+  {
+    "id": "repository",
+    "title": "vps-infra repository",
+    "url": "https://github.com/kanggihoo/vps-infra",
+    "description": "공용 VPS 인프라 코드 진입점."
+  }
+]

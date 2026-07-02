@@ -47,6 +47,21 @@ services:
       - traefik.http.routers.health.tls.certresolver=letsencrypt
       - traefik.http.services.health.loadbalancer.server.port=80
 
+  portal:
+    build: ./portal
+    container_name: vps-portal
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.portal.rule=Host(`portal.kkh-hub.tech`)
+      - traefik.http.routers.portal.entrypoints=websecure
+      - traefik.http.routers.portal.tls=true
+      - traefik.http.routers.portal.tls.certresolver=letsencrypt
+      - traefik.http.routers.portal.middlewares=traefik-auth
+      - traefik.http.services.portal.loadbalancer.server.port=8080
+
   postgres:
     image: postgres:16-alpine
     container_name: vps-postgres

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "caveman",
+    "title": "caveman",
+    "path": "/skills/caveman.md",
+    "description": "짧고 압축된 응답 모드.",
+    "installCommand": "npx skills install caveman",
+    "tags": ["style", "prompt"]
+  },
+  {
+    "id": "okf",
+    "title": "okf",
+    "path": "/skills/okf.md",
+    "description": "OKF 지식 번들 작성/유지/소비.",
+    "installCommand": "npx skills install okf",
+    "tags": ["docs", "knowledge"]
+  },
+  {
+    "id": "validate",
+    "title": "validate",
+    "path": "/skills/validate.md",
+    "description": "OKF bundle strict validation.",
+    "installCommand": "npx skills install validate",
+    "tags": ["docs", "validation"]
+  }
+]
+

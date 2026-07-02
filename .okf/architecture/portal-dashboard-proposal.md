@@ -109,7 +109,7 @@ UI 기반 CRUD는 file write 권한, audit, 실수 삭제, 인증 강도 문제�
 |------|------|
 | public route/TLS/auth | Traefik |
 | 포털 static file serving | `portal` Go service |
-| 서비스 링크 정의 | `portal/config/services.yml` 또는 OKF/Compose에서 파생 |
+| 서비스 링크 정의 | `portal/public/config/services.json` 또는 OKF/Compose에서 파생 |
 | skill 원문 | `portal/skills/*.md` curated copy |
 | skill list/install command | `portal/skills/index.yml` |
 | 운영 관측/알림 | MVP 제외, 나중 단계 |

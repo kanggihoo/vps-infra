@@ -82,7 +82,7 @@ Services 화면은 현재 코드상 구현된 public route와 운영 링크만 �
 데이터 원본은 처음에는 정적 config로 둔다.
 
 ```txt
-portal/config/services.yml
+portal/public/config/services.json
 ```
 
 Services 화면은 다른 project onboarding이 실제로 끝난 뒤에만 항목을 늘린다. 아직 배포되지
@@ -203,4 +203,3 @@ MVP 검증 기준:
 - skill sync script 추가.
 - favorites/tag filter 추가.
 - SSO 전환.
-
