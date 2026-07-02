@@ -4,7 +4,8 @@
     "title": "caveman",
     "path": "/skills/caveman.md",
     "description": "짧고 압축된 응답 모드.",
-    "installCommand": "npx skills install caveman",
+    "installCommand": "npx skills add https://github.com/juliusbrussee/caveman --skill caveman",
+    "sourceUrl": "https://github.com/juliusbrussee/caveman",
     "tags": ["style", "prompt"]
   },
   {
@@ -12,7 +13,8 @@
     "title": "okf",
     "path": "/skills/okf.md",
     "description": "OKF 지식 번들 작성/유지/소비.",
-    "installCommand": "npx skills install okf",
+    "installCommand": "npx skills add https://github.com/scaccogatto/okf-skills --skill okf",
+    "sourceUrl": "https://github.com/scaccogatto/okf-skills",
     "tags": ["docs", "knowledge"]
   },
   {
@@ -20,8 +22,8 @@
     "title": "validate",
     "path": "/skills/validate.md",
     "description": "OKF bundle strict validation.",
-    "installCommand": "npx skills install validate",
+    "installCommand": "npx skills add https://github.com/scaccogatto/okf-skills --skill validate",
+    "sourceUrl": "https://github.com/scaccogatto/okf-skills",
     "tags": ["docs", "validation"]
   }
 ]
-

@@ -2,7 +2,7 @@
 type: Service
 title: 공용 인프라 포털
 description: 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털.
-tags: [portal, react, go, traefik, skills]
+tags: [portal, react, go, traefik, skills, tailwind, shadcn]
 timestamp: 2026-07-03T00:00:00+09:00
 ---
 
@@ -21,15 +21,29 @@ https://portal.kkh-hub.tech -> portal
 # 구현
 
 `portal`은 Go `net/http` 서버 하나로 동작한다. Vite React build 결과물과 curated skill
-markdown 파일을 정적 파일로 제공한다.
+markdown 파일을 정적 파일로 제공한다. Frontend는 Tailwind CSS v4, shadcn/ui, lucide-react,
+Pretendard 기반으로 구성한다.
 
 ```txt
 portal/
   main.go
   src/
+    components/ui/
+    lib/utils.ts
   public/config/services.json
   public/skills/
+  components.json
 ```
+
+# Frontend UI stack
+
+- Vite React + TypeScript.
+- Tailwind CSS v4 with `@tailwindcss/vite`.
+- shadcn/ui radix-nova preset with CSS variables.
+- lucide-react icons.
+- Pretendard font via `@fontsource/pretendard`.
+- Mintlify-inspired dark documentation surface from `portal/DESIGN-mintlify.md`.
+- Dark mode is the default theme; light mode is available from the top bar.
 
 # 배포
 
@@ -54,6 +68,8 @@ docker compose up -d --build --no-deps portal
 - markdown preview.
 - raw markdown 보기.
 - 원문/body/install command 복사.
+- skill source GitHub URL 표시와 외부 이동.
+- install command를 별도 command block으로 표시하고 복사.
 
 제외한다.
 

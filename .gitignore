@@ -38,3 +38,6 @@ dist/
 
 # Graphify generated output
 graphify-out/
+
+.playwright-cli/
+output/

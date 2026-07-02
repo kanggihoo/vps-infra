@@ -1,6 +1,9 @@
 # 변경 기록
 
 ## 2026-07-03
+* **갱신**: [공용 인프라 포털](/services/portal.md)에 Mintlify-inspired dark 기본 theme, skill source URL, install command block UI를 추가한 내용을 기록했다.
+* **갱신**: [공용 인프라 포털](/services/portal.md)의 frontend stack을 Tailwind CSS v4, shadcn/ui, lucide-react, Pretendard 기반으로 전환한 내용을 기록했다.
+* **생성**: [Frontend Design Skills](/services/frontend-design-skills.md) concept를 추가하고, project scope Codex frontend design skill set과 DESIGN.md workflow 참고 문서를 기록했다.
 * **갱신**: [공용 인프라 포털](/services/portal.md)의 Basic Auth middleware를 제거하고, 현재 MVP는 공개 가능한 링크와 skill 원문만 제공한다고 기록했다.
 * **갱신**: [GitHub Actions 배포](/services/github-actions-deploy.md)에 `portal/**` 변경만 있을 때 포털 service만 rebuild/recreate하는 target 배포 흐름을 추가했다.
 * **생성**: [공용 인프라 포털](/services/portal.md) service concept를 추가했다.

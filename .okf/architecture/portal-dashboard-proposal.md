@@ -2,7 +2,7 @@
 type: ArchitectureProposal
 title: 공용 인프라 포털 MVP 아키텍처
 description: 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털 MVP 구조.
-tags: [architecture, portal, dashboard, react, go, traefik, skills]
+tags: [architecture, portal, dashboard, react, go, traefik, skills, tailwind, shadcn]
 timestamp: 2026-07-03T00:00:00+09:00
 ---
 
@@ -65,8 +65,10 @@ Internet
 ```
 
 `portal` service는 Go `net/http` 기반으로 React build output과 curated skill markdown
-파일을 제공한다. Traefik이 TLS와 hostname routing을 맡으므로 별도 nginx container는
-초기 범위에서 사용하지 않는다.
+파일을 제공한다. React UI는 Tailwind CSS v4, shadcn/ui, lucide-react, Pretendard를 사용한다.
+UI theme은 `portal/DESIGN-mintlify.md`의 dark documentation surface를 기준으로 하며,
+dark mode를 기본값으로 사용한다.
+Traefik이 TLS와 hostname routing을 맡으므로 별도 nginx container는 초기 범위에서 사용하지 않는다.
 
 # Services 화면
 
@@ -98,6 +100,9 @@ rendered markdown preview, raw markdown tab을 분리해 보여준다.
 - `Copy original`: frontmatter 포함 전체 markdown.
 - `Copy body`: frontmatter 제외 body markdown.
 - `Copy install command`: `index.yml`에 기록한 설치 명령.
+
+각 skill은 source GitHub URL을 가질 수 있다. 상세 화면 상단에는 source 링크를 보여주고,
+install command는 screenshot-style dark command block으로 분리해 복사한다.
 
 skill item은 10개 이하 curated list로 시작한다. 추가/삭제는 UI가 아니라 Git 변경으로 한다.
 UI 기반 CRUD는 file write 권한, audit, 실수 삭제, 인증 강도 문제를 만들기 때문에 MVP에서

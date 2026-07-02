@@ -1,4 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  BookOpenText,
+  Check,
+  Code2,
+  Copy,
+  ExternalLink,
+  FileText,
+  GitBranch,
+  Moon,
+  Server,
+  Sun,
+  Terminal,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 type ServiceItem = {
   id: string;
@@ -14,6 +42,7 @@ type SkillItem = {
   path: string;
   description: string;
   installCommand: string;
+  sourceUrl?: string;
   tags: string[];
 };
 
@@ -24,28 +53,53 @@ type SkillSource = {
 };
 
 type Tab = "services" | "skills";
+type Theme = "dark" | "light";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("services");
+  const [theme, setTheme] = useState<Theme>("dark");
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.classList.toggle("light", theme === "light");
+  }, [theme]);
 
   return (
-    <main className="shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">vps-infra</p>
-          <h1>공용 인프라 포털</h1>
+    <main className="min-h-screen">
+      <div className="border-b bg-card/80 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:justify-between md:px-8">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">vps-infra</p>
+            <h1 className="text-2xl font-bold tracking-normal">공용 인프라 포털</h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
+              <TabsList>
+                <TabsTrigger value="services">
+                  <Server data-icon="inline-start" />
+                  Services
+                </TabsTrigger>
+                <TabsTrigger value="skills">
+                  <BookOpenText data-icon="inline-start" />
+                  Skills
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button
+              onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+              size="icon"
+              title={theme === "dark" ? "Light mode" : "Dark mode"}
+              variant="outline"
+            >
+              {theme === "dark" ? <Sun /> : <Moon />}
+            </Button>
+          </div>
         </div>
-        <nav aria-label="Portal sections">
-          <button className={tab === "services" ? "active" : ""} onClick={() => setTab("services")}>
-            Services
-          </button>
-          <button className={tab === "skills" ? "active" : ""} onClick={() => setTab("skills")}>
-            Skills
-          </button>
-        </nav>
-      </header>
+      </div>
 
-      {tab === "services" ? <ServicesView /> : <SkillsView />}
+      <div className="mx-auto max-w-6xl px-5 py-6 md:px-8">
+        {tab === "services" ? <ServicesView /> : <SkillsView />}
+      </div>
     </main>
   );
 }
@@ -61,22 +115,41 @@ function ServicesView() {
   }, []);
 
   return (
-    <section className="section" aria-labelledby="services-title">
-      <div className="section-header">
-        <div>
-          <h2 id="services-title">Services</h2>
-          <p>현재 repo에 구현된 public entrypoint만 표시.</p>
-        </div>
+    <section aria-labelledby="services-title" className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 id="services-title" className="text-xl font-semibold tracking-normal">
+          Services
+        </h2>
+        <p className="text-sm text-muted-foreground">현재 repo에 구현된 public entrypoint만 표시.</p>
       </div>
 
-      <div className="service-grid">
+      <div className="grid gap-3 md:grid-cols-3">
         {services.map((service) => (
-          <a className="service-card" href={service.url} key={service.id} rel="noreferrer" target="_blank">
-            <span className="service-title">{service.title}</span>
-            <span className="service-url">{service.url}</span>
-            <span className="service-desc">{service.description}</span>
-            {service.protection ? <span className="pill">{service.protection}</span> : null}
-          </a>
+          <Card key={service.id} className="min-w-0 border-border/80 bg-card">
+            <CardHeader>
+              <div className="flex items-start justify-between gap-3">
+                <CardTitle className="text-base">{service.title}</CardTitle>
+                {service.protection ? <Badge variant="secondary">{service.protection}</Badge> : null}
+              </div>
+              <CardDescription>{service.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <a
+                className="break-all text-sm font-medium text-primary underline-offset-4 hover:underline"
+                href={service.url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {service.url}
+              </a>
+              <Button asChild size="sm" variant="outline">
+                <a href={service.url} rel="noreferrer" target="_blank">
+                  <ExternalLink data-icon="inline-start" />
+                  Open
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </section>
@@ -87,7 +160,6 @@ function SkillsView() {
   const [items, setItems] = useState<SkillItem[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [source, setSource] = useState<SkillSource | null>(null);
-  const [rawMode, setRawMode] = useState(false);
   const selected = useMemo(() => items.find((item) => item.id === selectedId), [items, selectedId]);
 
   useEffect(() => {
@@ -109,58 +181,147 @@ function SkillsView() {
   }, [selected]);
 
   return (
-    <section className="section skills-layout" aria-labelledby="skills-title">
-      <aside className="skill-list">
-        <h2 id="skills-title">Skills</h2>
-        {items.map((item) => (
-          <button className={item.id === selectedId ? "selected" : ""} key={item.id} onClick={() => setSelectedId(item.id)}>
-            <span>{item.title}</span>
-            <small>{item.description}</small>
-          </button>
-        ))}
-      </aside>
+    <section aria-labelledby="skills-title" className="grid gap-4 lg:grid-cols-[280px_1fr]">
+      <Card className="border-border/80 bg-card">
+        <CardHeader>
+          <CardTitle id="skills-title" className="text-lg">
+            Skills
+          </CardTitle>
+          <CardDescription>원문 확인과 복사용 curated list.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-2">
+            {items.map((item) => (
+              <Button
+                className={cn(
+                  "h-auto justify-start rounded-md px-3 py-2 text-left",
+                  item.id === selectedId && "bg-accent text-accent-foreground hover:bg-accent/90",
+                )}
+                key={item.id}
+                onClick={() => setSelectedId(item.id)}
+                variant="ghost"
+              >
+                <span className="flex min-w-0 flex-col gap-1">
+                  <span className="truncate font-semibold">{item.title}</span>
+                  <span className="line-clamp-2 text-xs opacity-75">{item.description}</span>
+                </span>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-      <article className="skill-detail">
+      <Card className="min-w-0 border-border/80 bg-card">
         {selected && source ? (
           <>
-            <div className="skill-heading">
-              <div>
-                <p className="eyebrow">{selected.tags.join(" / ")}</p>
-                <h2>{selected.title}</h2>
-                <p>{selected.description}</p>
-              </div>
-              <div className="actions">
-                <CopyButton text={source.raw}>Copy original</CopyButton>
-                <CopyButton text={source.body}>Copy body</CopyButton>
-                <CopyButton text={selected.installCommand}>Copy install</CopyButton>
-              </div>
-            </div>
-
-            <dl className="metadata">
-              {Object.entries(source.frontmatter).map(([key, value]) => (
-                <div key={key}>
-                  <dt>{key}</dt>
-                  <dd>{value}</dd>
+            <CardHeader className="gap-4">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="flex min-w-0 flex-col gap-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {selected.tags.map((tag) => (
+                      <Badge key={tag} variant="outline">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <CardTitle className="text-xl">{selected.title}</CardTitle>
+                    <CardDescription>{selected.description}</CardDescription>
+                  </div>
+                  {selected.sourceUrl ? <SourceLink url={selected.sourceUrl} /> : null}
                 </div>
-              ))}
-            </dl>
+                <div className="flex flex-wrap gap-2">
+                  <CopyButton text={source.raw}>Original</CopyButton>
+                  <CopyButton text={source.body}>Body</CopyButton>
+                </div>
+              </div>
+            </CardHeader>
 
-            <div className="tabs">
-              <button className={!rawMode ? "active" : ""} onClick={() => setRawMode(false)}>
-                Preview
-              </button>
-              <button className={rawMode ? "active" : ""} onClick={() => setRawMode(true)}>
-                Raw
-              </button>
-            </div>
+            <CardContent className="flex flex-col gap-4">
+              <InstallCommand command={selected.installCommand} />
+              <MetadataGrid values={source.frontmatter} />
 
-            {rawMode ? <pre className="raw">{source.raw}</pre> : <MarkdownPreview body={source.body} />}
+              <Tabs defaultValue="preview">
+                <TabsList>
+                  <TabsTrigger value="preview">
+                    <FileText data-icon="inline-start" />
+                    Preview
+                  </TabsTrigger>
+                  <TabsTrigger value="raw">
+                    <Code2 data-icon="inline-start" />
+                    Raw
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="preview">
+                  <ScrollArea className="h-[560px] rounded-lg border bg-card">
+                    <MarkdownPreview body={source.body} />
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="raw">
+                  <ScrollArea className="h-[560px] rounded-lg border border-border bg-code">
+                    <pre className="whitespace-pre-wrap break-words p-4 font-mono text-sm text-code-foreground">{source.raw}</pre>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
           </>
         ) : (
-          <p className="empty">Skill 없음.</p>
+          <CardContent className="flex min-h-64 items-center justify-center text-sm text-muted-foreground">
+            Skill 없음.
+          </CardContent>
         )}
-      </article>
+      </Card>
     </section>
+  );
+}
+
+function SourceLink({ url }: { url: string }) {
+  const sourceLabel = url.replace(/^https?:\/\//, "");
+
+  return (
+    <a
+      className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+      href={url}
+      rel="noreferrer"
+      target="_blank"
+    >
+      <GitBranch />
+      <span>Source: {sourceLabel}</span>
+      <ExternalLink />
+    </a>
+  );
+}
+
+function InstallCommand({ command }: { command: string }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(command);
+      setState("copied");
+    } catch {
+      setState("failed");
+    }
+    window.setTimeout(() => setState("idle"), 1400);
+  }
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-code text-code-foreground">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs text-code-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <Terminal />
+          install
+        </span>
+        <Button onClick={copy} size="sm" title="Copy install command" variant="ghost">
+          {state === "copied" ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
+          {state === "copied" ? "Copied" : state === "failed" ? "Failed" : "Copy"}
+        </Button>
+      </div>
+      <div className="flex min-w-0 items-center gap-3 px-4 py-5 font-mono text-sm md:text-base">
+        <span className="text-code-muted">$</span>
+        <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap">{command}</code>
+      </div>
+    </div>
   );
 }
 
@@ -178,9 +339,36 @@ function CopyButton({ children, text }: { children: string; text: string }) {
   }
 
   return (
-    <button onClick={copy} title={state === "failed" ? "복사 실패. Raw 탭에서 수동 복사." : children}>
+    <Button onClick={copy} size="sm" title={state === "failed" ? "복사 실패. Raw 탭에서 수동 복사." : children} variant="outline">
+      {state === "copied" ? (
+        <Check data-icon="inline-start" />
+      ) : state === "failed" ? (
+        <AlertTriangle data-icon="inline-start" />
+      ) : (
+        <Copy data-icon="inline-start" />
+      )}
       {state === "copied" ? "Copied" : state === "failed" ? "Failed" : children}
-    </button>
+    </Button>
+  );
+}
+
+function MetadataGrid({ values }: { values: Record<string, string> }) {
+  const entries = Object.entries(values);
+
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-border">
+      <div className="grid md:grid-cols-2">
+        {entries.map(([key, value], index) => (
+          <div className="flex min-w-0 flex-col gap-1 p-3" key={key}>
+            {index > 0 ? <Separator className="md:hidden" /> : null}
+            <dt className="text-xs font-semibold uppercase text-muted-foreground">{key}</dt>
+            <dd className="break-words text-sm">{value}</dd>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -226,25 +414,34 @@ function parseFrontmatter(text: string): Record<string, string> {
 
 function MarkdownPreview({ body }: { body: string }) {
   const blocks = body.split(/\n{2,}/);
+
   return (
-    <div className="markdown">
+    <div className="flex flex-col gap-4 p-4">
       {blocks.map((block, index) => {
         if (block.startsWith("```")) {
-          return <pre key={index}>{block.replace(/^```\w*\n?|\n?```$/g, "")}</pre>;
+          return (
+            <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-code p-4 font-mono text-sm text-code-foreground" key={index}>
+              {block.replace(/^```\w*\n?|\n?```$/g, "")}
+            </pre>
+          );
         }
-        if (block.startsWith("# ")) return <h1 key={index}>{block.slice(2)}</h1>;
-        if (block.startsWith("## ")) return <h2 key={index}>{block.slice(3)}</h2>;
-        if (block.startsWith("### ")) return <h3 key={index}>{block.slice(4)}</h3>;
+        if (block.startsWith("# ")) return <h1 className="text-2xl font-bold tracking-normal" key={index}>{block.slice(2)}</h1>;
+        if (block.startsWith("## ")) return <h2 className="border-t pt-4 text-xl font-semibold tracking-normal" key={index}>{block.slice(3)}</h2>;
+        if (block.startsWith("### ")) return <h3 className="text-base font-semibold" key={index}>{block.slice(4)}</h3>;
         if (block.startsWith("- ")) {
           return (
-            <ul key={index}>
+            <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground" key={index}>
               {block.split("\n").map((line) => (
                 <li key={line}>{line.replace(/^- /, "")}</li>
               ))}
             </ul>
           );
         }
-        return <p key={index}>{block}</p>;
+        return (
+          <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground" key={index}>
+            {block}
+          </p>
+        );
       })}
     </div>
   );
