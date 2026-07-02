@@ -8,7 +8,7 @@ timestamp: 2026-07-03T00:00:00+09:00
 
 # 개요
 
-공용 인프라 포털은 Hostinger VPS 공통 인프라의 관리자용 entrypoint다.
+공용 인프라 포털은 Hostinger VPS 공통 인프라의 공개 entrypoint다.
 [Traefik 리버스 프록시](/services/traefik.md) 뒤에서 `portal.kkh-hub.tech`로 노출되며,
 현재 구현된 public service 링크와 자주 쓰는 skill markdown 원문을 보여준다.
 
@@ -65,10 +65,11 @@ docker compose up -d --build --no-deps portal
 
 # 보안
 
-- Traefik Basic Auth를 적용한다.
+- 현재 MVP는 이미 공개 가능한 service link와 public skill 원문만 제공하므로 Basic Auth를 적용하지 않는다.
 - `proxy` network에만 연결한다.
 - PostgreSQL, Redis, Docker socket을 연결하지 않는다.
 - skill 원문은 repository에 포함 가능한 curated copy만 제공한다.
+- 나중에 status, logs, metrics, deploy action 같은 운영 기능을 추가하면 인증을 다시 적용한다.
 
 # 관련 개념
 

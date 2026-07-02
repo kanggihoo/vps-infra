@@ -116,11 +116,12 @@ UI 기반 CRUD는 file write 권한, audit, 실수 삭제, 인증 강도 문제�
 
 # 보안 원칙
 
-- `portal.kkh-hub.tech`는 관리자용 화면이므로 Traefik Basic Auth를 붙인다.
+- 현재 MVP는 public service link와 공개 가능한 skill 원문만 제공하므로 `portal.kkh-hub.tech`에 Basic Auth를 붙이지 않는다.
 - runtime host의 `~/.codex`, `~/.agents`, `.env`, private key, token 파일을 읽지 않는다.
 - 포털이 제공하는 skill source는 repository에 포함 가능한 curated copy로 제한한다.
 - markdown render 시 raw HTML은 비활성화하거나 sanitize한다.
 - PostgreSQL, Redis, Docker socket은 포털 container에 노출하지 않는다.
+- 나중에 status, logs, metrics, deploy action 같은 운영 기능을 추가하면 인증을 다시 적용한다.
 
 # 배포 고려사항
 

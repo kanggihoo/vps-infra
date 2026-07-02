@@ -155,11 +155,12 @@ Git history가 변경 이력 역할을 한다.
 
 ## 보안
 
-- `portal.kkh-hub.tech`는 관리자용 화면이므로 Traefik Basic Auth를 붙인다.
+- `portal.kkh-hub.tech`는 현재 MVP에서 Basic Auth를 적용하지 않는다.
 - skill 원문은 curated copy만 제공한다.
 - 런타임에 host의 `~/.codex`, `~/.agents`, `.env`, private key, token 파일을 읽지 않는다.
 - clipboard에 secret이 들어가지 않도록 skill source는 repository에 포함 가능한 내용만 둔다.
 - raw HTML markdown rendering은 비활성화하거나 sanitize한다.
+- status, logs, metrics, deploy action 같은 운영 기능을 추가하면 인증을 다시 적용한다.
 
 ## 배포
 
@@ -186,8 +187,7 @@ MVP 검증 기준:
 
 1. `docker compose config`가 통과한다.
 2. `portal` container가 Traefik `proxy` network에 연결된다.
-3. `https://portal.kkh-hub.tech`가 Basic Auth를 요구한다.
-4. 인증 후 Services 화면이 보인다.
+3. `https://portal.kkh-hub.tech`가 인증 없이 Services 화면을 보여준다.
 5. Traefik dashboard와 Health/whoami 링크가 표시된다.
 6. Skills 화면에서 skill list가 보인다.
 7. frontmatter metadata와 rendered markdown이 분리되어 보인다.
