@@ -11,7 +11,7 @@ VPS 공통 인프라는 앱 코드와 분리된 별도 디렉토리 또는 GitHu
 - **공통 진입점:** reverse proxy가 `80/443` 포트를 단독으로 노출
 - **인증 방식:** 공개 경로는 통과, 보호 경로는 SSO/Auth Gateway 적용
 - **앱 접근 방식:** 앱 컨테이너는 public port를 열지 않고 Docker internal network로만 접근
-- **배포 방식:** GitHub Actions 또는 SSH 기반 `git pull && docker compose up -d`
+- **배포 방식:** VPS 내부 Jenkins webhook 기반 `docker compose up -d`
 
 ### 권장 디렉토리 구조
 
@@ -227,20 +227,20 @@ JWT Bearer API에서는 일반적으로 CSRF를 비활성화한다. 브라우저
 - 여러 앱이 각자 origin 정책을 가진 경우: 앱별 Spring CORS 설정
 - 공통 정책만 필요한 경우: reverse proxy CORS 설정 가능
 
-### GitHub Actions 배포 전략
+### Jenkins 배포 전략
 
-인프라 repository도 GitHub Actions로 배포할 수 있다.
+인프라 repository는 VPS 내부 Jenkins로 배포한다. Jenkins는 GitHub webhook으로
+실행되고, 기존 `/opt/vps-infra` checkout에서 Docker Compose를 적용한다.
 
 기본 흐름:
 
 ```txt
 push to infra repo
--> GitHub Actions
--> SSH to VPS
--> git pull
+-> GitHub webhook
+-> Jenkins container
+-> /opt/vps-infra checkout
 -> docker compose config
--> docker compose pull
--> docker compose up -d
+-> docker compose up -d --build
 ```
 
 `docker compose up -d`는 보통 변경된 서비스만 재생성한다. 이미 실행 중인 앱이 있어도 compose project와 network 구성이 안정적이면 전체 앱이 매번 중단되지는 않는다.
@@ -262,10 +262,8 @@ push to infra repo
 초기 수동 배포:
 
 ```bash
-git pull
 docker compose config
-docker compose pull
-docker compose up -d
+docker compose up -d --build --wait
 ```
 
 정리 작업:
@@ -290,4 +288,4 @@ docker image prune -f
 
 ## 최종 요약
 
-하나의 VPS에서 여러 앱을 운영할 때는 공통 인프라를 앱 코드와 분리해 `vps-infra` 같은 별도 repository로 관리하는 것이 좋다. Reverse proxy와 SSO는 공통 진입점과 인증을 담당하고, 각 앱은 JWT claim의 `sub`를 자기 DB의 사용자와 매핑해 도메인 권한을 처리한다. Authentik 같은 IdP의 DB는 인증 서버 내부 상태이므로 앱이 직접 접근하지 않는다. 배포는 GitHub Actions로 자동화할 수 있지만, network, volume, secret, port 변경은 실행 중인 앱 전체에 영향을 줄 수 있으므로 별도 검토가 필요하다.
+하나의 VPS에서 여러 앱을 운영할 때는 공통 인프라를 앱 코드와 분리해 `vps-infra` 같은 별도 repository로 관리하는 것이 좋다. Reverse proxy와 SSO는 공통 진입점과 인증을 담당하고, 각 앱은 JWT claim의 `sub`를 자기 DB의 사용자와 매핑해 도메인 권한을 처리한다. Authentik 같은 IdP의 DB는 인증 서버 내부 상태이므로 앱이 직접 접근하지 않는다. 배포는 Jenkins로 자동화하지만, network, volume, secret, port 변경은 실행 중인 앱 전체에 영향을 줄 수 있으므로 별도 검토가 필요하다.

@@ -1,6 +1,7 @@
 # 서비스
 
-* [GitHub Actions 배포](github-actions-deploy.md) - `main` 변경 시 GitHub Actions가 SSH로 VPS에 접속해 배포한다.
+* [Jenkins 배포](jenkins-deploy.md) - VPS 내부 Jenkins가 GitHub webhook으로 Docker Compose를 실행한다.
+* [GitHub Actions 배포](github-actions-deploy.md) - Jenkins 전환 전 사용하던 수동 rollback 경로.
 * [Traefik 리버스 프록시](traefik.md) - VPS의 public HTTP/HTTPS 진입점.
 * [공용 인프라 포털](portal.md) - 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털.
 * [SSAFY Workspace Webhook POC](ssafy-workspace-webhook.md) - GitLab과 Mattermost webhook 연결을 검증하는 독립 FastAPI 서비스.

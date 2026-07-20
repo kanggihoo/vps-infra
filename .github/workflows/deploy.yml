@@ -1,8 +1,7 @@
-name: Deploy VPS Infra
+name: Deploy VPS Infra (manual rollback)
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:

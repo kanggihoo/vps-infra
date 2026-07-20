@@ -32,6 +32,7 @@ CNAME  www        kkh-hub.tech
 A      traefik    187.77.114.68
 A      health     187.77.114.68
 A      portal     187.77.114.68
+A      jenkins    187.77.114.68
 A      ssafy      187.77.114.68
 ```
 
@@ -43,8 +44,8 @@ A      ssafy      187.77.114.68
 groups: kkh sudo users docker
 ```
 
-GitHub Actions는 기존 개인 SSH key가 아니라 배포 전용 SSH key를 사용한다.
-private key는 GitHub Actions secret에만 저장한다.
+Jenkins는 GitHub checkout credential을 Jenkins credential store에 저장한다.
+Jenkins administrator credential과 private key는 repository에 저장하지 않는다.
 
 # Secret 제외 규칙
 
@@ -59,7 +60,7 @@ private key는 GitHub Actions secret에만 저장한다.
 
 # 관련 개념
 
-- [GitHub Actions 배포](/services/github-actions-deploy.md)
+- [Jenkins 배포](/services/jenkins-deploy.md)
 - [Traefik 리버스 프록시](/services/traefik.md)
 - [서브도메인 라우팅](/decisions/subdomain-routing.md)
 - [초기 배포 검증](/runbooks/initial-deployment-validation.md)

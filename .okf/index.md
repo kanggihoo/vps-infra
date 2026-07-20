@@ -17,11 +17,12 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 
 # 핵심 개념
 
-* [GitHub Actions 배포](services/github-actions-deploy.md) - `main` 변경 시 GitHub Actions가 SSH로 VPS에 접속해 배포한다.
+* [GitHub Actions 배포](services/github-actions-deploy.md) - Jenkins 전환 전 사용하던 수동 rollback용 배포 경로.
+* [Jenkins 배포](services/jenkins-deploy.md) - VPS 내부 Jenkins가 GitHub webhook을 받아 Docker Compose 배포를 실행한다.
 * [Traefik 리버스 프록시](services/traefik.md) - VPS의 public HTTP/HTTPS 진입점.
 * [공용 인프라 포털](services/portal.md) - 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털.
 * [Frontend Design Skills](services/frontend-design-skills.md) - 포털과 frontend 작업을 위해 project scope로 설치된 Codex frontend design skill set.
-* [시스템 아키텍처 개요](architecture/system-overview.md) - Hostinger VPS 1대에서 GitHub Actions, Traefik, Docker Compose, PostgreSQL, Redis가 연결되는 전체 구조.
+* [시스템 아키텍처 개요](architecture/system-overview.md) - Hostinger VPS 1대에서 Jenkins, Traefik, Docker Compose, PostgreSQL, Redis가 연결되는 전체 구조.
 * [공용 인프라 포털 MVP 아키텍처](architecture/portal-dashboard-proposal.md) - 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털 MVP 구조.
 * [Hostinger VPS](environments/hostinger-vps.md) - 현재 인프라가 배포될 VPS와 public 운영 메타데이터.
 * [초기 배포 검증](runbooks/initial-deployment-validation.md) - 첫 인프라 배포 성공 기준.

@@ -13,7 +13,7 @@ timestamp: 2026-06-28T00:00:00+09:00
 
 # 성공 기준
 
-1. GitHub Actions가 `main` push에서 성공한다.
+1. Jenkins가 GitHub webhook으로 시작되어 성공한다.
 2. `/opt/vps-infra`가 최신 `main`으로 갱신된다.
 3. `docker compose config`가 통과한다.
 4. [Traefik](/services/traefik.md), [PostgreSQL](/services/postgresql.md),
@@ -26,7 +26,7 @@ timestamp: 2026-06-28T00:00:00+09:00
 
 # 관련 개념
 
-- [GitHub Actions 배포](/services/github-actions-deploy.md)
+- [Jenkins 배포](/services/jenkins-deploy.md)
 - [장애 진단](/runbooks/failure-diagnosis.md)
 
 # Citations

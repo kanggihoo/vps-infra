@@ -1,7 +1,7 @@
 ---
 type: Architecture
 title: 시스템 아키텍처 개요
-description: Hostinger VPS 1대에서 GitHub Actions, Traefik, Docker Compose, PostgreSQL, Redis가 연결되는 전체 구조.
+description: Hostinger VPS 1대에서 Jenkins, Traefik, Docker Compose, PostgreSQL, Redis가 연결되는 전체 구조.
 tags: [architecture, vps, docker-compose, traefik, deployment]
 timestamp: 2026-06-29T00:00:00+09:00
 ---
@@ -16,16 +16,15 @@ Redis는 Docker internal network 안에서만 접근한다.
 
 ```txt
 GitHub main
-  -> GitHub Actions
-    -> SSH as kkh
-      -> /opt/vps-infra
-        -> git pull origin main
+  -> GitHub webhook
+    -> Jenkins container
+      -> /opt/vps-infra checkout
         -> docker compose up -d
 ```
 
-[GitHub Actions 배포](/services/github-actions-deploy.md)는 `main` 변경을 트리거로
-VPS에 접속한다. VPS 안의 `/opt/vps-infra` repository를 갱신하고 Docker Compose를
-적용한다.
+[Jenkins 배포](/services/jenkins-deploy.md)는 `main` 변경을 트리거로 Pipeline을
+실행한다. Jenkins는 VPS의 `/opt/vps-infra` checkout을 갱신하고 Docker Compose를
+적용한다. GitHub Actions workflow는 자동 배포에 사용하지 않는다.
 
 # 런타임 구조
 
@@ -35,6 +34,7 @@ Internet
     -> VPS 187.77.114.68
       -> Traefik :80/:443
         -> Docker internal network
+          -> Jenkins
           -> whoami
           -> portal
           -> ssafy-webhook-receiver
@@ -74,6 +74,7 @@ ssafy.kkh-hub.tech
 | 서비스 | 경계 | 외부 노출 |
 |--------|------|-----------|
 | [Traefik](/services/traefik.md) | public HTTP/HTTPS entrypoint | `80`, `443` |
+| [Jenkins](/services/jenkins-deploy.md) | GitHub webhook와 배포 Pipeline | Traefik 뒤 HTTPS만 |
 | [whoami](/services/whoami.md) | Traefik 뒤 검증용 HTTP backend | 직접 노출 없음 |
 | [SSAFY Workspace Webhook POC](/services/ssafy-workspace-webhook.md) | GitLab·Mattermost 연결 검증 | Traefik exact path만 공개 |
 | [PostgreSQL](/services/postgresql.md) | 공통 DB container | `5432` 미노출 |
@@ -141,7 +142,7 @@ Docker daemon이 boot 시 자동 시작되고, 이미 생성된 container는 res
 
 - VPS 외부 공개는 Traefik만 담당한다.
 - 내부 서비스는 Docker network 안에서만 접근한다.
-- 배포는 GitHub Actions가 SSH로 VPS에 접속해 Compose를 갱신한다.
+- 배포는 VPS 내부 Jenkins가 GitHub webhook을 받아 Compose를 갱신한다.
 - secret과 runtime state는 Git에 커밋하지 않는다.
 
 # 관련 개념

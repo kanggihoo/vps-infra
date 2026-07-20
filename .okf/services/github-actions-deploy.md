@@ -1,20 +1,26 @@
 ---
 type: Deployment Service
 title: GitHub Actions 배포
-description: main 변경 시 GitHub Actions가 SSH로 VPS에 접속해 배포한다.
+description: 과거 main 변경 시 GitHub Actions가 SSH로 VPS에 접속해 배포하던 방식.
 tags: [deployment, github-actions, ssh, docker-compose]
 timestamp: 2026-07-03T00:00:00+09:00
 ---
 
+# 상태
+
+이 방식은 Jenkins migration 이후 자동 배포 경로로 사용하지 않는다. workflow는
+수동 rollback 또는 emergency deployment 용도로만 남겨둔다.
+
 # 개요
 
-GitHub Actions는 `main` 브랜치가 변경되면 인프라 repository를 배포한다.
+Jenkins migration 전 GitHub Actions가 `main` 변경을 자동 배포했다. 현재는
+자동 트리거가 제거되었고, workflow를 수동 실행하는 비상 경로로만 유지한다.
 workflow는 Hostinger VPS에 `kkh` 사용자로 SSH 접속하고, `/opt/vps-infra`
 repository를 갱신한 뒤 Docker Compose를 적용한다.
 
 이 서비스는 [SSH git-pull 배포 결정](/decisions/ssh-git-pull-deployment.md)을 구현한다.
 
-# 트리거
+# 과거 트리거
 
 ```yaml
 on:
@@ -22,8 +28,8 @@ on:
     branches: [main]
 ```
 
-1차 단계에는 `workflow_dispatch`를 넣지 않는다. 코드 변경 없이 재배포해야 하는
-운영 요구가 생기면 나중에 추가한다.
+현재 workflow는 `workflow_dispatch`만 허용한다. Jenkins 장애 시 수동으로
+rollback 또는 emergency deployment를 실행할 수 있다.
 
 # 흐름
 

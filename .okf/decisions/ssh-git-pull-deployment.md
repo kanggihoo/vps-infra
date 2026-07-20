@@ -1,12 +1,16 @@
 ---
 type: Decision
 title: SSH Git-Pull 배포
-description: GitHub Actions가 SSH로 VPS에 접속하고 VPS에서 git pull을 실행한다.
+description: Jenkins 전환 전 GitHub Actions가 SSH로 VPS에 접속하고 VPS에서 git pull을 실행하던 방식.
 tags: [deployment, github-actions, ssh]
 timestamp: 2026-06-28T00:00:00+09:00
 ---
 
-# 결정
+# 상태
+
+Jenkins migration 전 결정. 현재 자동 배포 경로는 [Jenkins 내부 배포](/decisions/jenkins-deployment.md)다.
+
+# 과거 결정
 
 GitHub Actions에서 Hostinger VPS에 SSH로 접속한 뒤 `/opt/vps-infra`에서
 `git pull`과 Docker Compose 명령을 실행한다.
