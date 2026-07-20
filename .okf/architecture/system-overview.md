@@ -36,6 +36,8 @@ Internet
       -> Traefik :80/:443
         -> Docker internal network
           -> whoami
+          -> portal
+          -> ssafy-webhook-receiver
           -> PostgreSQL
           -> Redis
 ```
@@ -57,10 +59,15 @@ traefik.kkh-hub.tech
 health.kkh-hub.tech
   -> traefik/whoami
   -> DNS/TLS/routing 검증용
+
+ssafy.kkh-hub.tech
+  -> exact webhook/command paths
+  -> ssafy-webhook-receiver:8000
 ```
 
 라우팅은 [서브도메인 라우팅](/decisions/subdomain-routing.md) 결정을 따른다.
-path prefix 방식은 초기 단계에서 사용하지 않는다.
+서브도메인을 서비스 경계로 사용하고, 한 제품에서 여러 backend가 필요한 경우에만
+명시된 exact path로 내부 서비스를 구분한다.
 
 # 서비스 경계
 
@@ -68,6 +75,7 @@ path prefix 방식은 초기 단계에서 사용하지 않는다.
 |--------|------|-----------|
 | [Traefik](/services/traefik.md) | public HTTP/HTTPS entrypoint | `80`, `443` |
 | [whoami](/services/whoami.md) | Traefik 뒤 검증용 HTTP backend | 직접 노출 없음 |
+| [SSAFY Workspace Webhook POC](/services/ssafy-workspace-webhook.md) | GitLab·Mattermost 연결 검증 | Traefik exact path만 공개 |
 | [PostgreSQL](/services/postgresql.md) | 공통 DB container | `5432` 미노출 |
 | [Redis](/services/redis.md) | 공통 cache/session container | `6379` 미노출 |
 

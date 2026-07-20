@@ -11,6 +11,8 @@ timestamp: 2026-06-28T00:00:00+09:00
 Traefik은 VPS에서 public HTTP/HTTPS 포트를 노출하는 유일한 서비스다.
 hostname 기준으로 Docker 서비스를 라우팅하고, HTTP를 HTTPS로 redirect하며,
 Let's Encrypt HTTP-01 방식으로 TLS 인증서를 발급한다.
+Docker provider는 같은 Compose stack의 서비스 label을 읽고, file provider는 별도
+application repository가 운영하는 backend route를 관리한다.
 
 # Public Routes
 
@@ -18,6 +20,8 @@ Let's Encrypt HTTP-01 방식으로 TLS 인증서를 발급한다.
 |----------|------|------|
 | `traefik.kkh-hub.tech` | Traefik dashboard/API | Basic Auth |
 | `health.kkh-hub.tech` | [whoami](/services/whoami.md) | 초기 검증 단계에서는 public |
+| `portal.kkh-hub.tech` | [공용 인프라 포털](/services/portal.md) | public |
+| `ssafy.kkh-hub.tech` | [SSAFY Workspace Webhook POC](/services/ssafy-workspace-webhook.md) | token 검증 endpoint |
 
 # 책임
 
@@ -25,6 +29,7 @@ Let's Encrypt HTTP-01 방식으로 TLS 인증서를 발급한다.
 - HTTP -> HTTPS redirect.
 - Let's Encrypt HTTP-01 인증서 발급.
 - hostname 기반 라우팅.
+- `ssafy.kkh-hub.tech`의 명시된 webhook path만 file provider로 라우팅.
 - dashboard Basic Auth 보호.
 
 # 제약

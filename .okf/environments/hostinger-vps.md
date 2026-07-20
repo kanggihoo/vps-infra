@@ -31,6 +31,8 @@ A      @          187.77.114.68
 CNAME  www        kkh-hub.tech
 A      traefik    187.77.114.68
 A      health     187.77.114.68
+A      portal     187.77.114.68
+A      ssafy      187.77.114.68
 ```
 
 # SSH / Docker 조건
