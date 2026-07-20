@@ -36,3 +36,6 @@ The container has access to `/var/run/docker.sock` so the Pipeline can build
 and deploy the local Compose stack. This grants Jenkins control over the host
 Docker daemon and is equivalent to high host privileges. Keep Jenkins private,
 use strong credentials, and restrict who can edit jobs.
+
+The Pipeline runs health checks through the `vps_proxy` Docker network. This
+avoids VPS hairpin routing when Jenkins calls the public Traefik hostnames.

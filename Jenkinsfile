@@ -40,7 +40,7 @@ pipeline {
 
         stage('Health check') {
             steps {
-                sh '/opt/vps-infra/scripts/healthcheck.sh'
+                sh 'HEALTHCHECK_CONNECT_HOST=vps-traefik /opt/vps-infra/scripts/healthcheck.sh'
             }
         }
     }
