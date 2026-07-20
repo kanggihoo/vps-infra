@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     options {
+        skipDefaultCheckout(true)
         disableConcurrentBuilds()
         timeout(time: 15, unit: 'MINUTES')
         timestamps()
@@ -19,33 +20,27 @@ pipeline {
         stage('Select target') {
             steps {
                 script {
-                    dir('/opt/vps-infra') {
-                        def changed = sh(
-                            script: 'git diff --name-only HEAD^ HEAD 2>/dev/null || git diff-tree --no-commit-id --name-only -r HEAD',
-                            returnStdout: true
-                        ).trim()
-                        def files = changed ? changed.readLines() : []
-                        env.DEPLOY_TARGET = files && files.every { it.startsWith('portal/') } ? 'portal' : 'all'
-                        echo "Deploy target: ${env.DEPLOY_TARGET}"
-                    }
+                    def changed = sh(
+                        script: 'git -C /opt/vps-infra diff --name-only HEAD^ HEAD 2>/dev/null || git -C /opt/vps-infra diff-tree --no-commit-id --name-only -r HEAD',
+                        returnStdout: true
+                    ).trim()
+                    def files = changed ? changed.readLines() : []
+                    env.DEPLOY_TARGET = files && files.every { it.startsWith('portal/') } ? 'portal' : 'all'
+                    echo "Deploy target: ${env.DEPLOY_TARGET}"
                 }
             }
         }
 
         stage('Deploy') {
             steps {
-                dir('/opt/vps-infra') {
-                    sh 'chmod +x scripts/deploy.sh scripts/healthcheck.sh'
-                    sh './scripts/deploy.sh "$DEPLOY_TARGET"'
-                }
+                sh 'chmod +x /opt/vps-infra/scripts/deploy.sh /opt/vps-infra/scripts/healthcheck.sh'
+                sh '/opt/vps-infra/scripts/deploy.sh "$DEPLOY_TARGET"'
             }
         }
 
         stage('Health check') {
             steps {
-                dir('/opt/vps-infra') {
-                    sh './scripts/healthcheck.sh'
-                }
+                sh '/opt/vps-infra/scripts/healthcheck.sh'
             }
         }
     }
