@@ -32,7 +32,7 @@ metadata와 restart policy를 보고 재부팅 후 컨테이너를 다시 시작
 
 # 관련 개념
 
-- [Traefik 리버스 프록시](/services/traefik.md)
+- [nginx 리버스 프록시](/services/nginx.md)
 - [PostgreSQL](/services/postgresql.md)
 - [Redis](/services/redis.md)
 - [whoami Health Target](/services/whoami.md)

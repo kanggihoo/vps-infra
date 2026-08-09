@@ -2,10 +2,10 @@
 
 * [Jenkins 배포](jenkins-deploy.md) - VPS 내부 Jenkins가 GitHub webhook으로 Docker Compose를 실행한다.
 * [GitHub Actions 배포](github-actions-deploy.md) - Jenkins 전환 전 사용하던 수동 rollback 경로.
-* [Traefik 리버스 프록시](traefik.md) - VPS의 public HTTP/HTTPS 진입점.
+* [nginx 리버스 프록시](nginx.md) - VPS의 public HTTP/HTTPS 진입점.
 * [공용 인프라 포털](portal.md) - 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털.
 * [SSAFY Workspace Webhook POC](ssafy-workspace-webhook.md) - GitLab과 Mattermost webhook 연결을 검증하는 독립 FastAPI 서비스.
 * [Frontend Design Skills](frontend-design-skills.md) - 포털과 frontend 작업을 위해 project scope로 설치된 Codex frontend design skill set.
-* [whoami Health Target](whoami.md) - DNS, TLS, Traefik 라우팅, Docker 네트워크를 검증하는 가벼운 HTTP 컨테이너.
+* [whoami Health Target](whoami.md) - DNS, TLS, nginx 라우팅, Docker 네트워크를 검증하는 가벼운 HTTP 컨테이너.
 * [PostgreSQL](postgresql.md) - 향후 서비스별 DB를 담을 공통 PostgreSQL 컨테이너.
 * [Redis](redis.md) - 향후 서비스 캐시/세션 용도로 쓸 공통 Redis 컨테이너.

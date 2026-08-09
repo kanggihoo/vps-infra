@@ -29,11 +29,9 @@ timestamp: 2026-06-28T00:00:00+09:00
 ```txt
 A      @          187.77.114.68
 CNAME  www        kkh-hub.tech
-A      traefik    187.77.114.68
 A      health     187.77.114.68
 A      portal     187.77.114.68
 A      jenkins    187.77.114.68
-A      ssafy      187.77.114.68
 ```
 
 # SSH / Docker 조건
@@ -55,12 +53,11 @@ Jenkins administrator credential과 private key는 repository에 저장하지 �
 - `.env` 실제 값.
 - DB password.
 - Redis password.
-- Traefik Basic Auth hash.
-- Let's Encrypt `acme.json`.
+- Let's Encrypt 인증서/키 (certbot named volume 상태).
 
 # 관련 개념
 
 - [Jenkins 배포](/services/jenkins-deploy.md)
-- [Traefik 리버스 프록시](/services/traefik.md)
+- [nginx 리버스 프록시](/services/nginx.md)
 - [서브도메인 라우팅](/decisions/subdomain-routing.md)
 - [초기 배포 검증](/runbooks/initial-deployment-validation.md)

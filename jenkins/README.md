@@ -1,7 +1,7 @@
 # Jenkins
 
 Jenkins runs as a separate Compose project. It shares the existing `vps_proxy`
-network and routes through Traefik at `https://jenkins.kkh-hub.tech`.
+network and routes through nginx at `https://jenkins.kkh-hub.tech`.
 
 ## One-time VPS setup
 
@@ -20,8 +20,7 @@ sudo docker logs vps-jenkins
 
 The host must already have Docker, the `vps_proxy` network, and the
 `/opt/vps-infra` deployment checkout. Jenkins needs write access to that
-checkout so its Pipeline can update it without deleting `.env` or
-`traefik/acme.json`.
+checkout so its Pipeline can update it without deleting `.env`.
 
 ## Jenkins setup
 
@@ -38,4 +37,4 @@ Docker daemon and is equivalent to high host privileges. Keep Jenkins private,
 use strong credentials, and restrict who can edit jobs.
 
 The Pipeline runs health checks through the `vps_proxy` Docker network. This
-avoids VPS hairpin routing when Jenkins calls the public Traefik hostnames.
+avoids VPS hairpin routing when Jenkins calls the public nginx hostnames.

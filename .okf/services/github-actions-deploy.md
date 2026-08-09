@@ -76,7 +76,7 @@ redis ping
 
 # 관계
 
-이 workflow는 [Traefik](/services/traefik.md), [PostgreSQL](/services/postgresql.md),
+이 workflow는 [nginx](/services/nginx.md), [PostgreSQL](/services/postgresql.md),
 [Redis](/services/redis.md), [whoami](/services/whoami.md), [공용 인프라 포털](/services/portal.md)을 시작하고 갱신한다.
 
 # Citations

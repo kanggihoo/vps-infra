@@ -46,8 +46,4 @@ for attempt in $(seq 1 12); do
   sleep 5
 done
 
-echo "[healthcheck] traefik dashboard auth"
-dashboard_status="$(public_curl traefik.kkh-hub.tech -sS -o /dev/null -w "%{http_code}")"
-test "$dashboard_status" = "401"
-
 echo "[healthcheck] ok"

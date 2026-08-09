@@ -9,7 +9,7 @@ timestamp: 2026-07-20T00:00:00+09:00
 # 개요
 
 Jenkins는 기존 인프라 Compose project와 분리된 Docker Compose project로
-실행한다. Traefik 뒤 `jenkins.kkh-hub.tech`로 접근하며, GitHub webhook이
+실행한다. nginx 뒤 `jenkins.kkh-hub.tech`로 접근하며, GitHub webhook이
 Pipeline을 시작한다.
 
 이번 단계에서는 GHCR를 사용하지 않는다. Jenkins가 `/opt/vps-infra`에서
@@ -29,7 +29,7 @@ GitHub push
 ```
 
 Jenkins가 Docker socket을 사용하므로 host Docker daemon에 높은 권한을 가진다.
-Jenkins 관리자와 Pipeline 수정 권한을 제한하고, public 접근은 Traefik HTTPS와
+Jenkins 관리자와 Pipeline 수정 권한을 제한하고, public 접근은 nginx HTTPS와
 Jenkins 인증 뒤에 둔다.
 
 # 초기화
@@ -38,9 +38,9 @@ Jenkins 설치는 관리자 SSH 또는 VPS console에서 1회 수행한다.
 
 ```bash
 cd /opt/vps-infra/jenkins
-mkdir -p /opt/jenkins
-cp .env.example /opt/jenkins/.env
-sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(getent group docker | cut -d: -f3)/" /opt/jenkins/.env
+sudo mkdir -p /opt/jenkins
+sudo cp .env.example /opt/jenkins/.env
+sudo sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(getent group docker | cut -d: -f3)/" /opt/jenkins/.env
 docker compose --env-file /opt/jenkins/.env up -d --build
 ```
 
@@ -50,7 +50,7 @@ checkout과 Docker 명령을 수행한다.
 # 보안
 
 - Jenkins를 기존 `compose.yml`에 넣지 않는다. 배포 중 Jenkins 재생성을 피한다.
-- `8080`을 public port로 publish하지 않는다. Traefik만 `80/443`을 노출한다.
+- `8080`을 public port로 publish하지 않는다. nginx만 `80/443`을 노출한다.
 - Jenkins GitHub credential과 administrator password를 repository에 저장하지 않는다.
 - Jenkins의 anonymous read와 signup을 비활성화한다.
 - `/var/run/docker.sock` mount는 host Docker 제어 권한을 의미한다.

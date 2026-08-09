@@ -2,14 +2,14 @@
 type: Service
 title: 공용 인프라 포털
 description: 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털.
-tags: [portal, react, go, traefik, skills, tailwind, shadcn]
+tags: [portal, react, go, nginx, skills, tailwind, shadcn]
 timestamp: 2026-07-03T00:00:00+09:00
 ---
 
 # 개요
 
 공용 인프라 포털은 Hostinger VPS 공통 인프라의 공개 entrypoint다.
-[Traefik 리버스 프록시](/services/traefik.md) 뒤에서 `portal.kkh-hub.tech`로 노출되며,
+[nginx 리버스 프록시](/services/nginx.md) 뒤에서 `portal.kkh-hub.tech`로 노출되며,
 현재 구현된 public service 링크와 자주 쓰는 skill markdown 원문을 보여준다.
 
 # Route
@@ -55,7 +55,7 @@ portal/
 docker compose up -d --build --no-deps portal
 ```
 
-`compose.yml`, Traefik, DB, Redis, 배포 script 같은 인프라 파일이 함께 변경되면 전체
+`compose.yml`, nginx, DB, Redis, 배포 script 같은 인프라 파일이 함께 변경되면 전체
 배포 경로를 사용한다.
 
 # 범위

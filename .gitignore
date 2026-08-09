@@ -2,10 +2,10 @@
 .env
 .env.*
 !.env.example
+.traefik-dashboard-password
+*.htpasswd
 
-# Traefik / Let's Encrypt state
-traefik/acme.json
-traefik/acme-staging.json
+# Let's Encrypt state (managed via certbot named volumes, not repo paths)
 
 # Local data and backups
 data/

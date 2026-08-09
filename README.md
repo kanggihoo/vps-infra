@@ -20,9 +20,9 @@ vps-infra/
   README.md
   compose.yml
   .env.example
-  traefik/
-    traefik.yml
-    dynamic.yml
+  nginx/
+    nginx.conf
+    conf.d/
   authentik/
     README.md
   scripts/
@@ -73,7 +73,7 @@ networks:
 앱은 reverse proxy와 통신하기 위한 `proxy` network와, 앱 내부 DB 통신을 위한 private network를 분리해서 사용한다.
 
 ```txt
-traefik -> proxy network -> app1
+nginx -> proxy network -> app1
 app1 -> app1_internal network -> app1-db
 ```
 

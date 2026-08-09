@@ -8,7 +8,7 @@ timestamp: 2026-06-28T00:00:00+09:00
 
 # 실행 시점
 
-첫 `main` push 배포 후, VPS 재부팅 테스트 후, 또는 DNS/firewall/Traefik/PostgreSQL/Redis
+첫 `main` push 배포 후, VPS 재부팅 테스트 후, 또는 DNS/firewall/nginx/PostgreSQL/Redis
 설정을 바꾼 뒤 실행한다.
 
 # 성공 기준
@@ -16,10 +16,12 @@ timestamp: 2026-06-28T00:00:00+09:00
 1. Jenkins가 GitHub webhook으로 시작되어 성공한다.
 2. `/opt/vps-infra`가 최신 `main`으로 갱신된다.
 3. `docker compose config`가 통과한다.
-4. [Traefik](/services/traefik.md), [PostgreSQL](/services/postgresql.md),
-   [Redis](/services/redis.md), [whoami](/services/whoami.md)가 running 상태다.
+4. [nginx](/services/nginx.md), [PostgreSQL](/services/postgresql.md),
+   [Redis](/services/redis.md), [whoami](/services/whoami.md), `certbot`이
+   running 상태다.
 5. `https://health.kkh-hub.tech`가 whoami 응답을 반환한다.
-6. `https://traefik.kkh-hub.tech`가 Basic Auth를 요구하고 dashboard를 보여준다.
+6. `https://portal.kkh-hub.tech`, `https://jenkins.kkh-hub.tech`가 유효한 TLS
+   인증서로 응답한다.
 7. PostgreSQL `pg_isready`가 통과한다.
 8. Redis가 `PONG`을 반환한다.
 9. 외부에서 접근 가능한 public port는 `80`, `443`뿐이다.

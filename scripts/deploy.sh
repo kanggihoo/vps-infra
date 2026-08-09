@@ -17,7 +17,6 @@ esac
 echo "[deploy] checking required files"
 test -f .env
 test -f compose.yml
-test -f traefik/acme.json
 
 set -a
 . ./.env

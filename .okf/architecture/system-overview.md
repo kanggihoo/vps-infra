@@ -9,7 +9,7 @@ timestamp: 2026-06-29T00:00:00+09:00
 # 개요
 
 이 프로젝트는 Hostinger VPS 1대에서 공통 인프라를 Docker Compose로 운영한다.
-외부 traffic은 [Traefik 리버스 프록시](/services/traefik.md)만 받고, PostgreSQL과
+외부 traffic은 [nginx 리버스 프록시](/services/nginx.md)만 받고, PostgreSQL과
 Redis는 Docker internal network 안에서만 접근한다.
 
 # 배포 구조
@@ -32,14 +32,14 @@ GitHub main
 Internet
   -> DNS: kkh-hub.tech
     -> VPS 187.77.114.68
-      -> Traefik :80/:443
+      -> nginx :80/:443
         -> Docker internal network
           -> Jenkins
           -> whoami
           -> portal
-          -> ssafy-webhook-receiver
           -> PostgreSQL
           -> Redis
+      -> certbot (인증서 발급/갱신, public 포트 미점유)
 ```
 
 # Docker 네트워크
@@ -52,31 +52,31 @@ Internet
 # 라우팅 구조
 
 ```txt
-traefik.kkh-hub.tech
-  -> Traefik dashboard
-  -> Basic Auth 보호
-
 health.kkh-hub.tech
-  -> traefik/whoami
+  -> whoami
   -> DNS/TLS/routing 검증용
 
-ssafy.kkh-hub.tech
-  -> exact webhook/command paths
-  -> ssafy-webhook-receiver:8000
+portal.kkh-hub.tech
+  -> portal
+
+jenkins.kkh-hub.tech
+  -> jenkins
 ```
 
 라우팅은 [서브도메인 라우팅](/decisions/subdomain-routing.md) 결정을 따른다.
-서브도메인을 서비스 경계로 사용하고, 한 제품에서 여러 backend가 필요한 경우에만
-명시된 exact path로 내부 서비스를 구분한다.
+서브도메인을 서비스 경계로 사용한다. nginx는 Docker label 기반 동적 라우팅이
+없으므로 `nginx/conf.d/`에 서비스당 conf 파일 1개를 명시적으로 둔다.
+
+Traefik dashboard와 SSAFY webhook exact path 라우팅(`ssafy.kkh-hub.tech`)은
+nginx 전환과 함께 제거했다.
 
 # 서비스 경계
 
 | 서비스 | 경계 | 외부 노출 |
 |--------|------|-----------|
-| [Traefik](/services/traefik.md) | public HTTP/HTTPS entrypoint | `80`, `443` |
-| [Jenkins](/services/jenkins-deploy.md) | GitHub webhook와 배포 Pipeline | Traefik 뒤 HTTPS만 |
-| [whoami](/services/whoami.md) | Traefik 뒤 검증용 HTTP backend | 직접 노출 없음 |
-| [SSAFY Workspace Webhook POC](/services/ssafy-workspace-webhook.md) | GitLab·Mattermost 연결 검증 | Traefik exact path만 공개 |
+| [nginx](/services/nginx.md) | public HTTP/HTTPS entrypoint | `80`, `443` |
+| [Jenkins](/services/jenkins-deploy.md) | GitHub webhook와 배포 Pipeline | nginx 뒤 HTTPS만 |
+| [whoami](/services/whoami.md) | nginx 뒤 검증용 HTTP backend | 직접 노출 없음 |
 | [PostgreSQL](/services/postgresql.md) | 공통 DB container | `5432` 미노출 |
 | [Redis](/services/redis.md) | 공통 cache/session container | `6379` 미노출 |
 
@@ -140,7 +140,7 @@ Docker daemon이 boot 시 자동 시작되고, 이미 생성된 container는 res
 
 # 핵심 원칙
 
-- VPS 외부 공개는 Traefik만 담당한다.
+- VPS 외부 공개는 nginx만 담당한다.
 - 내부 서비스는 Docker network 안에서만 접근한다.
 - 배포는 VPS 내부 Jenkins가 GitHub webhook을 받아 Compose를 갱신한다.
 - secret과 runtime state는 Git에 커밋하지 않는다.
@@ -149,7 +149,7 @@ Docker daemon이 boot 시 자동 시작되고, 이미 생성된 container는 res
 
 - [Hostinger VPS](/environments/hostinger-vps.md)
 - [GitHub Actions 배포](/services/github-actions-deploy.md)
-- [Traefik 리버스 프록시](/services/traefik.md)
+- [nginx 리버스 프록시](/services/nginx.md)
 - [초기 배포 검증](/runbooks/initial-deployment-validation.md)
 
 # Citations

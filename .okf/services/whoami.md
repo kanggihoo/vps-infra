@@ -1,14 +1,14 @@
 ---
 type: Service
 title: whoami Health Target
-description: DNS, TLS, Traefik 라우팅, Docker 네트워크를 검증하는 가벼운 HTTP 컨테이너.
-tags: [healthcheck, traefik, docker]
-timestamp: 2026-06-28T00:00:00+09:00
+description: DNS, TLS, nginx 라우팅, Docker 네트워크를 검증하는 가벼운 HTTP 컨테이너.
+tags: [healthcheck, nginx, docker]
+timestamp: 2026-08-10T00:00:00+09:00
 ---
 
 # 개요
 
-`traefik/whoami`는 [Traefik](/services/traefik.md) 뒤에 두는 첫 HTTP 대상이다.
+`traefik/whoami`는 [nginx](/services/nginx.md) 뒤에 두는 첫 HTTP 대상이다.
 요청을 받으면 hostname, IP, forwarded header 같은 요청 메타데이터를 반환한다.
 
 # Route
@@ -23,7 +23,7 @@ https://health.kkh-hub.tech -> whoami
 
 - DNS가 VPS를 가리킨다.
 - TLS 인증서가 발급되고 serving된다.
-- Traefik hostname 라우팅이 동작한다.
+- nginx hostname 라우팅이 동작한다.
 - Docker internal network가 동작한다.
 - backend container가 reverse proxy 뒤에서 응답한다.
 

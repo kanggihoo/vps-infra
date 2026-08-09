@@ -12,12 +12,16 @@ timestamp: 2026-07-03T00:00:00+09:00
 `React+nginx + Go API + 운영 상태 수집` 구조에서 범위를 줄여, 첫 버전은 현재
 repository에 구현된 public service 링크와 skill markdown library만 제공한다.
 
+이 문서는 작성 당시(Traefik 운영 시점) 기준이다. 이후 리버스 프록시를
+[nginx](/services/nginx.md)로 전환하면서 Traefik dashboard 링크는 제거되었다.
+현재 유효한 Public Route는 [nginx](/services/nginx.md) 문서를 따른다.
+
 # 목표
 
 - VPS 안에서 실제 운영 중인 public service entrypoint를 빠르게 이동한다.
 - 자주 쓰는 agent skill 원문을 보기 쉽게 렌더링하고 복사할 수 있게 한다.
 - 포털을 특정 앱 backend에 얹지 않고 인프라 repository에서 관리한다.
-- [Traefik 리버스 프록시](/services/traefik.md)를 public HTTP/HTTPS 진입점으로 유지한다.
+- Traefik 리버스 프록시(작성 당시, 현재는 [nginx](/services/nginx.md))를 public HTTP/HTTPS 진입점으로 유지한다.
 
 # MVP 범위
 
@@ -162,5 +166,5 @@ local Dockerfile build가 생기므로 [GitHub Actions 배포](/services/github-
 # 관련 개념
 
 - [시스템 아키텍처 개요](/architecture/system-overview.md)
-- [Traefik 리버스 프록시](/services/traefik.md)
+- Traefik 리버스 프록시(작성 당시, 현재는 [nginx](/services/nginx.md))
 - [GitHub Actions 배포](/services/github-actions-deploy.md)

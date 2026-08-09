@@ -11,13 +11,6 @@ services:
       - "${DOCKER_GID:?DOCKER_GID is required}"
     networks:
       - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.jenkins.rule=Host(`jenkins.kkh-hub.tech`)
-      - traefik.http.routers.jenkins.entrypoints=websecure
-      - traefik.http.routers.jenkins.tls=true
-      - traefik.http.routers.jenkins.tls.certresolver=letsencrypt
-      - traefik.http.services.jenkins.loadbalancer.server.port=8080
 
 networks:
   proxy:
