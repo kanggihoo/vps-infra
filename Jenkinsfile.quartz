@@ -21,7 +21,10 @@ pipeline {
     environment {
         BUILD_DIR  = '/opt/quartz-build'
         DEPLOY_DIR = '/opt/quartz-site'
-        NODE_IMAGE = 'node:22-alpine'
+        // alpine이 아니라 slim(Debian)을 쓴다.
+        // Quartz CLI 셔뱅이 `#!/usr/bin/env -S node`인데 alpine의 BusyBox env에는
+        // -S 옵션이 없어 실행되지 않는다. Quartz 공식 Dockerfile도 slim을 쓴다.
+        NODE_IMAGE = 'node:22-slim'
         REPO       = 'github.com/kanggihoo/quartz-site-private.git'
     }
 
@@ -72,7 +75,9 @@ pipeline {
                         -w /app \
                         "${NODE_IMAGE}" \
                         sh -ceu '
-                            apk add --no-cache git >/dev/null
+                            # plugin install이 github에서 플러그인을 받아오므로 git이 필요하다.
+                            apt-get update -qq
+                            apt-get install -y -qq --no-install-recommends git >/dev/null
                             npm ci --no-audit --no-fund
                             # --from-config: quartz.config.yaml에 켜둔 플러그인만 설치한다.
                             # 플래그를 빼면 lockfile의 46개를 전부 받아 빌드가 느려진다.
