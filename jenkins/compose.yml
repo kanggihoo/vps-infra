@@ -7,6 +7,11 @@ services:
       - jenkins-data:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/vps-infra:/opt/vps-infra
+      # Quartz 빌드 작업 폴더와 배포 결과물 폴더.
+      # 호스트와 같은 경로로 마운트해야 Pipeline이 실행하는 docker run의
+      # -v 경로(호스트 기준)와 Jenkins 안에서 보는 경로가 일치한다.
+      - /opt/quartz-build:/opt/quartz-build
+      - /opt/quartz-site:/opt/quartz-site
     group_add:
       - "${DOCKER_GID:?DOCKER_GID is required}"
     networks:
