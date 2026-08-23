@@ -17,16 +17,35 @@ base_domain="${BASE_DOMAIN:-localhost}"
 notes_user="${NOTES_USER:-test}"
 notes_pass="${NOTES_PASS:-test}"
 
+# 스킴에 따라 요청 방식이 다르다.
+#   http  (로컬): IP로 접속하고 Host 헤더로 서브도메인을 지정한다.
+#                 로컬은 인증서가 없으므로 이 방식이 필요하다.
+#   https (VPS):  호스트명으로 직접 접속한다. IP+Host 헤더로는 SNI가
+#                 인증서 이름과 맞지 않아 TLS 핸드셰이크가 실패한다(코드 000).
+scheme="${base_url%%://*}"
+
+# 요청 인자를 스킴에 맞게 만든다. 호출부는 항상 전체 호스트명을 넘긴다.
+# 결과를 전역 REQ 배열에 담는다(bash 3.2 호환을 위해 반환값 대신 전역 사용).
+build_req() {
+  local host="$1" path="$2"
+  if [ "$scheme" = "https" ]; then
+    REQ=("https://${host}${path}")
+  else
+    REQ=(-H "Host: ${host}" "${base_url}${path}")
+  fi
+}
+
 fail=0
 
-# check <설명> <Host 헤더> <경로> <기대 상태코드> [curl 추가인자...]
+# check <설명> <호스트명> <경로> <기대 상태코드> [curl 추가인자...]
 check() {
   local desc="$1" host="$2" path="$3" want="$4"
   shift 4
+  build_req "$host" "$path"
   local got
   got="$(curl -s -o /dev/null -w '%{http_code}' \
     --connect-timeout 5 --max-time 15 \
-    -H "Host: ${host}" "$@" "${base_url}${path}" || echo 000)"
+    "$@" "${REQ[@]}" || echo 000)"
   if [ "$got" = "$want" ]; then
     echo "ok   - $desc ($host$path -> $got)"
   else
@@ -35,13 +54,14 @@ check() {
   fi
 }
 
-# body_contains <설명> <Host> <경로> <기대 문자열> [curl 추가인자...]
+# body_contains <설명> <호스트명> <경로> <기대 문자열> [curl 추가인자...]
 body_contains() {
   local desc="$1" host="$2" path="$3" want="$4"
   shift 4
+  build_req "$host" "$path"
   local body
   body="$(curl -s --connect-timeout 5 --max-time 15 \
-    -H "Host: ${host}" "$@" "${base_url}${path}" || true)"
+    "$@" "${REQ[@]}" || true)"
   if printf '%s' "$body" | grep -q "$want"; then
     echo "ok   - $desc"
   else
@@ -68,9 +88,10 @@ check "notes 인증 없이 401" "notes.${base_domain}" / 401
 check "notes 틀린 비밀번호도 401" "notes.${base_domain}" / 401 -u "${notes_user}:definitely-wrong"
 # 올바른 자격증명으로는 통과해야 한다.
 # 콘텐츠가 없으면 404, 있으면 200 — 둘 다 인증 통과를 뜻한다.
+build_req "notes.${base_domain}" "/"
 got="$(curl -s -o /dev/null -w '%{http_code}' \
   --connect-timeout 5 --max-time 15 \
-  -u "${notes_user}:${notes_pass}" -H "Host: notes.${base_domain}" "${base_url}/" || echo 000)"
+  -u "${notes_user}:${notes_pass}" "${REQ[@]}" || echo 000)"
 if [ "$got" = "200" ] || [ "$got" = "404" ]; then
   echo "ok   - notes 올바른 자격증명으로 인증 통과 ($got)"
 else
@@ -81,7 +102,7 @@ fi
 echo "--- 정적 사이트 try_files ---"
 # 확장자 없는 경로가 .html로 해석되는지. probe 파일을 볼륨에 넣어 확인한다.
 # nginx는 /var/www/notes를 :ro로 마운트하므로 쓰기는 별도 컨테이너로 한다.
-docker run --rm -v vps_quartz_site:/w alpine:3.24 \
+docker run --rm -v "${QUARTZ_VOLUME:-vps_quartz_site}":/w alpine:3.24 \
   sh -c 'echo "<h1>note body</h1>" > /w/probe.html' >/dev/null 2>&1 || true
 # Basic Auth가 걸려 있으므로 자격증명을 함께 보낸다.
 body_contains "확장자 없는 /probe가 probe.html로 해석" \
@@ -93,9 +114,10 @@ echo "--- 별도 compose 프로젝트 라우팅 ---"
 #   502 = Jenkins 미기동 (upstream 해석 실패 -> 변수+resolver가 동작한 것)
 #   403/200 = Jenkins 기동 (인증 요구 또는 응답)
 # 여기서 000(연결 실패)이나 404가 나오면 라우팅이 깨진 것이다.
+build_req "jenkins.${base_domain}" "/"
 got="$(curl -s -o /dev/null -w '%{http_code}' \
   --connect-timeout 5 --max-time 15 \
-  -H "Host: jenkins.${base_domain}" "${base_url}/" || echo 000)"
+  "${REQ[@]}" || echo 000)"
 case "$got" in
   502) echo "ok   - jenkins 미기동 상태에서 nginx는 정상 기동하고 502를 준다 ($got)" ;;
   200|403|401) echo "ok   - jenkins 기동 상태로 라우팅된다 ($got)" ;;
