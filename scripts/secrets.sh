@@ -52,8 +52,17 @@ cmd_decrypt() {
     fi
     mkdir -p "$(dirname "$dst")"
     sops --decrypt "$src" > "$dst"
-    # secret 파일은 소유자만 읽게 한다.
-    chmod 600 "$dst"
+
+    # 기본은 600(소유자만). 단 컨테이너가 비-root 사용자로 읽어야 하는
+    # 파일은 644로 둔다.
+    #   htpasswd: nginx 워커가 `nginx` 사용자로 실행되므로 600이면
+    #   "open() ... failed (13: Permission denied)"로 500을 응답한다.
+    #   내용은 단방향 해시(apr1/bcrypt)이고 이미 이미지 안에서만 보이므로
+    #   644가 실질적 노출을 늘리지 않는다.
+    case "$dst" in
+      *htpasswd) chmod 644 "$dst" ;;
+      *)         chmod 600 "$dst" ;;
+    esac
     # tools 컨테이너는 root로 동작하므로 결과가 root:root 600이 된다.
     # 그러면 호스트 사용자가 읽지 못해 compose가 .env를 못 읽는다.
     # HOST_UID/GID가 주어지면 소유권을 호스트 사용자에게 넘긴다.

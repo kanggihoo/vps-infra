@@ -62,6 +62,10 @@ check "portal -> portal:8080" "portal.${base_domain}" / 200
 echo "--- Basic Auth ---"
 # 자격증명 없이 401이어야 한다. 200이면 인증이 빠진 것.
 check "notes 인증 없이 401" "notes.${base_domain}" / 401
+# 틀린 비밀번호도 401이어야 한다. 여기서 500이 나오면 nginx가 htpasswd 파일을
+# 읽지 못하는 것이다(파일 권한 600 + nginx 워커가 비-root인 경우).
+# 401과 500을 구분하지 않으면 이 권한 문제가 테스트를 통과해버린다.
+check "notes 틀린 비밀번호도 401" "notes.${base_domain}" / 401 -u "${notes_user}:definitely-wrong"
 # 올바른 자격증명으로는 통과해야 한다.
 # 콘텐츠가 없으면 404, 있으면 200 — 둘 다 인증 통과를 뜻한다.
 got="$(curl -s -o /dev/null -w '%{http_code}' \
