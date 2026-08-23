@@ -54,6 +54,12 @@ cmd_decrypt() {
     sops --decrypt "$src" > "$dst"
     # secret 파일은 소유자만 읽게 한다.
     chmod 600 "$dst"
+    # tools 컨테이너는 root로 동작하므로 결과가 root:root 600이 된다.
+    # 그러면 호스트 사용자가 읽지 못해 compose가 .env를 못 읽는다.
+    # HOST_UID/GID가 주어지면 소유권을 호스트 사용자에게 넘긴다.
+    if [ -n "${HOST_UID:-}" ] && [ -n "${HOST_GID:-}" ]; then
+      chown "${HOST_UID}:${HOST_GID}" "$dst" 2>/dev/null || true
+    fi
     echo "[secrets] $src -> $dst"
   done
   [ "$missing" -eq 0 ] || echo "[secrets] 일부 파일이 아직 암호화되지 않았다" >&2

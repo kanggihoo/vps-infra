@@ -79,6 +79,15 @@ services:
   # 호스트 셸이 PowerShell이든 zsh든 같은 명령으로 같은 결과가 나온다.
   tools:
     build: ./tools
+    environment:
+      # 복호화할 환경을 고른다(local|prod). compose run은 호스트 환경변수를
+      # 자동으로 넘기지 않으므로 여기서 명시해야 ENV_NAME=prod가 전달된다.
+      ENV_NAME: ${ENV_NAME:-local}
+      # 컨테이너 안 root가 만든 파일을 호스트 사용자가 읽을 수 있게 한다.
+      # 이 값이 없으면 복호화 결과가 root:root 600이 되어 compose가
+      # .env를 읽지 못하고 "Permission denied"로 막힌다.
+      HOST_UID: ${HOST_UID:-}
+      HOST_GID: ${HOST_GID:-}
     # docker.sock으로 호스트 Docker를 제어하므로, 레포를 호스트와 같은 경로에
     # 마운트해야 여기서 실행한 docker run의 -v 경로가 호스트에서도 유효하다.
     volumes:

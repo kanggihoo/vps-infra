@@ -50,12 +50,17 @@ rm /tmp/pat
 
 환경별로 `.env` 한 벌씩 둔다. `ENV_NAME`으로 고른다(기본 `local`).
 
+`HOST_UID`/`HOST_GID`를 넘겨야 한다. tools 컨테이너는 root로 동작하므로,
+없으면 복호화 결과가 `root:root 600`이 되어 호스트에서 `.env`를 읽지 못한다.
+
 ```bash
 # 로컬 값으로 복호화
-docker compose run --rm tools ./scripts/secrets.sh decrypt
+HOST_UID=$(id -u) HOST_GID=$(id -g) \
+  docker compose run --rm tools ./scripts/secrets.sh decrypt
 
 # VPS 값으로 복호화
-ENV_NAME=prod docker compose run --rm tools ./scripts/secrets.sh decrypt
+ENV_NAME=prod HOST_UID=$(id -u) HOST_GID=$(id -g) \
+  docker compose run --rm tools ./scripts/secrets.sh decrypt
 
 # 값 수정 후 재암호화
 docker compose run --rm tools ./scripts/secrets.sh encrypt .env secrets/env.local.sops.env
