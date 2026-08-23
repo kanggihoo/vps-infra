@@ -32,3 +32,4 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 * [공용 인프라 포털 MVP 아키텍처](architecture/portal-dashboard-proposal.md) - 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털 MVP 구조.
 * [Hostinger VPS](environments/hostinger-vps.md) - 현재 인프라가 배포될 VPS와 public 운영 메타데이터.
 * [초기 배포 검증](runbooks/initial-deployment-validation.md) - 첫 인프라 배포 성공 기준.
+* [로컬 우선 인프라 인수 절차](runbooks/local-first-handover.md) - spec 0001 단계 0~5 구현 후 사용자 작업과 로컬 검증 명령.

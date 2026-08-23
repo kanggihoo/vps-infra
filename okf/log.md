@@ -1,6 +1,8 @@
 # 변경 기록
 
 ## 2026-08-23
+* **생성**: [로컬 우선 인프라 인수 절차](/runbooks/local-first-handover.md) 런북을 추가했다. spec 0001 단계 0~5을 구현하면서, 사용자만 할 수 있는 작업(age key 생성, 실제 secret 암호화)과 로컬 검증 명령, 미구현 단계 6~8의 선행 조건을 정리했다.
+* **구현**: spec 0001 단계 0~5을 구현했다. 배포 대상 판정을 셸 스크립트로 내리고(빈 diff는 판정 불가로 실패), nginx conf를 envsubst 템플릿으로 바꿔 로컬 HTTP 기동을 가능하게 했고, SOPS 배선과 Jenkins JCasC/job-dsl을 추가했다. 로컬 Jenkins가 빈 volume에서 기동만으로 Job을 복원하고 파이프라인 전체가 통과함을 확인했다. 단계 6~8은 VPS 접근과 외부 레포가 필요해 미구현이다.
 * **삭제**: `docs/superpowers/`와 `references/` 그룹을 제거했다. 원본 설계 문서가 traefik + GitHub Actions 시절 내용이라 이미 폐기된 구조를 서술하고 있었고, 이를 가리키던 reference concept와 `# Citations` 블록 12개도 함께 정리했다.
 * **정리**: ADR 파일명을 작성 시점 순 `0001`~`0010`으로 통일하고 inbound 링크를 갱신했다. 이전에는 초기 결정 5개가 번호 없는 slug 이름이었다.
 * **생성**: [로컬 우선 인프라 재구성](/spec/0001-local-first-infra.md) spec을 추가하고, seam 3개(스크립트 / 기동된 스택 HTTP / SOPS 왕복)와 8단계 작업 순서를 기록했다.
@@ -37,7 +39,7 @@
 * **생성**: AI 작업 진입점인 repository root `AGENTS.md`를 추가했다.
 * **생성**: public 운영 메타데이터를 담는 [Hostinger VPS](/environments/hostinger-vps.md) 환경 개념을 추가했다.
 * **생성**: VPS 인프라 설계 지식을 OKF 번들로 정리했다.
-* **생성**: [GitHub Actions 배포](/services/github-actions-deploy.md), [Traefik 리버스 프록시](/services/traefik.md), [PostgreSQL](/services/postgresql.md), [Redis](/services/redis.md), [whoami Health Target](/services/whoami.md) 서비스 개념을 추가했다.
+* **생성**: [GitHub Actions 배포](/services/github-actions-deploy.md), Traefik 리버스 프록시(2026-07 nginx 전환 시 삭제됨), [PostgreSQL](/services/postgresql.md), [Redis](/services/redis.md), [whoami Health Target](/services/whoami.md) 서비스 개념을 추가했다.
 * **생성**: 배포 방식, 라우팅 방식, 데이터 서비스 격리, 재부팅 복구 결정을 추가했다.
 * **생성**: [초기 배포 검증](/runbooks/initial-deployment-validation.md), [장애 진단](/runbooks/failure-diagnosis.md) 런북을 추가했다.
 * **생성**: 원본 설계 문서를 가리키는 VPS 인프라 GitHub Actions 배포 설계 reference concept를 추가했다. (2026-08-23 삭제됨)
