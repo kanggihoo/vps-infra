@@ -54,12 +54,18 @@ credentials:
               description: "GitHub PAT for SCM checkout"
           # SOPS 복호화용 age key. Jenkins가 파일로 받아 쓰므로
           # 호스트에 key를 노출하지 않는다(ADR 0010).
+          #
+          # secretBytes는 base64 문자열을 기대한다. age key는 3줄이고
+          # compose의 .env는 여러 줄 값을 담을 수 없으므로, 주입 전에
+          # base64로 한 줄로 만들어 넘긴다:
+          #   SOPS_AGE_KEY_CONTENT=$(base64 < ~/.config/sops/age/keys.txt | tr -d '\n')
+          # 여기서 ${base64:...}를 다시 씌우면 이중 인코딩이 된다.
           - file:
               scope: GLOBAL
               id: "sops-age-key"
               fileName: "keys.txt"
-              secretBytes: "${base64:${SOPS_AGE_KEY_CONTENT}}"
-              description: "age key for SOPS decryption"
+              secretBytes: "${SOPS_AGE_KEY_CONTENT}"
+              description: "age key for SOPS decryption (base64)"
 
 jobs:
   # job-dsl seed. 아래 스크립트가 Job을 만든다.
