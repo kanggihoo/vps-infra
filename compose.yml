@@ -25,8 +25,15 @@ services:
       # Quartz 정적 사이트. named volume이므로 호스트 경로 의존이 없다.
       # 단계 7에서 Quartz를 이미지화하면 이 마운트 자체가 사라진다.
       - quartz-site:/var/www/notes:ro
-      # Basic Auth 사용자 파일. SOPS로 복호화해 이 경로에 생성한다(단계 3).
-      - ./secrets/notes.htpasswd:/etc/nginx/notes.htpasswd:ro
+      # Basic Auth 사용자 파일.
+      #
+      # 기본값이 공개 fixture(test/test)인 이유: 이 경로에 파일이 없으면
+      # Docker가 디렉터리를 만들고 nginx가 auth_basic_user_file 오류로 죽는다.
+      # 즉 clean clone에서 `up`이 실패해 로컬 검증을 시작할 수 없다.
+      #
+      # 실제 secret을 쓰려면 SOPS로 복호화한 뒤 이 변수를 덮어쓴다(단계 3):
+      #   NOTES_HTPASSWD=./secrets/notes.htpasswd
+      - ${NOTES_HTPASSWD:-./nginx/test-fixtures/notes.htpasswd}:/etc/nginx/notes.htpasswd:ro
     networks:
       - proxy
     depends_on:

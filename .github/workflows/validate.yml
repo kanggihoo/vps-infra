@@ -52,6 +52,15 @@ jobs:
           trap 'docker rm -f whoami portal >/dev/null 2>&1 || true; \
                 docker network rm ci_validate >/dev/null 2>&1 || true' EXIT
 
+          # VPS 모드는 인증서 파일이 있어야 `nginx -t`를 통과한다.
+          # 더미 인증서를 만들어두면 인증서 경로 오타까지 이 단계에서 드러난다.
+          # 로컬 모드는 이 마운트를 무시하므로 두 모드가 같은 호출을 쓴다.
+          mkdir -p /tmp/le/live/kkh-hub.tech
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj '/CN=kkh-hub.tech' \
+            -keyout /tmp/le/live/kkh-hub.tech/privkey.pem \
+            -out /tmp/le/live/kkh-hub.tech/fullchain.pem >/dev/null 2>&1
+
           validate() {
             echo "--- BASE_DOMAIN=$1 NGINX_LISTEN=$2 TLS_MODE=$3 ---"
             docker run --rm --network ci_validate \
@@ -63,32 +72,15 @@ jobs:
               -v "$PWD/nginx/templates:/etc/nginx/templates:ro" \
               -v "$PWD/nginx/tls:/etc/nginx/tls:ro" \
               -v "$PWD/nginx/test-fixtures/notes.htpasswd:/etc/nginx/notes.htpasswd:ro" \
+              -v /tmp/le:/etc/letsencrypt:ro \
               nginx:1.31.4-alpine \
               sh -c '/docker-entrypoint.sh nginx -t'
           }
 
-          # 로컬 모드. TLS 지시자 없이 80에서 기동되어야 한다.
+          # 두 모드를 모두 검증한다. 한쪽만 보면 다른 쪽 오타를 놓친다.
           validate localhost 80 none acme-challenge.invalid
-
-          # VPS 모드. 인증서 파일이 없으므로 문법 검증만 가능하도록
-          # 더미 인증서를 만들어 넣는다. 경로 오타는 이 단계에서 드러난다.
-          mkdir -p /tmp/le/live/kkh-hub.tech
-          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
-            -subj '/CN=kkh-hub.tech' \
-            -keyout /tmp/le/live/kkh-hub.tech/privkey.pem \
-            -out /tmp/le/live/kkh-hub.tech/fullchain.pem >/dev/null 2>&1
-          docker run --rm --network ci_validate \
-            -e BASE_DOMAIN=kkh-hub.tech \
-            -e NGINX_LISTEN="443 ssl" \
-            -e TLS_MODE=live \
-            -e CHALLENGE_DOMAINS="kkh-hub.tech health.kkh-hub.tech portal.kkh-hub.tech jenkins.kkh-hub.tech notes.kkh-hub.tech" \
-            -v "$PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
-            -v "$PWD/nginx/templates:/etc/nginx/templates:ro" \
-            -v "$PWD/nginx/tls:/etc/nginx/tls:ro" \
-            -v "$PWD/nginx/test-fixtures/notes.htpasswd:/etc/nginx/notes.htpasswd:ro" \
-            -v /tmp/le:/etc/letsencrypt:ro \
-            nginx:1.31.4-alpine \
-            sh -c '/docker-entrypoint.sh nginx -t'
+          validate kkh-hub.tech "443 ssl" live \
+            "kkh-hub.tech health.kkh-hub.tech portal.kkh-hub.tech jenkins.kkh-hub.tech notes.kkh-hub.tech"
 
       # 빠른 루프(수초). 로직 버그를 push 시점에 잡는다.
       # seam 2는 스택 기동이 필요해 CI에 두지 않는다(로컬에서 실행).

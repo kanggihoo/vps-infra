@@ -50,9 +50,19 @@ pipelineJob('vps-infra-pipeline') {
 
 // Quartz는 별도 레포가 Dockerfile과 compose.yml을 소유한다(ADR 0007).
 // SCM URL이 설정되지 않은 환경(로컬 기본)에서는 Job을 만들지 않는다.
+//
+// ⚠️ 단계 7(Quartz 이미지화)이 아직 구현되지 않았다. 이전 구조에서 Jenkins는
+// 호스트 /opt/quartz-build, /opt/quartz-site를 마운트해 빌드 산출물을 놓았는데,
+// 그 마운트는 이 변경에서 제거되었다(named volume + 이미지화로 대체 예정).
+// 따라서 QUARTZ_SCM_URL을 설정하면 Job은 생성되지만 기존 방식의 빌드는
+// 실패한다. 단계 7에서 해당 레포의 Jenkinsfile을 이미지 빌드 방식으로
+// 바꾼 뒤에 설정한다.
 if (quartzRepo) {
     pipelineJob('quartz-deploy') {
-        description('quartz-site-private 빌드와 배포. 정의는 jenkins/jobs.groovy에 있다.')
+        description('''quartz-site-private 빌드와 배포. 정의는 jenkins/jobs.groovy에 있다.
+
+주의: 단계 7(이미지화) 미구현 상태다. 호스트 /opt/quartz-* 마운트가 제거되어
+이전 방식의 빌드는 실패한다.''')
 
         definition {
             cpsScm {
@@ -72,8 +82,13 @@ if (quartzRepo) {
             }
         }
 
-        triggers {
-            githubPush()
+        // 최상위 triggers 블록은 deprecated 경고를 남긴다.
+        properties {
+            pipelineTriggers {
+                triggers {
+                    githubPush()
+                }
+            }
         }
     }
 }

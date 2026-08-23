@@ -59,6 +59,14 @@ cp .env.example .env          # 또는 secrets.sh decrypt
 cp jenkins/.env.example jenkins/.env
 ```
 
+`.env.example`의 `NOTES_HTPASSWD`는 공개 테스트 fixture(`test`/`test`)를
+가리킨다. clean clone에서도 `docker compose up`이 성공하도록 한 기본값이다.
+실제 secret으로 바꿀 때만 수정한다.
+
+```bash
+NOTES_HTPASSWD=./secrets/notes.htpasswd
+```
+
 `jenkins/.env`에서 **반드시** 수정할 항목:
 
 | 변수 | 값 |
