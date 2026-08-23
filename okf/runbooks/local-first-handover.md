@@ -165,24 +165,52 @@ cd jenkins && docker compose down -v
 - **새 서브도메인을 추가하면** 템플릿 1개와 `.env`의 `CHALLENGE_DOMAINS`를
   수정한다. 후자를 빼면 인증서 발급이 실패한다.
 
-# 미구현 (단계 6~8)
+# 단계 6 진행 상황
 
-| 단계 | 내용 | 막힌 이유 |
+**인프라 전환 완료** (2026-08-24). Jenkins JCasC 전환은 미완이다.
+
+| 항목 | 상태 |
+|------|------|
+| 배포 경로 | `~/app/vps-infra` (옛 `/opt/vps-infra`는 롤백용으로 보존) |
+| nginx | 템플릿 구조로 전환, 운영 인증서로 동작 |
+| secret | `ENV_NAME=prod`로 복호화해 사용 |
+| notes 콘텐츠 | `vps_quartz_site` named volume (68개 파일) |
+| Jenkins | **옛 설정 그대로.** JCasC 미적용 |
+
+검증: portal/health/apex 200, notes 401, jenkins 403. seam 2 운영 HTTPS 통과.
+
+백업 위치: `~/backups/stage6-20260824/`
+(Jenkins volume 525M, 인증서, postgres 논리 백업, 설정 파일 — 복원 가능성 검증됨)
+
+## 롤백 방법
+
+```bash
+cd ~/app/vps-infra && docker compose down
+cd /opt/vps-infra && docker compose up -d
+```
+
+볼륨(DB·인증서·notes)을 공유하므로 데이터 손실이 없다.
+`/opt/vps-infra`와 `/opt/quartz-site`를 지우면 이 경로가 사라지므로,
+Jenkins 전환까지 끝나고 안정화된 뒤에 정리한다.
+
+# 남은 작업
+
+| 단계 | 내용 | 선행 조건 |
 |------|------|-----------|
-| 6 | VPS 적용 (`app/` 이전, JCasC 전환) | VPS SSH 접근과 Jenkins volume 백업 필요 |
+| 6-b | Jenkins JCasC 전환 | volume 백업 완료됨. plugin 94개/GUI Job 2개와 충돌 가능 |
 | 7 | Quartz 이미지화 | `quartz-site-private` 레포 수정 필요 |
 | 8 | 신규 프로젝트 추가 | 대상 프로젝트 미정 |
 
-단계 6 착수 전 Jenkins volume을 백업한다. VPS에 plugin 94개와 GUI Job 2개가
-있어 JCasC 전환 시 충돌할 수 있다(spec 알려진 리스크 1).
+Jenkins 전환 시 `github-pat` 암호화가 필요하다. VPS Jenkins가 GitHub에서
+checkout하므로 로컬과 달리 PAT가 실제로 쓰인다.
 
 ## 문서 정합성
 
 `README.md`, `INFRA.md`, `OBSERVABILITY.md`는 여전히 `/opt/vps-infra`,
-`/opt/quartz-site`, `nginx/conf.d/`를 서술한다. 이는 **현재 VPS의 실제 상태**가
-맞으므로 지금 고치지 않았다. 단계 6에서 VPS를 `app/`과 템플릿 구조로 전환할 때
-함께 갱신한다. 레포와 VPS가 갈라져 있는 이 기간에는 두 문서가 서로 다른 시점을
-서술한다는 점을 알고 읽어야 한다.
+`/opt/quartz-site`, `nginx/conf.d/`를 서술한다. **이제 실제 상태와 다르다.**
+단계 6 전환으로 경로는 `~/app/vps-infra`, nginx는 `nginx/templates/`가 되었다.
+Jenkins 전환(6-b)까지 끝난 뒤 한 번에 갱신하는 것이 낫다 — 지금 고치면
+Jenkins 관련 서술만 다시 어긋난다.
 
 # 관련 개념
 
