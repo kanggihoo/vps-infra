@@ -2,8 +2,15 @@
 .env
 .env.*
 !.env.example
-.traefik-dashboard-password
 *.htpasswd
+# SOPS로 암호화한 파일은 커밋한다(단계 3).
+!*.sops.env
+!*.sops.htpasswd
+# 공개 테스트 fixture(test/test). 실제 secret이 아니므로 커밋한다.
+!nginx/test-fixtures/notes.htpasswd
+# age 복호화 key는 절대 커밋하지 않는다.
+keys.txt
+*.age
 
 # Let's Encrypt state (managed via certbot named volumes, not repo paths)
 

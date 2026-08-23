@@ -1,0 +1,66 @@
+# Jenkins Configuration as Code.
+#
+# ⚠️ GUI에서 변경한 설정은 재기동 시 사라진다.
+#    JCasC가 관리하는 항목을 기동 시 덮어쓰기 때문이다(ADR 0009).
+#    설정 변경은 항상 이 파일 수정 -> 커밋 -> 재배포로 한다.
+#    GUI는 조회와 빌드 실행에만 쓴다.
+
+jenkins:
+  systemMessage: "이 Jenkins는 jenkins/jenkins.yaml로 관리된다. GUI 변경은 재기동 시 사라진다."
+
+  # 빌드는 Pipeline이 docker.sock으로 수행하므로 executor는 적게 둔다.
+  numExecutors: 2
+
+  # anonymous read 차단 + signup 차단.
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: "${JENKINS_ADMIN_ID}"
+            permissions:
+              - "Overall/Administer"
+  securityRealm:
+    local:
+      # signup 차단
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+
+  # remotingSecurity는 이 Jenkins 버전에서 no-op이므로 두지 않는다.
+  # (설정하면 "no longer has any effect" 경고와 스택트레이스가 남는다)
+
+security:
+  # 스크립트 승인 없이 job-dsl이 동작하도록 한다.
+  globalJobDslSecurityConfiguration:
+    useScriptSecurity: false
+
+unclassified:
+  location:
+    url: "${JENKINS_URL}"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          # GitHub checkout용 PAT.
+          # Jenkins volume이 유실되어도 이 credential까지 복원되어야
+          # Job만 복원되고 checkout이 실패하는 반쪽 복구를 피한다(ADR 0010).
+          - usernamePassword:
+              scope: GLOBAL
+              id: "github-pat"
+              username: "${GITHUB_PAT_USER}"
+              password: "${GITHUB_PAT_TOKEN}"
+              description: "GitHub PAT for SCM checkout"
+          # SOPS 복호화용 age key. Jenkins가 파일로 받아 쓰므로
+          # 호스트에 key를 노출하지 않는다(ADR 0010).
+          - file:
+              scope: GLOBAL
+              id: "sops-age-key"
+              fileName: "keys.txt"
+              secretBytes: "${base64:${SOPS_AGE_KEY_CONTENT}}"
+              description: "age key for SOPS decryption"
+
+jobs:
+  # job-dsl seed. 아래 스크립트가 Job을 만든다.
+  - file: /usr/share/jenkins/casc/jobs.groovy

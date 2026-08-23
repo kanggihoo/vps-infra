@@ -546,5 +546,5 @@ cAdvisor가 컨테이너 메트릭을 읽으려면 `/sys`, `/var/lib/docker`(읽
 - `INFRA.md` — 인프라 현황 및 신규 서비스 추가 가이드
 - `README.md` — 저장소 개요
 - `jenkins/README.md` — Jenkins 초기 설정
-- `.okf/environments/hostinger-vps.md` — VPS 환경 메타데이터
-- `.okf/runbooks/failure-diagnosis.md` — 장애 진단 런북
+- `okf/environments/hostinger-vps.md` — VPS 환경 메타데이터
+- `okf/runbooks/failure-diagnosis.md` — 장애 진단 런북

@@ -511,7 +511,7 @@ docker compose logs myapp                            # 6. 서비스 자체
 
 - `README.md` — 저장소 개요
 - `jenkins/README.md` — Jenkins 초기 설정
-- `.okf/services/nginx.md` — nginx 리버스 프록시 상세
-- `.okf/decisions/subdomain-routing.md` — 서브도메인 라우팅 결정 배경
-- `.okf/runbooks/failure-diagnosis.md` — 장애 진단 런북
-- `.okf/environments/hostinger-vps.md` — VPS 환경 메타데이터
+- `okf/services/nginx.md` — nginx 리버스 프록시 상세
+- `okf/adr/0005-subdomain-routing.md` — 서브도메인 라우팅 결정 배경
+- `okf/runbooks/failure-diagnosis.md` — 장애 진단 런북
+- `okf/environments/hostinger-vps.md` — VPS 환경 메타데이터

@@ -1,20 +1,32 @@
 services:
   nginx:
-    image: nginx:alpine
+    # 버전 고정: 움직이는 태그(alpine)는 Dockerfile이 안 바뀌어도
+    # 빌드 시점에 따라 로컬과 VPS가 다른 이미지를 갖게 한다.
+    image: nginx:1.31.4-alpine
     container_name: vps-nginx
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      # nginx 공식 이미지 entrypoint가 기동 시 templates/*.template을
+      # envsubst로 치환해 /etc/nginx/conf.d/에 쓴다. 새 의존성이 없다.
+      BASE_DOMAIN: ${BASE_DOMAIN:-localhost}
+      NGINX_LISTEN: ${NGINX_LISTEN:-80}
+      # none = 빈 파일(로컬), live = 인증서 경로(VPS)
+      TLS_MODE: ${TLS_MODE:-none}
+      CHALLENGE_DOMAINS: ${CHALLENGE_DOMAINS:-localhost}
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/tls:/etc/nginx/tls:ro
       - certbot-etc:/etc/letsencrypt:ro
       - certbot-www:/var/www/certbot:ro
-      # Quartz 정적 사이트. Jenkins가 빌드 결과물을 호스트 경로에 배치한다.
-      - /opt/quartz-site:/var/www/notes:ro
-      # Basic Auth 사용자 파일. VPS에서 htpasswd로 생성하며 Git에 넣지 않는다.
-      - /opt/nginx-auth/notes.htpasswd:/etc/nginx/notes.htpasswd:ro
+      # Quartz 정적 사이트. named volume이므로 호스트 경로 의존이 없다.
+      # 단계 7에서 Quartz를 이미지화하면 이 마운트 자체가 사라진다.
+      - quartz-site:/var/www/notes:ro
+      # Basic Auth 사용자 파일. SOPS로 복호화해 이 경로에 생성한다(단계 3).
+      - ./secrets/notes.htpasswd:/etc/nginx/notes.htpasswd:ro
     networks:
       - proxy
     depends_on:
@@ -22,7 +34,8 @@ services:
       - portal
 
   certbot:
-    image: certbot/certbot
+    # 태그를 생략하면 latest이므로 명시적으로 고정한다.
+    image: certbot/certbot:v5.7.0
     container_name: vps-certbot
     restart: unless-stopped
     volumes:
@@ -54,8 +67,28 @@ services:
     networks:
       - proxy
 
+  # 스크립트 실행 진입점. 상주하지 않는다.
+  #   docker compose run --rm tools ./scripts/test-select-target.sh
+  # 호스트 셸이 PowerShell이든 zsh든 같은 명령으로 같은 결과가 나온다.
+  tools:
+    build: ./tools
+    # docker.sock으로 호스트 Docker를 제어하므로, 레포를 호스트와 같은 경로에
+    # 마운트해야 여기서 실행한 docker run의 -v 경로가 호스트에서도 유효하다.
+    volumes:
+      - .:/repo
+      - /var/run/docker.sock:/var/run/docker.sock
+      # age 복호화 key. 호스트 홈 디렉터리에서 읽기 전용으로 가져온다(단계 3).
+      - ${SOPS_AGE_KEY_DIR:-~/.config/sops/age}:/root/.config/sops/age:ro
+    working_dir: /repo
+    networks:
+      - proxy
+    # `up`이 이 컨테이너를 띄워 즉시 종료된 상태로 남기지 않도록 한다.
+    # `docker compose run --rm tools ...`로만 실행한다.
+    # (profile을 쓰지 않는 것은 spec 결정. scale 0이 같은 효과를 낸다)
+    scale: 0
+
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.14-alpine
     container_name: vps-postgres
     restart: unless-stopped
     environment:
@@ -74,7 +107,7 @@ services:
       start_period: 20s
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.9-alpine
     container_name: vps-redis
     restart: unless-stopped
     environment:
@@ -106,3 +139,6 @@ volumes:
     name: vps_certbot_etc
   certbot-www:
     name: vps_certbot_www
+  # Quartz 빌드 산출물. 호스트 경로(/opt/quartz-site) 의존을 제거했다.
+  quartz-site:
+    name: vps_quartz_site

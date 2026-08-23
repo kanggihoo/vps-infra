@@ -1,0 +1,26 @@
+# SOPS 암호화 규칙. `sops --encrypt` 시 이 파일의 age 수신자가 자동 적용된다.
+#
+# ┌─ 사용자 작업 필요 ─────────────────────────────────────────────┐
+# │ 아래 age 공개키는 placeholder다. 실제 키로 교체해야 동작한다.  │
+# │                                                                │
+# │ 1) 로컬에서 key 생성 (한 번만):                                │
+# │      mkdir -p ~/.config/sops/age                               │
+# │      age-keygen -o ~/.config/sops/age/keys.txt                 │
+# │    출력된 "Public key: age1..." 값을 아래 age: 에 넣는다.       │
+# │                                                                │
+# │ 2) VPS에도 같은 key 파일을 배치:                               │
+# │      ~/.config/sops/age/keys.txt                               │
+# │                                                                │
+# │ 3) key 백업. 분실하면 secret을 복호화할 수 없다(ADR 0010).      │
+# └────────────────────────────────────────────────────────────────┘
+creation_rules:
+  # .env 형태. key=value 이므로 값만 암호화하면 diff가 읽기 쉬워지지만,
+  # dotenv는 SOPS가 값만 암호화하는 형식을 지원한다.
+  - path_regex: secrets/env\.sops$
+    input_type: dotenv
+    output_type: dotenv
+    age: REPLACE_WITH_YOUR_AGE_PUBLIC_KEY
+
+  # htpasswd와 PAT는 구조가 없는 텍스트이므로 파일 전체를 암호화한다.
+  - path_regex: secrets/.*\.sops$
+    age: REPLACE_WITH_YOUR_AGE_PUBLIC_KEY

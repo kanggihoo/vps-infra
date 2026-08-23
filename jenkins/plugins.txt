@@ -1,0 +1,35 @@
+# 최상위 plugin만 버전을 고정한다.
+# 하위 의존성은 jenkins-plugin-cli가 각 plugin의 MANIFEST를 읽어 자동 해석한다.
+# 94줄짜리 목록을 읽지 않기 위한 의식적 trade-off이며, 하위 의존성 버전은
+# 고정되지 않는다(ADR 0009). 문제가 생기면 그 항목만 여기에 추가로 고정한다.
+
+# Pipeline 전체 (workflow-* 다수를 끌어온다)
+workflow-aggregator:608.v67378e9d3db_1
+
+# SCM
+git:5.10.1
+github:1.47.0
+
+# credential을 빌드 환경변수/파일로 주입
+credentials-binding:728.v902a_273b_8947
+
+# 권한 관리 (anonymous read 차단에 필요)
+matrix-auth:3.3
+
+# 빌드 로그 타임스탬프
+timestamper:1.30
+
+# 빌드 후 워크스페이스 정리
+ws-cleanup:0.49
+
+# 빌드 타임아웃
+build-timeout:1.41
+
+# Pipeline에서 docker 명령 사용
+docker-workflow:653.v2f2c08eff0ec
+
+# --- 아래 둘은 신규 추가. 현재 VPS에 미설치다. ---
+# jenkins.yaml로 시스템 설정을 코드화
+configuration-as-code:2117.vc05a_0b_e6b_f4e
+# Job 정의를 코드화
+job-dsl:3732.v9a_c49a_61a_313

@@ -1,19 +1,62 @@
+# Jenkins는 별도 Compose 프로젝트다.
+# 이유: 배포가 Jenkins 자신을 재생성하면 실행 중인 파이프라인이 죽는다(ADR 0007).
+# 로컬도 같은 구조를 유지한다.
+#
+#   docker compose --env-file .env up -d --build
 services:
   jenkins:
     build: .
     container_name: vps-jenkins
     restart: unless-stopped
+
+    # Jenkins가 유일한 변동성 큰 메모리 소비자다. VPS에 swap이 없어 OOM 시
+    # 프로세스가 즉사하므로, Jenkins만 제한해 postgres가 희생되지 않게 한다(ADR 0006).
+    mem_limit: ${JENKINS_MEM_LIMIT:-2g}
+
+    environment:
+      # JVM heap 상한. mem_limit보다 낮게 둬서 heap 밖 메모리(metaspace,
+      # 스레드 스택) 여유를 남긴다. 이 값을 mem_limit과 같게 두면
+      # heap이 다 차기 전에 컨테이너가 먼저 OOM으로 죽는다.
+      # ALLOW_LOCAL_CHECKOUT: 로컬 경로를 SCM으로 쓰려면 필요하다.
+      # Jenkins는 기본적으로 local directory checkout을 거부한다.
+      # 이것이 없으면 push하지 않은 커밋으로 파이프라인을 테스트할 수 없다.
+      # VPS에서는 GitHub URL을 쓰므로 false로 둔다(.env로 제어).
+      JAVA_OPTS: >-
+        -Djenkins.install.runSetupWizard=false
+        -Xmx${JENKINS_HEAP_MAX:-1g}
+        -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=${ALLOW_LOCAL_CHECKOUT:-false}
+
+      # JCasC가 치환할 값들. 평문을 여기 두지 않고 .env에서 받는다.
+      JENKINS_ADMIN_ID: ${JENKINS_ADMIN_ID:?JENKINS_ADMIN_ID is required}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?JENKINS_ADMIN_PASSWORD is required}
+      JENKINS_URL: ${JENKINS_URL:-http://localhost:8080/}
+
+      GITHUB_PAT_USER: ${GITHUB_PAT_USER:-git}
+      GITHUB_PAT_TOKEN: ${GITHUB_PAT_TOKEN:-unset}
+
+      # SOPS 복호화 key 내용. credential(secret file)로 등록된다.
+      SOPS_AGE_KEY_CONTENT: ${SOPS_AGE_KEY_CONTENT:-}
+
+      # Job이 checkout할 SCM. 로컬은 레포 경로, VPS는 GitHub URL.
+      # 로컬 경로를 쓰면 push하지 않은 커밋으로도 파이프라인을 테스트할 수 있다.
+      INFRA_SCM_URL: ${INFRA_SCM_URL:-/app/vps-infra}
+      QUARTZ_SCM_URL: ${QUARTZ_SCM_URL:-}
+      SCM_CREDENTIAL_ID: ${SCM_CREDENTIAL_ID:-}
+
+      # 파이프라인이 배포에 사용할 경로. 컨테이너 안/밖이 같아야 한다.
+      APP_DIR: ${APP_DIR:-/app/vps-infra}
+
     volumes:
       - jenkins-data:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      - /opt/vps-infra:/opt/vps-infra
-      # Quartz 빌드 작업 폴더와 배포 결과물 폴더.
-      # 호스트와 같은 경로로 마운트해야 Pipeline이 실행하는 docker run의
-      # -v 경로(호스트 기준)와 Jenkins 안에서 보는 경로가 일치한다.
-      - /opt/quartz-build:/opt/quartz-build
-      - /opt/quartz-site:/opt/quartz-site
+      # 배포 경로. 홈 디렉터리 아래로 옮겨 sudo 의존을 없앴다.
+      # docker.sock으로 실행하는 docker run의 -v 경로는 호스트 기준이므로
+      # 컨테이너 안/밖 경로가 반드시 일치해야 한다.
+      - ${APP_DIR_HOST:-${HOME}/app/vps-infra}:${APP_DIR:-/app/vps-infra}
+
     group_add:
       - "${DOCKER_GID:?DOCKER_GID is required}"
+
     networks:
       - proxy
 

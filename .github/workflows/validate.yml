@@ -1,0 +1,44 @@
+name: Validate infra config
+
+# 배포는 하지 않는다. 배포는 VPS 내부 Jenkins가 담당한다(ADR 0006).
+# 이 workflow는 push 시점에 설정 문법 오류만 잡는다.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # compose는 변수가 없으면 config 단계에서 경고/실패하므로 예시 값을 넣는다.
+      # 검증 대상은 문법이지 값이 아니다.
+      - name: Validate compose syntax
+        run: |
+          cp .env.example .env
+          docker compose config >/dev/null
+          docker compose -f jenkins/compose.yml config >/dev/null
+        env:
+          DOCKER_GID: "999"
+
+      # nginx 템플릿은 envsubst 치환 전에는 유효한 conf가 아니다.
+      # 이미지 entrypoint와 같은 방식으로 렌더한 뒤 `nginx -t`로 문법만 본다.
+      - name: Validate nginx templates
+        run: |
+          docker run --rm \
+            -e BASE_DOMAIN=localhost \
+            -e NGINX_LISTEN=80 \
+            -e TLS_MODE=none \
+            -v "$PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+            -v "$PWD/nginx/templates:/etc/nginx/templates:ro" \
+            -v "$PWD/nginx/tls:/etc/nginx/tls:ro" \
+            -v "$PWD/nginx/test-fixtures/notes.htpasswd:/etc/nginx/notes.htpasswd:ro" \
+            nginx:1.31.4-alpine \
+            sh -c '/docker-entrypoint.sh nginx -t'
+
+      - name: Verify SOPS files are encrypted
+        run: ./scripts/check-sops.sh
