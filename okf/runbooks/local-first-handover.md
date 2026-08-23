@@ -21,8 +21,9 @@ age key 생성과 secret 암호화는 **완료되었다.** 아래는 현재 상�
 |------|------|
 | age key | `~/.config/sops/age/keys.txt` (mode 600, 커밋 안 됨) |
 | 공개키 | `.sops.yaml`에 반영됨 |
-| `.env` | `secrets/env.sops.env`로 암호화, traefik 잔재 제거됨 |
-| notes Basic Auth | `secrets/notes.htpasswd.sops.txt`로 암호화, 사용자 `kkh` |
+| `.env` (로컬) | `secrets/env.local.sops.env`로 암호화 |
+| `.env` (VPS) | `secrets/env.prod.sops.env`로 암호화, 운영 DB 값 보존 |
+| notes Basic Auth | `secrets/notes.htpasswd.sops.txt` (VPS 기존 자격증명 그대로) |
 | `github-pat` | **미암호화.** PAT 발급이 필요하다(아래 참조) |
 
 ## ⚠️ age key 백업 (남은 필수 작업)
@@ -47,13 +48,21 @@ rm /tmp/pat
 
 ## secret 갱신 방법
 
+환경별로 `.env` 한 벌씩 둔다. `ENV_NAME`으로 고른다(기본 `local`).
+
 ```bash
-# 복호화 (암호화 파일 -> 평문 경로)
+# 로컬 값으로 복호화
 docker compose run --rm tools ./scripts/secrets.sh decrypt
 
+# VPS 값으로 복호화
+ENV_NAME=prod docker compose run --rm tools ./scripts/secrets.sh decrypt
+
 # 값 수정 후 재암호화
-docker compose run --rm tools ./scripts/secrets.sh encrypt .env secrets/env.sops.env
+docker compose run --rm tools ./scripts/secrets.sh encrypt .env secrets/env.local.sops.env
 ```
+
+환경을 늘릴 때는 `secrets/env.<이름>.sops.env`를 추가하면 된다
+(spec 사용자 스토리 14).
 
 암호화 파일(`secrets/*.sops.*`)은 커밋한다. 복호화 결과(`.env`,
 `secrets/notes.htpasswd`)는 gitignored다.

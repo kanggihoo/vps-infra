@@ -19,8 +19,14 @@ cd "$(dirname "$0")/.."
 #   SOPS는 규칙을 보지 않고 **파일 확장자**로 형식을 판단한다. 확장자가
 #   `.sops`처럼 미지의 값이면 JSON으로 추측해 "invalid character '#'"로
 #   실패한다. 따라서 SOPS가 아는 확장자를 유지해야 한다.
+# 환경별 .env를 한 벌씩 둔다. 로컬과 VPS는 도메인·TLS 모드가 다르고
+# DB 비밀번호도 다르므로 파일 하나로 합칠 수 없다.
+# 환경을 늘릴 때는 secrets/env.<이름>.sops.env를 추가하면 된다(spec 사용자 스토리 14).
+#   ENV_NAME=local (기본) | prod
+env_name="${ENV_NAME:-local}"
+
 declare -A TARGETS=(
-  ["secrets/env.sops.env"]=".env"
+  ["secrets/env.${env_name}.sops.env"]=".env"
   ["secrets/notes.htpasswd.sops.txt"]="secrets/notes.htpasswd"
   ["secrets/github-pat.sops.txt"]="secrets/github-pat"
 )
@@ -57,8 +63,19 @@ cmd_encrypt() {
   local plain="${1:?usage: secrets.sh encrypt <평문파일> <대상.sops>}"
   local out="${2:?usage: secrets.sh encrypt <평문파일> <대상.sops>}"
   require_key
+
+  # 형식을 출력 파일명으로 판단해 명시적으로 넘긴다.
+  # 이유: .sops.yaml의 creation_rules는 **입력 파일명**에 매칭되므로,
+  # 평문 임시 파일 이름이 무엇이냐에 따라 dotenv 대신 binary/json 규칙이
+  # 잡히는 사고가 난다(예: secrets/.env.prod.tmp -> JSON으로 암호화되어
+  # 복호화 시 "invalid dotenv input line: {" 로 실패).
+  local fmt=()
+  case "$out" in
+    *.env) fmt=(--input-type dotenv --output-type dotenv) ;;
+    *)     fmt=(--input-type binary --output-type binary) ;;
+  esac
   mkdir -p "$(dirname "$out")"
-  sops --encrypt "$plain" > "$out"
+  sops --encrypt "${fmt[@]}" "$plain" > "$out"
   echo "[secrets] encrypted $plain -> $out"
 }
 
