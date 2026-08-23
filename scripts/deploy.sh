@@ -18,6 +18,14 @@ echo "[deploy] checking required files"
 test -f .env
 test -f compose.yml
 
+# .env를 셸로 읽는다. 공백이 든 값에 따옴표가 없으면 여기서
+# "ssl: command not found"처럼 엉뚱한 오류가 나므로 미리 잡아준다.
+if grep -qE '^[A-Z_]+=[^"'"'"']*[[:space:]]' .env; then
+  echo "[deploy] .env에 따옴표 없는 공백 값이 있다. 예: NGINX_LISTEN=\"443 ssl\"" >&2
+  grep -nE '^[A-Z_]+=[^"'"'"']*[[:space:]]' .env | sed 's/=.*/=<...>/' >&2
+  exit 2
+fi
+
 set -a
 . ./.env
 set +a
