@@ -75,7 +75,10 @@ pipeline {
         stage('Health check') {
             steps {
                 dir(env.APP_DIR) {
-                    sh './scripts/healthcheck.sh'
+                    // Jenkins 안에서는 공개 DNS를 거치지 않고 nginx 컨테이너로
+                    // 직접 붙는다. VPS의 hairpin 라우팅을 피하고, 로컬에서는
+                    // health.localhost가 컨테이너 안에서 해석되지 않는 문제를 피한다.
+                    sh 'HEALTHCHECK_CONNECT_HOST=vps-nginx ./scripts/healthcheck.sh'
                 }
             }
         }

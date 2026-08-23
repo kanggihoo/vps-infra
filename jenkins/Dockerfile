@@ -13,8 +13,13 @@ RUN apt-get update \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable" \
         > /etc/apt/sources.list.d/docker.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+    && apt-get install -y --no-install-recommends docker-ce-cli docker-buildx-plugin docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
+
+# 배포 경로의 부모 디렉터리를 jenkins 소유로 만든다.
+# Jenkins의 dir() 스텝은 작업 디렉터리 옆에 "<dir>@tmp"를 만들므로
+# 부모가 쓰기 가능해야 한다. root 소유면 AccessDeniedException이 난다.
+RUN mkdir -p /app && chown jenkins:jenkins /app
 
 USER jenkins
 
