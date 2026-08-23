@@ -13,14 +13,22 @@
 # │                                                                │
 # │ 3) key 백업. 분실하면 secret을 복호화할 수 없다(ADR 0010).      │
 # └────────────────────────────────────────────────────────────────┘
+# creation_rules는 **암호화할 때만** 적용된다. path_regex는 입력 파일 경로에
+# 매칭된다(출력이 아니다).
+#
+# 복호화할 때 SOPS는 이 규칙을 보지 않고 **파일 확장자**로 형식을 판단한다.
+# 그래서 암호화 결과 파일명이 `secrets/env.sops.env`처럼 SOPS가 아는 확장자로
+# 끝나야 한다. `.sops`로 끝내면 JSON으로 추측해 복호화가 실패한다.
 creation_rules:
-  # .env 형태. key=value 이므로 값만 암호화하면 diff가 읽기 쉬워지지만,
-  # dotenv는 SOPS가 값만 암호화하는 형식을 지원한다.
-  - path_regex: secrets/env\.sops$
+  # .env 형태. dotenv로 다루면 값만 암호화되어 어떤 키가 바뀌었는지 diff에 남는다.
+  # 규칙 순서가 중요하다 — 첫 매칭이 이기므로 포괄 규칙보다 위에 둔다.
+  - path_regex: (^|/)\.env$|(^|/)secrets/env\.sops\.env$
     input_type: dotenv
     output_type: dotenv
-    age: REPLACE_WITH_YOUR_AGE_PUBLIC_KEY
+    age: age1mh8hd0zyjkx53jldewvwf4en9yn0mt96uqhaz3zj8yupemvupp4qv0amj8
 
   # htpasswd와 PAT는 구조가 없는 텍스트이므로 파일 전체를 암호화한다.
-  - path_regex: secrets/.*\.sops$
-    age: REPLACE_WITH_YOUR_AGE_PUBLIC_KEY
+  - path_regex: secrets/.*
+    input_type: binary
+    output_type: binary
+    age: age1mh8hd0zyjkx53jldewvwf4en9yn0mt96uqhaz3zj8yupemvupp4qv0amj8

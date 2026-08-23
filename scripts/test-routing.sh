@@ -6,10 +6,16 @@
 #
 # 전제: docker compose up -d 가 이미 완료된 상태.
 #   BASE_URL 로 대상 변경 가능 (기본 http://127.0.0.1)
+#
+# notes 자격증명은 환경변수로 받는다. 기본값은 공개 fixture(test/test)이며,
+# 실제 secret(secrets/notes.htpasswd)을 마운트한 상태에서 검증하려면
+# NOTES_USER / NOTES_PASS 를 넘긴다. 하드코딩하면 secret을 바꾼 뒤 깨진다.
 set -euo pipefail
 
 base_url="${BASE_URL:-http://127.0.0.1}"
 base_domain="${BASE_DOMAIN:-localhost}"
+notes_user="${NOTES_USER:-test}"
+notes_pass="${NOTES_PASS:-test}"
 
 fail=0
 
@@ -56,11 +62,11 @@ check "portal -> portal:8080" "portal.${base_domain}" / 200
 echo "--- Basic Auth ---"
 # 자격증명 없이 401이어야 한다. 200이면 인증이 빠진 것.
 check "notes 인증 없이 401" "notes.${base_domain}" / 401
-# fixture 자격증명(test/test)으로는 통과해야 한다.
+# 올바른 자격증명으로는 통과해야 한다.
 # 콘텐츠가 없으면 404, 있으면 200 — 둘 다 인증 통과를 뜻한다.
 got="$(curl -s -o /dev/null -w '%{http_code}' \
   --connect-timeout 5 --max-time 15 \
-  -u test:test -H "Host: notes.${base_domain}" "${base_url}/" || echo 000)"
+  -u "${notes_user}:${notes_pass}" -H "Host: notes.${base_domain}" "${base_url}/" || echo 000)"
 if [ "$got" = "200" ] || [ "$got" = "404" ]; then
   echo "ok   - notes 올바른 자격증명으로 인증 통과 ($got)"
 else
@@ -75,7 +81,7 @@ docker run --rm -v vps_quartz_site:/w alpine:3.24 \
   sh -c 'echo "<h1>note body</h1>" > /w/probe.html' >/dev/null 2>&1 || true
 # Basic Auth가 걸려 있으므로 자격증명을 함께 보낸다.
 body_contains "확장자 없는 /probe가 probe.html로 해석" \
-  "notes.${base_domain}" "/probe" "note body" -u test:test
+  "notes.${base_domain}" "/probe" "note body" -u "${notes_user}:${notes_pass}"
 
 echo "--- 별도 compose 프로젝트 라우팅 ---"
 # jenkins는 jenkins/compose.yml이 띄우므로 이 스택만으로는 없을 수 있다.

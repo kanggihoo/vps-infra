@@ -13,10 +13,16 @@ cd "$(dirname "$0")/.."
 
 # 암호화 파일 -> 복호화 결과 경로.
 # 좌변은 커밋되고, 우변은 .gitignore로 제외된다.
+#
+# 암호화 파일이 `.sops.env` / `.sops.txt`로 끝나는 이유:
+#   creation_rules(.sops.yaml)는 **암호화할 때만** 적용된다. 복호화할 때
+#   SOPS는 규칙을 보지 않고 **파일 확장자**로 형식을 판단한다. 확장자가
+#   `.sops`처럼 미지의 값이면 JSON으로 추측해 "invalid character '#'"로
+#   실패한다. 따라서 SOPS가 아는 확장자를 유지해야 한다.
 declare -A TARGETS=(
-  ["secrets/env.sops"]=".env"
-  ["secrets/notes.htpasswd.sops"]="secrets/notes.htpasswd"
-  ["secrets/github-pat.sops"]="secrets/github-pat"
+  ["secrets/env.sops.env"]=".env"
+  ["secrets/notes.htpasswd.sops.txt"]="secrets/notes.htpasswd"
+  ["secrets/github-pat.sops.txt"]="secrets/github-pat"
 )
 
 require_key() {

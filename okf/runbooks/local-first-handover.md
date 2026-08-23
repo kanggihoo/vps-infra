@@ -13,49 +13,58 @@ timestamp: 2026-08-23T00:00:00+09:00
 
 단계 6~8(VPS 적용, Quartz 이미지화, 신규 프로젝트)은 미구현이다.
 
-# 사용자 작업 (필수)
+# 완료된 SOPS 설정
 
-## 1. age key 생성과 `.sops.yaml` 채우기
+age key 생성과 secret 암호화는 **완료되었다.** 아래는 현재 상태다.
 
-`.sops.yaml`의 `REPLACE_WITH_YOUR_AGE_PUBLIC_KEY`가 placeholder다. 실제 키가
-없으면 secret 관련 기능이 동작하지 않는다.
+| 항목 | 상태 |
+|------|------|
+| age key | `~/.config/sops/age/keys.txt` (mode 600, 커밋 안 됨) |
+| 공개키 | `.sops.yaml`에 반영됨 |
+| `.env` | `secrets/env.sops.env`로 암호화, traefik 잔재 제거됨 |
+| notes Basic Auth | `secrets/notes.htpasswd.sops.txt`로 암호화, 사용자 `kkh` |
+| `github-pat` | **미암호화.** PAT 발급이 필요하다(아래 참조) |
 
-```bash
-mkdir -p ~/.config/sops/age
-docker compose run --rm --entrypoint age-keygen tools -o /root/.config/sops/age/keys.txt
-```
-
-호스트에 직접 설치했다면 `age-keygen -o ~/.config/sops/age/keys.txt`도 된다.
-출력된 `Public key: age1...`을 `.sops.yaml`의 두 `age:` 항목에 넣는다.
+## ⚠️ age key 백업 (남은 필수 작업)
 
 **key를 분실하면 secret을 복호화할 수 없다.** 백업이 운영 요구사항이다
-([ADR 0010](/adr/0010-sops-secrets.md)).
+([ADR 0010](/adr/0010-sops-secrets.md)). `~/.config/sops/age/keys.txt`를
+비밀번호 관리자나 오프라인 매체에 보관한다.
 
-## 2. secret 암호화
+VPS 적용(단계 6) 시 같은 파일을 VPS의 `~/.config/sops/age/keys.txt`에 두고,
+Jenkins에는 `SOPS_AGE_KEY_CONTENT`로 주입한다.
 
-현재 `.env`에는 traefik 잔재(`ACME_EMAIL`, `TRAEFIK_DASHBOARD_AUTH`)가 남아
-있다. 암호화 전에 지운다. 이 파일은 gitignored이므로 구현 중 건드리지 않았다.
+## github-pat (단계 6 전까지 불필요)
+
+로컬 Jenkins는 로컬 경로를 SCM으로 쓰므로 PAT가 필요 없다. VPS 적용 시
+GitHub에서 PAT를 발급해 암호화한다.
 
 ```bash
-# .env
-docker compose run --rm tools ./scripts/secrets.sh encrypt .env secrets/env.sops
-
-# notes Basic Auth (사용자/비밀번호를 직접 정한다)
-docker run --rm httpd:2.4-alpine htpasswd -nbB <user> <password> > /tmp/notes.htpasswd
-docker compose run --rm tools ./scripts/secrets.sh encrypt /tmp/notes.htpasswd secrets/notes.htpasswd.sops
-rm /tmp/notes.htpasswd
-
-# GitHub PAT
-docker compose run --rm tools ./scripts/secrets.sh encrypt <pat파일> secrets/github-pat.sops
+printf '%s' '<PAT값>' > /tmp/pat
+docker compose run --rm tools ./scripts/secrets.sh encrypt /tmp/pat secrets/github-pat.sops.txt
+rm /tmp/pat
 ```
 
-암호화한 `secrets/*.sops`는 커밋한다. 복호화 결과(`.env`,
-`secrets/notes.htpasswd`)는 gitignored다.
-
-## 3. 로컬 `.env`와 `jenkins/.env` 준비
+## secret 갱신 방법
 
 ```bash
-cp .env.example .env          # 또는 secrets.sh decrypt
+# 복호화 (암호화 파일 -> 평문 경로)
+docker compose run --rm tools ./scripts/secrets.sh decrypt
+
+# 값 수정 후 재암호화
+docker compose run --rm tools ./scripts/secrets.sh encrypt .env secrets/env.sops.env
+```
+
+암호화 파일(`secrets/*.sops.*`)은 커밋한다. 복호화 결과(`.env`,
+`secrets/notes.htpasswd`)는 gitignored다.
+
+**파일명이 `.sops.env` / `.sops.txt`인 이유**: `creation_rules`는 암호화할
+때만 적용되고, 복호화할 때 SOPS는 **확장자**로 형식을 판단한다. `.sops`로
+끝내면 JSON으로 추측해 실패한다.
+
+## `jenkins/.env` 준비 (남은 작업)
+
+```bash
 cp jenkins/.env.example jenkins/.env
 ```
 
