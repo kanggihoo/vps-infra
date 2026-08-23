@@ -77,10 +77,20 @@ docker run --rm -v vps_quartz_site:/w alpine:3.24 \
 body_contains "확장자 없는 /probe가 probe.html로 해석" \
   "notes.${base_domain}" "/probe" "note body" -u test:test
 
-echo "--- 잘못된 서비스 이름은 502 ---"
-# spec 사용자 스토리 4: 서비스 이름/포트 오타를 로컬에서 502로 본다.
-# jenkins는 별도 compose가 띄우므로 로컬 기본 스택에서는 502가 정상이다.
-check "미기동 upstream은 502" "jenkins.${base_domain}" / 502
+echo "--- 별도 compose 프로젝트 라우팅 ---"
+# jenkins는 jenkins/compose.yml이 띄우므로 이 스택만으로는 없을 수 있다.
+# 어느 쪽이든 "nginx가 기동되어 이 server 블록을 처리한다"가 증명되어야 한다.
+#   502 = Jenkins 미기동 (upstream 해석 실패 -> 변수+resolver가 동작한 것)
+#   403/200 = Jenkins 기동 (인증 요구 또는 응답)
+# 여기서 000(연결 실패)이나 404가 나오면 라우팅이 깨진 것이다.
+got="$(curl -s -o /dev/null -w '%{http_code}' \
+  --connect-timeout 5 --max-time 15 \
+  -H "Host: jenkins.${base_domain}" "${base_url}/" || echo 000)"
+case "$got" in
+  502) echo "ok   - jenkins 미기동 상태에서 nginx는 정상 기동하고 502를 준다 ($got)" ;;
+  200|403|401) echo "ok   - jenkins 기동 상태로 라우팅된다 ($got)" ;;
+  *) echo "FAIL - jenkins 라우팅 실패: got $got (502 또는 200/403 기대)" >&2; fail=1 ;;
+esac
 
 if [ "$fail" -ne 0 ]; then
   echo "seam 2: FAILED" >&2

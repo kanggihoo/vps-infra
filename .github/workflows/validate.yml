@@ -23,22 +23,82 @@ jobs:
           docker compose config >/dev/null
           docker compose -f jenkins/compose.yml config >/dev/null
         env:
+          # jenkins/compose.yml의 필수 변수. 값은 검증용 더미다.
+          # 필수(:?)로 둔 이유는 조용한 기본값이 경로 불일치를 숨기기 때문이다.
           DOCKER_GID: "999"
+          APP_DIR: /home/jenkins/app/vps-infra
+          APP_DIR_HOST: /home/jenkins/app/vps-infra
+          INFRA_SCM_URL: /home/jenkins/app/vps-infra
+          JENKINS_ADMIN_ID: ci
+          JENKINS_ADMIN_PASSWORD: ci
 
       # nginx 템플릿은 envsubst 치환 전에는 유효한 conf가 아니다.
-      # 이미지 entrypoint와 같은 방식으로 렌더한 뒤 `nginx -t`로 문법만 본다.
+      # 이미지 entrypoint와 같은 방식으로 렌더한 뒤 `nginx -t`로 문법을 본다.
+      #
+      # `nginx -t`는 upstream 이름을 DNS로 해석하므로, 대상 컨테이너가 없는
+      # CI에서는 "host not found in upstream"으로 실패한다. 문법만 보려면
+      # 이름이 해석되어야 하므로 더미 컨테이너를 같은 네트워크에 띄운다.
+      # (jenkins는 변수+resolver를 쓰므로 기동 시 해석되지 않아도 된다)
+      #
+      # 로컬과 VPS 두 모드를 모두 검증한다. 한쪽만 보면 다른 쪽 오타를 놓친다.
       - name: Validate nginx templates
         run: |
-          docker run --rm \
-            -e BASE_DOMAIN=localhost \
-            -e NGINX_LISTEN=80 \
-            -e TLS_MODE=none \
+          set -eu
+          docker network create ci_validate
+          for svc in whoami portal; do
+            docker run -d --rm --name "$svc" --network ci_validate \
+              traefik/whoami:v1.10 >/dev/null
+          done
+          trap 'docker rm -f whoami portal >/dev/null 2>&1 || true; \
+                docker network rm ci_validate >/dev/null 2>&1 || true' EXIT
+
+          validate() {
+            echo "--- BASE_DOMAIN=$1 NGINX_LISTEN=$2 TLS_MODE=$3 ---"
+            docker run --rm --network ci_validate \
+              -e BASE_DOMAIN="$1" \
+              -e NGINX_LISTEN="$2" \
+              -e TLS_MODE="$3" \
+              -e CHALLENGE_DOMAINS="$4" \
+              -v "$PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+              -v "$PWD/nginx/templates:/etc/nginx/templates:ro" \
+              -v "$PWD/nginx/tls:/etc/nginx/tls:ro" \
+              -v "$PWD/nginx/test-fixtures/notes.htpasswd:/etc/nginx/notes.htpasswd:ro" \
+              nginx:1.31.4-alpine \
+              sh -c '/docker-entrypoint.sh nginx -t'
+          }
+
+          # 로컬 모드. TLS 지시자 없이 80에서 기동되어야 한다.
+          validate localhost 80 none acme-challenge.invalid
+
+          # VPS 모드. 인증서 파일이 없으므로 문법 검증만 가능하도록
+          # 더미 인증서를 만들어 넣는다. 경로 오타는 이 단계에서 드러난다.
+          mkdir -p /tmp/le/live/kkh-hub.tech
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj '/CN=kkh-hub.tech' \
+            -keyout /tmp/le/live/kkh-hub.tech/privkey.pem \
+            -out /tmp/le/live/kkh-hub.tech/fullchain.pem >/dev/null 2>&1
+          docker run --rm --network ci_validate \
+            -e BASE_DOMAIN=kkh-hub.tech \
+            -e NGINX_LISTEN="443 ssl" \
+            -e TLS_MODE=live \
+            -e CHALLENGE_DOMAINS="kkh-hub.tech health.kkh-hub.tech portal.kkh-hub.tech jenkins.kkh-hub.tech notes.kkh-hub.tech" \
             -v "$PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
             -v "$PWD/nginx/templates:/etc/nginx/templates:ro" \
             -v "$PWD/nginx/tls:/etc/nginx/tls:ro" \
             -v "$PWD/nginx/test-fixtures/notes.htpasswd:/etc/nginx/notes.htpasswd:ro" \
+            -v /tmp/le:/etc/letsencrypt:ro \
             nginx:1.31.4-alpine \
             sh -c '/docker-entrypoint.sh nginx -t'
+
+      # 빠른 루프(수초). 로직 버그를 push 시점에 잡는다.
+      # seam 2는 스택 기동이 필요해 CI에 두지 않는다(로컬에서 실행).
+      - name: Run seam 1 (deploy target selection)
+        run: ./scripts/test-select-target.sh
+
+      - name: Run seam 3 (SOPS roundtrip)
+        run: |
+          docker compose --env-file .env.example \
+            run --rm --no-deps tools ./scripts/test-sops.sh
 
       - name: Verify SOPS files are encrypted
         run: ./scripts/check-sops.sh

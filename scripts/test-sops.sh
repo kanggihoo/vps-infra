@@ -17,6 +17,16 @@ done
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
+# 레포의 .sops.yaml을 쓰지 않는다. 이 테스트는 자기 임시 key로만 검증하므로
+# 레포 설정(운영 age 수신자)이 끼면 "no matching creation rules"로 실패한다.
+# 수신자는 아래에서 --age로 직접 지정하므로 규칙 파일 자체가 필요 없다.
+# 임시 디렉터리로 이동해 상위 탐색이 레포 .sops.yaml에 닿지 않게 한다.
+cd "$work"
+# 모든 경로에 매칭되는 규칙을 둔다(수신자는 --age가 덮어쓴다).
+# 빈 creation_rules는 "매칭 규칙 없음"이 되어 오히려 실패한다.
+printf 'creation_rules:\n  - path_regex: .*\n' > "$work/.sops.yaml"
+export SOPS_CONFIG="$work/.sops.yaml"
+
 # --- 임시 key 생성 ---
 key="$work/keys.txt"
 age-keygen -o "$key" 2>/dev/null
