@@ -3,7 +3,7 @@ type: Environment
 title: Hostinger VPS
 description: 현재 인프라가 배포될 VPS와 public 운영 메타데이터.
 tags: [hostinger, vps, environment, deployment]
-timestamp: 2026-06-28T00:00:00+09:00
+timestamp: 2026-08-25T00:00:00+09:00
 ---
 
 # 개요
@@ -19,7 +19,7 @@ timestamp: 2026-06-28T00:00:00+09:00
 | Public IP | `187.77.114.68` |
 | Domain | `kkh-hub.tech` |
 | SSH user | `kkh` |
-| Deploy path | `/opt/vps-infra` |
+| Deploy path | `~/app/vps-infra` |
 | Public ports | `80`, `443` |
 
 # DNS Records
@@ -50,7 +50,7 @@ Jenkins administrator credential과 private key는 repository에 저장하지 �
 다음 값은 이 OKF bundle이나 Git tracked 파일에 기록하지 않는다.
 
 - SSH private key.
-- `.env` 실제 값.
+- 평문 `.env` 실제 값. SOPS 암호화본은 Git에 기록한다.
 - DB password.
 - Redis password.
 - Let's Encrypt 인증서/키 (certbot named volume 상태).

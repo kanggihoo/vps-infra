@@ -1,22 +1,22 @@
 ---
 type: Deployment Service
-title: GitHub Actions 배포
-description: 과거 main 변경 시 GitHub Actions가 SSH로 VPS에 접속해 배포하던 방식.
+title: GitHub Actions 검증
+description: 과거 SSH 배포 경로와 현재 push/PR 설정 검증 workflow를 기록한다.
 tags: [deployment, github-actions, ssh, docker-compose]
-timestamp: 2026-07-03T00:00:00+09:00
+timestamp: 2026-08-25T00:00:00+09:00
 ---
 
 # 상태
 
-이 방식은 Jenkins migration 이후 자동 배포 경로로 사용하지 않는다. workflow는
-수동 rollback 또는 emergency deployment 용도로만 남겨둔다.
+**자동 배포 경로로 폐기.** 현재 `.github/workflows/validate.yml`만 유지하며,
+Compose·nginx·배포 대상 판정·SOPS 파일 무결성을 검증한다. 이 문서의 SSH 배포 흐름은
+역사 기록이며 현재 운영 절차가 아니다.
 
 # 개요
 
-Jenkins migration 전 GitHub Actions가 `main` 변경을 자동 배포했다. 현재는
-자동 트리거가 제거되었고, workflow를 수동 실행하는 비상 경로로만 유지한다.
-workflow는 Hostinger VPS에 `kkh` 사용자로 SSH 접속하고, `/opt/vps-infra`
-repository를 갱신한 뒤 Docker Compose를 적용한다.
+Jenkins migration 전 GitHub Actions가 `main` 변경을 자동 배포했다. 현재 자동 배포는
+Jenkins가 담당하며, repository에는 `.github/workflows/validate.yml`만 남아 설정 검증을
+수행한다. 아래 SSH 흐름은 과거 구현 기록이다.
 
 이 서비스는 [SSH git-pull 배포 결정](/adr/0001-ssh-git-pull-deployment.md)을 구현한다.
 
@@ -28,8 +28,8 @@ on:
     branches: [main]
 ```
 
-현재 workflow는 `workflow_dispatch`만 허용한다. Jenkins 장애 시 수동으로
-rollback 또는 emergency deployment를 실행할 수 있다.
+현재 workflow는 배포가 아니라 설정 검증을 수행한다. Jenkins 장애 시 수동 배포가
+필요하면 관리자 SSH로 Docker 명령을 직접 실행한다.
 
 # 흐름
 

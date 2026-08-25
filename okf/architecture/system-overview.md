@@ -1,9 +1,9 @@
 ---
 type: Architecture
 title: 시스템 아키텍처 개요
-description: Hostinger VPS 1대에서 Jenkins, Traefik, Docker Compose, PostgreSQL, Redis가 연결되는 전체 구조.
-tags: [architecture, vps, docker-compose, traefik, deployment]
-timestamp: 2026-06-29T00:00:00+09:00
+description: Hostinger VPS 1대에서 Jenkins, nginx, Docker Compose, PostgreSQL, Redis가 연결되는 현재 구조.
+tags: [architecture, vps, docker-compose, nginx, deployment]
+timestamp: 2026-08-25T00:00:00+09:00
 ---
 
 # 개요
@@ -18,12 +18,12 @@ Redis는 Docker internal network 안에서만 접근한다.
 GitHub main
   -> GitHub webhook
     -> Jenkins container
-      -> /opt/vps-infra checkout
+      -> ~/app/vps-infra checkout
         -> docker compose up -d
 ```
 
 [Jenkins 배포](/services/jenkins-deploy.md)는 `main` 변경을 트리거로 Pipeline을
-실행한다. Jenkins는 VPS의 `/opt/vps-infra` checkout을 갱신하고 Docker Compose를
+실행한다. Jenkins는 VPS의 사용자 홈 아래 `app/vps-infra` checkout을 갱신하고 Docker Compose를
 적용한다. GitHub Actions workflow는 자동 배포에 사용하지 않는다.
 
 # 런타임 구조
@@ -46,7 +46,7 @@ Internet
 
 | Compose network | Docker network | 용도 |
 |-----------------|----------------|------|
-| `proxy` | `vps_proxy` | Traefik과 public HTTP backend가 연결되는 라우팅 경계. |
+| `proxy` | `vps_proxy` | nginx와 public HTTP backend가 연결되는 라우팅 경계. |
 | `data` | `vps_data` | PostgreSQL과 Redis가 외부 port publish 없이 연결되는 내부 데이터 경계. |
 
 # 라우팅 구조
@@ -65,7 +65,9 @@ jenkins.kkh-hub.tech
 
 라우팅은 [서브도메인 라우팅](/adr/0005-subdomain-routing.md) 결정을 따른다.
 서브도메인을 서비스 경계로 사용한다. nginx는 Docker label 기반 동적 라우팅이
-없으므로 `nginx/conf.d/`에 서비스당 conf 파일 1개를 명시적으로 둔다.
+없으므로 호스트의 `nginx/templates/*.template`에 서비스당 템플릿 파일 1개를 둔다.
+nginx 공식 이미지가 기동 시 환경변수를 치환해 컨테이너 내부
+`/etc/nginx/conf.d/*.conf`를 생성한다.
 
 Traefik dashboard와 SSAFY webhook exact path 라우팅(`ssafy.kkh-hub.tech`)은
 nginx 전환과 함께 제거했다.
@@ -107,11 +109,11 @@ Git에 포함한다.
 
 ```txt
 compose.yml
-nginx templates (nginx/templates/*.conf.template)
+nginx templates (`nginx/templates/*.template`)
 scripts
 jenkins/ (Dockerfile, plugins.txt, jenkins.yaml)
 .env.example
-SOPS 암호화 secret (*.sops)
+SOPS 암호화 secret (`secrets/*.sops.env`, `secrets/*.sops.txt`)
 docs
 okf
 ```
@@ -145,7 +147,7 @@ Docker daemon이 boot 시 자동 시작되고, 이미 생성된 container는 res
 - VPS 외부 공개는 nginx만 담당한다.
 - 내부 서비스는 Docker network 안에서만 접근한다.
 - 배포는 VPS 내부 Jenkins가 GitHub webhook을 받아 Compose를 갱신한다.
-- secret과 runtime state는 Git에 커밋하지 않는다.
+- 평문 secret과 runtime state는 Git에 커밋하지 않는다. SOPS 암호화 파일은 Git에 커밋한다.
 
 # 관련 개념
 

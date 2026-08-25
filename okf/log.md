@@ -1,5 +1,10 @@
 # 변경 기록
 
+## 2026-08-25
+* **동기화**: 현재 코드 기준으로 시스템 아키텍처, nginx/Jenkins 서비스, VPS 환경, 초기 배포 검증 문서의 경로·프록시·SOPS 설명을 갱신했다. 과거 SSH 배포와 Traefik 내용은 역사 기록으로 구분했다.
+* **이동**: `Frontend Design Skills`를 runtime service가 아닌 project tooling 개념으로 보고 `/tooling/`으로 이동했으며, 실제 `.agents/skills/` 목록과 동기화했다.
+* **갱신**: `INFRA.md`를 현재 Compose, Jenkins, nginx template, SOPS 구조 기준의 현황 및 신규 서비스 추가 가이드로 재작성했다.
+
 ## 2026-08-23
 * **생성**: [로컬 우선 인프라 인수 절차](/runbooks/local-first-handover.md) 런북을 추가했다. spec 0001 단계 0~5을 구현하면서, 사용자만 할 수 있는 작업(age key 생성, 실제 secret 암호화)과 로컬 검증 명령, 미구현 단계 6~8의 선행 조건을 정리했다.
 * **구현**: spec 0001 단계 0~5을 구현했다. 배포 대상 판정을 셸 스크립트로 내리고(빈 diff는 판정 불가로 실패), nginx conf를 envsubst 템플릿으로 바꿔 로컬 HTTP 기동을 가능하게 했고, SOPS 배선과 Jenkins JCasC/job-dsl을 추가했다. 로컬 Jenkins가 빈 volume에서 기동만으로 Job을 복원하고 파이프라인 전체가 통과함을 확인했다. 단계 6~8은 VPS 접근과 외부 레포가 필요해 미구현이다.
@@ -20,7 +25,7 @@
 ## 2026-07-03
 * **갱신**: [공용 인프라 포털](/services/portal.md)에 Mintlify-inspired dark 기본 theme, skill source URL, install command block UI를 추가한 내용을 기록했다.
 * **갱신**: [공용 인프라 포털](/services/portal.md)의 frontend stack을 Tailwind CSS v4, shadcn/ui, lucide-react, Pretendard 기반으로 전환한 내용을 기록했다.
-* **생성**: [Frontend Design Skills](/services/frontend-design-skills.md) concept를 추가하고, project scope Codex frontend design skill set과 DESIGN.md workflow 참고 문서를 기록했다.
+* **생성**: [Frontend Design Skills](/tooling/frontend-design-skills.md) concept를 추가하고, project scope Codex frontend design skill set과 DESIGN.md workflow 참고 문서를 기록했다.
 * **갱신**: [공용 인프라 포털](/services/portal.md)의 Basic Auth middleware를 제거하고, 현재 MVP는 공개 가능한 링크와 skill 원문만 제공한다고 기록했다.
 * **갱신**: [GitHub Actions 배포](/services/github-actions-deploy.md)에 `portal/**` 변경만 있을 때 포털 service만 rebuild/recreate하는 target 배포 흐름을 추가했다.
 * **생성**: [공용 인프라 포털](/services/portal.md) service concept를 추가했다.

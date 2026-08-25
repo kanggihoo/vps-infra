@@ -15,8 +15,8 @@ SSAFY Workspace Webhook POC는 `/opt/ssafy-workspace` repository가 배포하는
 Traefik에서 nginx로 전환하면서 `ssafy.kkh-hub.tech` exact path 라우팅
 (`/healthz`, `/webhooks/gitlab`, `/webhooks/mattermost/outgoing`,
 `/commands/mattermost/a502`)을 제거했다. 현재 `vps-infra`는 이 서비스를
-외부로 노출하지 않는다. 다시 노출하려면 `nginx/conf.d/ssafy.conf`를 추가해야
-한다.
+외부로 노출하지 않는다. 다시 노출하려면 `nginx/templates/ssafy.conf.template`를
+추가하고, 인증서 대상 도메인도 함께 갱신해야 한다.
 
 # 책임 경계
 

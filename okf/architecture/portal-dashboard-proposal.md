@@ -2,8 +2,8 @@
 type: ArchitectureProposal
 title: 공용 인프라 포털 MVP 아키텍처
 description: 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털 MVP 구조.
-tags: [architecture, portal, dashboard, react, go, traefik, skills, tailwind, shadcn]
-timestamp: 2026-07-03T00:00:00+09:00
+tags: [architecture, portal, dashboard, react, go, nginx, skills, tailwind, shadcn]
+timestamp: 2026-08-25T00:00:00+09:00
 ---
 
 # 상태
@@ -12,16 +12,16 @@ timestamp: 2026-07-03T00:00:00+09:00
 `React+nginx + Go API + 운영 상태 수집` 구조에서 범위를 줄여, 첫 버전은 현재
 repository에 구현된 public service 링크와 skill markdown library만 제공한다.
 
-이 문서는 작성 당시(Traefik 운영 시점) 기준이다. 이후 리버스 프록시를
-[nginx](/services/nginx.md)로 전환하면서 Traefik dashboard 링크는 제거되었다.
-현재 유효한 Public Route는 [nginx](/services/nginx.md) 문서를 따른다.
+이 문서는 초기 제안에서 현재 구현으로 이어진 설계 기록이다. 현재 유효한 Public Route와
+reverse proxy 동작은 [nginx](/services/nginx.md)와
+[공용 인프라 포털](/services/portal.md) 문서를 따른다.
 
 # 목표
 
 - VPS 안에서 실제 운영 중인 public service entrypoint를 빠르게 이동한다.
 - 자주 쓰는 agent skill 원문을 보기 쉽게 렌더링하고 복사할 수 있게 한다.
 - 포털을 특정 앱 backend에 얹지 않고 인프라 repository에서 관리한다.
-- Traefik 리버스 프록시(작성 당시, 현재는 [nginx](/services/nginx.md))를 public HTTP/HTTPS 진입점으로 유지한다.
+- [nginx](/services/nginx.md)를 public HTTP/HTTPS 진입점으로 사용한다.
 
 # MVP 범위
 
@@ -36,7 +36,6 @@ Portal
 포함한다.
 
 - 현재 코드상 구현된 public route 링크.
-- `traefik.kkh-hub.tech` Traefik dashboard 링크.
 - `health.kkh-hub.tech` whoami health route 링크.
 - 자주 쓰는 skill markdown 원문 viewer.
 - skill frontmatter metadata 표시.
@@ -62,7 +61,7 @@ Portal
 Internet
   -> DNS: portal.kkh-hub.tech
     -> VPS
-      -> Traefik :443
+      -> nginx :443
         -> portal Go service
           -> React static files
           -> static skill markdown files
@@ -72,7 +71,7 @@ Internet
 파일을 제공한다. React UI는 Tailwind CSS v4, shadcn/ui, lucide-react, Pretendard를 사용한다.
 UI theme은 `portal/DESIGN-mintlify.md`의 dark documentation surface를 기준으로 하며,
 dark mode를 기본값으로 사용한다.
-Traefik이 TLS와 hostname routing을 맡으므로 별도 nginx container는 초기 범위에서 사용하지 않는다.
+nginx가 TLS와 hostname routing을 맡는다. 포털은 nginx 뒤의 `portal` 컨테이너로 제공된다.
 
 # Services 화면
 
@@ -80,12 +79,11 @@ Services 화면은 실제 구현된 public entrypoint만 보여준다.
 
 | 항목 | URL | 설명 |
 |------|-----|------|
-| Traefik dashboard | `https://traefik.kkh-hub.tech` | Basic Auth 보호된 reverse proxy dashboard |
-| Health/whoami | `https://health.kkh-hub.tech` | DNS/TLS/Traefik routing 검증용 public endpoint |
+| Health/whoami | `https://health.kkh-hub.tech` | DNS/TLS/nginx routing 검증용 public endpoint |
 | Repository | GitHub repository URL | 인프라 코드 진입점 |
 
 후보 route나 아직 배포되지 않은 다른 project 링크는 표시하지 않는다. 다른 project가 실제로
-Compose와 Traefik label에 추가된 뒤 포털 항목도 늘린다.
+Compose와 nginx 템플릿에 추가된 뒤 포털 항목도 늘린다.
 
 # Skills 화면
 
@@ -116,7 +114,7 @@ UI 기반 CRUD는 file write 권한, audit, 실수 삭제, 인증 강도 문제�
 
 | 책임 | 위치 |
 |------|------|
-| public route/TLS/auth | Traefik |
+| public route/TLS/auth | nginx |
 | 포털 static file serving | `portal` Go service |
 | 서비스 링크 정의 | `portal/public/config/services.json` 또는 OKF/Compose에서 파생 |
 | skill 원문 | `portal/skills/*.md` curated copy |
@@ -162,5 +160,5 @@ local Dockerfile build가 생기므로 [GitHub Actions 배포](/services/github-
 # 관련 개념
 
 - [시스템 아키텍처 개요](/architecture/system-overview.md)
-- Traefik 리버스 프록시(작성 당시, 현재는 [nginx](/services/nginx.md))
+- [nginx 리버스 프록시](/services/nginx.md)
 - [GitHub Actions 배포](/services/github-actions-deploy.md)

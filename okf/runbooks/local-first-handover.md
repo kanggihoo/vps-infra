@@ -206,11 +206,10 @@ checkout하므로 로컬과 달리 PAT가 실제로 쓰인다.
 
 ## 문서 정합성
 
-`README.md`, `INFRA.md`, `OBSERVABILITY.md`는 여전히 `/opt/vps-infra`,
-`/opt/quartz-site`, `nginx/conf.d/`를 서술한다. **이제 실제 상태와 다르다.**
-단계 6 전환으로 경로는 `~/app/vps-infra`, nginx는 `nginx/templates/`가 되었다.
-Jenkins 전환(6-b)까지 끝난 뒤 한 번에 갱신하는 것이 낫다 — 지금 고치면
-Jenkins 관련 서술만 다시 어긋난다.
+현재 OKF의 운영 문서는 단계 6 전환 상태를 기준으로 갱신한다. 외부 운영 문서
+(`README.md`, `INFRA.md`, `OBSERVABILITY.md`)는 별도 갱신 대상이다.
+실제 배포 경로는 `~/app/vps-infra`, nginx 설정 소스는 `nginx/templates/`이며,
+컨테이너 내부의 완성 설정만 `/etc/nginx/conf.d/`에 생성된다.
 
 # 관련 개념
 

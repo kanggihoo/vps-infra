@@ -3,7 +3,7 @@ type: Deployment Service
 title: Jenkins 배포
 description: VPS 내부 Docker Jenkins가 GitHub webhook을 받아 인프라를 배포한다.
 tags: [deployment, jenkins, docker, webhook]
-timestamp: 2026-07-20T00:00:00+09:00
+timestamp: 2026-08-25T00:00:00+09:00
 ---
 
 # 개요
@@ -12,7 +12,7 @@ Jenkins는 기존 인프라 Compose project와 분리된 Docker Compose project�
 실행한다. nginx 뒤 `jenkins.kkh-hub.tech`로 접근하며, GitHub webhook이
 Pipeline을 시작한다.
 
-이번 단계에서는 GHCR를 사용하지 않는다. Jenkins가 `/opt/vps-infra`에서
+이번 단계에서는 GHCR를 사용하지 않는다. Jenkins가 사용자 홈 아래 `app/vps-infra`에서
 repository를 checkout하고, VPS Docker daemon에서 portal 이미지를 build한 뒤
 기존 `scripts/deploy.sh`를 실행한다.
 
@@ -22,7 +22,7 @@ repository를 checkout하고, VPS Docker daemon에서 portal 이미지를 build�
 GitHub push
 -> GitHub webhook
 -> Jenkins container
--> /opt/vps-infra checkout
+-> ~/app/vps-infra checkout
 -> docker compose config
 -> scripts/deploy.sh
 -> scripts/healthcheck.sh
@@ -37,15 +37,16 @@ Jenkins 인증 뒤에 둔다.
 Jenkins 설치는 관리자 SSH 또는 VPS console에서 1회 수행한다.
 
 ```bash
-cd /opt/vps-infra/jenkins
+cd ~/app/vps-infra/jenkins
 sudo mkdir -p /opt/jenkins
 sudo cp .env.example /opt/jenkins/.env
 sudo sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(getent group docker | cut -d: -f3)/" /opt/jenkins/.env
 docker compose --env-file /opt/jenkins/.env up -d --build
 ```
 
-이후 배포마다 수동 SSH 또는 VPS 내부 `git clone`은 필요하지 않다. Jenkins가
-checkout과 Docker 명령을 수행한다.
+이후 배포마다 관리자가 수동 SSH로 배포하거나 VPS 내부에서 별도로 `git clone`할
+필요가 없다. Jenkins가 checkout과 Docker 명령을 수행한다. 관리자 SSH는 초기 설정과
+비상 조치에만 사용한다.
 
 # 보안
 

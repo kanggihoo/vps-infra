@@ -3,27 +3,28 @@ type: Service
 title: nginx 리버스 프록시
 description: VPS의 public HTTP/HTTPS 진입점.
 tags: [nginx, reverse-proxy, tls, certbot, docker]
-timestamp: 2026-08-10T00:00:00+09:00
+timestamp: 2026-08-25T00:00:00+09:00
 ---
 
 # 개요
 
 nginx는 VPS에서 public HTTP/HTTPS 포트를 노출하는 유일한 서비스다.
-`nginx/conf.d/*.conf`의 정적 server block으로 hostname 기반 라우팅을 하고,
+`nginx/templates/*.template`의 server block으로 hostname 기반 라우팅을 하고,
 HTTP를 HTTPS로 redirect하며, `certbot` 컨테이너가 Let's Encrypt HTTP-01 방식으로
 발급한 인증서를 read-only volume으로 공유받아 사용한다.
 
-Traefik과 달리 Docker label 기반 동적 라우팅은 없다. 서비스를 추가하거나 라우팅을
-바꾸려면 `nginx/conf.d/`에 conf 파일을 추가/수정하고 `docker compose restart nginx`
-(또는 `nginx -s reload`)로 반영해야 한다.
+Docker label 기반 동적 라우팅은 없다. 서비스를 추가하거나 라우팅을 바꾸려면
+`nginx/templates/`의 템플릿을 추가/수정하고 `docker compose up -d --force-recreate nginx`
+로 환경변수 치환 결과를 다시 생성한다. 완성된 설정은 컨테이너 내부
+`/etc/nginx/conf.d/`에 있다.
 
 # Public Routes
 
 | Hostname | 대상 | conf 파일 |
 |----------|------|-----------|
-| `health.kkh-hub.tech` | [whoami](/services/whoami.md) | `nginx/conf.d/health.conf` |
-| `portal.kkh-hub.tech` | [공용 인프라 포털](/services/portal.md) | `nginx/conf.d/portal.conf` |
-| `jenkins.kkh-hub.tech` | [Jenkins](/services/jenkins-deploy.md) | `nginx/conf.d/jenkins.conf` |
+| `health.kkh-hub.tech` | [whoami](/services/whoami.md) | `nginx/templates/health.conf.template` |
+| `portal.kkh-hub.tech` | [공용 인프라 포털](/services/portal.md) | `nginx/templates/portal.conf.template` |
+| `jenkins.kkh-hub.tech` | [Jenkins](/services/jenkins-deploy.md) | `nginx/templates/jenkins.conf.template` |
 
 Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 (`ssafy.kkh-hub.tech`)은 nginx 전환과 함께 제거했다. SSAFY Workspace Webhook POC는
@@ -43,14 +44,14 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 - 갱신은 `certbot` 컨테이너의 entrypoint가 12시간 주기로 `certbot renew`를
   반복 실행하며 자동 처리한다. 운영 배포 스크립트(`scripts/deploy.sh`)는 발급
   로직을 포함하지 않는다.
-- HTTP(`:80`)의 `/.well-known/acme-challenge/`는 `nginx/conf.d/00-http-challenge.conf`가
+- HTTP(`:80`)의 `/.well-known/acme-challenge/`는 `nginx/templates/00-http-challenge.conf.template`가
   webroot로 정적 서빙한다. 나머지 HTTP 요청은 HTTPS로 301 redirect한다.
 
 # 책임
 
 - `80`, `443` 포트 publish.
 - HTTP -> HTTPS redirect.
-- hostname 기반 라우팅 (`server_name` + `conf.d/*.conf`).
+- hostname 기반 라우팅 (`server_name` + 생성된 `conf.d/*.conf`).
 - Jenkins WebSocket/장시간 연결을 위한 `proxy_http_version 1.1`, `Upgrade`/`Connection`
   헤더 전달.
 
@@ -59,7 +60,7 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 - 다른 서비스는 `80`, `443`을 publish하지 않는다.
 - 인증서(`certbot-etc`)와 webroot(`certbot-www`) volume은 VPS에만 상태로 존재하고
   Git에 커밋하지 않는다.
-- Traefik 시절 존재하던 dashboard/Basic Auth 보호 대상은 없다. 상태 확인은
+- 이전 Traefik 시절 존재하던 dashboard/Basic Auth 보호 대상은 없다. 상태 확인은
   `health.kkh-hub.tech` 응답과 `docker compose ps`로 대체한다.
 
 # 관계

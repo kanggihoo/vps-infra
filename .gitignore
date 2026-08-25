@@ -38,7 +38,7 @@ dist/
 .DS_Store
 
 # Editor / OS
-.idea/
+.icdea/
 .vscode/
 *.swp
 *.swo

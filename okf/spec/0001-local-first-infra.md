@@ -3,8 +3,15 @@ type: Spec
 title: 로컬 우선 인프라 재구성
 description: 배포 로직과 nginx 설정을 로컬에서 검증 가능하게 만들고, Jenkins 설정과 secret을 레포에서 관리한다.
 tags: [infrastructure, local-development, jenkins, nginx, sops, spec]
-timestamp: 2026-08-23T00:00:00+09:00
+timestamp: 2026-08-25T00:00:00+09:00
 ---
+
+# 상태
+
+**단계 0~5 구현 완료.** 문제 정의와 설계는 구현 당시 상태를 설명하는 기록이며,
+단계 6~8(VPS 적용, Quartz 이미지화, 신규 프로젝트)은 후속 작업으로 남아 있다.
+현재 운영 상태는 [로컬 우선 인프라 인수 절차](/runbooks/local-first-handover.md)를
+따른다.
 
 # 문제 정의
 
