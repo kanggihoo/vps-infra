@@ -18,6 +18,7 @@ keys.txt
 data/
 volumes/
 backups/
+.deploy-state/
 *.dump
 *.sql
 *.sql.gz

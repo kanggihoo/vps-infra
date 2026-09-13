@@ -59,6 +59,14 @@ pipeline {
                     fi
                     git log --oneline -1
                 '''
+
+                // 이 실행이 배포할 소스를 여기서 한 번 고정한다.
+                // 이후 GitHub에 새 push가 와도 현재 checkout의 SHA는 바뀌지 않는다.
+                env.DEPLOY_SHA = sh(
+                    script: 'cd "$APP_DIR" && git rev-parse HEAD',
+                    returnStdout: true
+                ).trim()
+                echo "Deploy SHA: ${env.DEPLOY_SHA}"
             }
         }
 
@@ -69,10 +77,28 @@ pipeline {
                         env.RESOLVED_TARGET = params.DEPLOY_TARGET
                         echo "Deploy target (override): ${env.RESOLVED_TARGET}"
                     } else {
-                        // 판정은 스크립트가 한다. 판정 불가면 exit 1로 빌드가 멈춘다.
-                        // 의도적으로 배포하려면 DEPLOY_TARGET 파라미터로 override한다.
+                        // 마지막 성공 배포부터 이번 고정 SHA까지의 누적 변경을 본다.
+                        // 상태가 없거나 history가 끊기면 일부 변경을 누락하지 않도록 all을 고른다.
                         env.RESOLVED_TARGET = sh(
-                            script: 'cd "$APP_DIR" && ./scripts/select-target.sh HEAD~1 HEAD',
+                            script: '''
+                                set -eu
+                                cd "$APP_DIR"
+                                state_file=.deploy-state/last-successful-sha
+
+                                if [ -f "$state_file" ]; then
+                                    previous_sha="$(cat "$state_file")"
+                                    if printf '%s' "$previous_sha" | grep -Eq '^[0-9a-f]{40}$' && \
+                                       git cat-file -e "${previous_sha}^{commit}" 2>/dev/null && \
+                                       git merge-base --is-ancestor "$previous_sha" "$DEPLOY_SHA"; then
+                                        ./scripts/select-target.sh "$previous_sha" "$DEPLOY_SHA"
+                                        exit 0
+                                    fi
+                                    echo "[select-target] saved deployment SHA is not an ancestor; deploying all" >&2
+                                else
+                                    echo "[select-target] no successful deployment SHA; deploying all" >&2
+                                fi
+                                echo all
+                            ''',
                             returnStdout: true
                         ).trim()
                         echo "Deploy target (auto): ${env.RESOLVED_TARGET}"
@@ -93,6 +119,24 @@ pipeline {
                 // 직접 붙는다. VPS의 hairpin 라우팅을 피하고, 로컬에서는
                 // health.localhost가 컨테이너 안에서 해석되지 않는 문제를 피한다.
                 sh 'cd "$APP_DIR" && HEALTHCHECK_CONNECT_HOST=vps-nginx ./scripts/healthcheck.sh'
+            }
+        }
+
+        stage('Record successful deployment') {
+            steps {
+                sh '''
+                    set -eu
+                    cd "$APP_DIR"
+                    # runtime state라 Git에 넣지 않는다. 임시 파일을 rename해 중간에
+                    # Jenkins가 죽어도 깨진 SHA 파일을 남기지 않는다.
+                    state_dir=.deploy-state
+                    state_file="$state_dir/last-successful-sha"
+                    mkdir -p "$state_dir"
+                    umask 077
+                    temporary_file="$state_file.tmp.$$"
+                    printf '%s\n' "$DEPLOY_SHA" > "$temporary_file"
+                    mv "$temporary_file" "$state_file"
+                '''
             }
         }
     }

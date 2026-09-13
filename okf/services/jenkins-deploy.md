@@ -3,7 +3,7 @@ type: Deployment Service
 title: Jenkins 배포
 description: VPS 내부 Docker Jenkins가 GitHub webhook을 받아 인프라를 배포한다.
 tags: [deployment, jenkins, docker, webhook]
-timestamp: 2026-08-25T00:00:00+09:00
+timestamp: 2026-09-13T00:00:00+09:00
 ---
 
 # 개요
@@ -27,6 +27,11 @@ GitHub push
 -> scripts/deploy.sh
 -> scripts/healthcheck.sh
 ```
+
+Pipeline은 checkout 갱신 직후 SHA를 이번 배포 SHA로 고정한다. `.deploy-state/last-successful-sha`
+부터 그 SHA까지의 누적 변경으로 `portal` 또는 `all` 대상을 고른다. healthcheck가 성공한
+경우에만 상태 SHA를 갱신한다. 이 상태 파일은 VPS checkout의 runtime state라 Git에 커밋하지
+않는다. 파일이 없거나 Git history가 이어지지 않으면 안전하게 전체 배포한다.
 
 Jenkins가 Docker socket을 사용하므로 host Docker daemon에 높은 권한을 가진다.
 Jenkins 관리자와 Pipeline 수정 권한을 제한하고, public 접근은 nginx HTTPS와

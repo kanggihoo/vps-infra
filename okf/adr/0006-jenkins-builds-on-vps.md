@@ -3,7 +3,7 @@ type: Decision
 title: Jenkins가 VPS에서 이미지를 빌드한다
 description: 빌드를 외부 CI나 registry로 넘기지 않고 VPS 내부 Jenkins가 webhook을 받아 직접 빌드한다.
 tags: [deployment, jenkins, ci, build]
-timestamp: 2026-08-23T00:00:00+09:00
+timestamp: 2026-09-13T00:00:00+09:00
 ---
 
 # 결정
@@ -33,8 +33,13 @@ CPU     상시 0%대
 - 배포 중 2 코어가 컴파일에 점유된다. Quartz 빌드는 약 3분이 걸린다.
 - 프로젝트가 늘어 동시 빌드가 경합하면 빌드만 Actions로 옮긴다. 그 이동은
   Jenkinsfile의 build stage를 제거하는 수준이므로 되돌리기 비용이 낮다.
+- Jenkins controller executor는 전역 1개로 둔다. Job별 `disableConcurrentBuilds`는
+  서로 다른 Job의 동시 빌드를 막지 못하기 때문이다.
 - Jenkins가 유일한 변동성 큰 메모리 소비자이므로 Jenkins에만 `mem_limit`과
   JVM heap 상한을 둔다. VPS에 swap이 없어 OOM이 발생하면 프로세스가 즉시 죽는다.
+  Docker socket을 거친 BuildKit 작업은 이 container limit에 포함되지 않으므로,
+  실제 빌드 중 호스트 메모리와 서비스 지연을 측정한다. 부족하면
+  `docker-container` builder의 CPU·메모리 제한을 도입한다.
 
 # 거절한 대안
 

@@ -14,6 +14,7 @@ fi
 #   VPS   HEALTHCHECK_HOST=health.kkh-hub.tech HEALTHCHECK_SCHEME=https
 health_host="${HEALTHCHECK_HOST:-health.localhost}"
 health_scheme="${HEALTHCHECK_SCHEME:-http}"
+portal_host="${PORTAL_HEALTHCHECK_HOST:-portal.${BASE_DOMAIN:-localhost}}"
 
 public_curl() {
   local host="$1"
@@ -43,16 +44,24 @@ docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-postgres}" -d "$
 echo "[healthcheck] redis"
 docker compose exec -T redis redis-cli -a "${REDIS_PASSWORD:?REDIS_PASSWORD is required}" ping | grep -q PONG
 
-echo "[healthcheck] public health route (${health_scheme}://${health_host})"
-for attempt in $(seq 1 12); do
-  if public_curl "$health_host" -fsS >/dev/null; then
-    break
-  fi
-  if [ "$attempt" = 12 ]; then
-    echo "[healthcheck] public health route failed after ${attempt} attempts" >&2
-    exit 1
-  fi
-  sleep 5
-done
+check_public_route() {
+  local name="$1" host="$2"
+
+  echo "[healthcheck] ${name} route (${health_scheme}://${host})"
+  for attempt in $(seq 1 12); do
+    if public_curl "$host" -fsS >/dev/null; then
+      return 0
+    fi
+    if [ "$attempt" = 12 ]; then
+      echo "[healthcheck] ${name} route failed after ${attempt} attempts" >&2
+      return 1
+    fi
+    sleep 5
+  done
+}
+
+# whoami는 DNS, TLS, nginx 경로를 확인하고 portal은 실제 배포 대상을 확인한다.
+check_public_route "health" "$health_host"
+check_public_route "portal" "$portal_host"
 
 echo "[healthcheck] ok"

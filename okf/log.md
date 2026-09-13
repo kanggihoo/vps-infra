@@ -1,5 +1,13 @@
 # 변경 기록
 
+## 2026-09-13
+* **생성**: [Jenkins·nginx 리뷰 보완](/spec/0002-infra-review-remediation.md) 스펙을 추가했다.
+* **구현**: nginx 후보 설정 검사·강제 재생성, portal 경로 healthcheck, private notes 캐시 정책, Jenkins 누적 SHA 배포 상태, systemd 기반 인증서 갱신을 추가했다.
+* **갱신**: Jenkins controller executor를 전역 1개로 제한하고, host BuildKit 자원 관측 조건을 ADR 0006에 기록했다.
+
+## 2026-09-11
+* **생성**: [Jenkins·nginx 보안 및 운영 리뷰](/architecture/infra-review-2026-09-11.md)에 설정 반영, 인증서 갱신, 캐시·인증 기본값, 배포 SHA, Jenkins 권한 경계와 운영 개선안을 기록했다. VPS 실측과 저장소 정적 분석을 구분했다.
+
 ## 2026-08-25
 * **동기화**: 현재 코드 기준으로 시스템 아키텍처, nginx/Jenkins 서비스, VPS 환경, 초기 배포 검증 문서의 경로·프록시·SOPS 설명을 갱신했다. 과거 SSH 배포와 Traefik 내용은 역사 기록으로 구분했다.
 * **이동**: `Frontend Design Skills`를 runtime service가 아닌 project tooling 개념으로 보고 `/tooling/`으로 이동했으며, 실제 `.agents/skills/` 목록과 동기화했다.

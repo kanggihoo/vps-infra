@@ -8,8 +8,10 @@
 jenkins:
   systemMessage: "이 Jenkins는 jenkins/jenkins.yaml로 관리된다. GUI 변경은 재기동 시 사라진다."
 
-  # 빌드는 Pipeline이 docker.sock으로 수행하므로 executor는 적게 둔다.
-  numExecutors: 2
+  # 서로 다른 Job도 한 번에 하나만 실행한다. Job별 disableConcurrentBuilds만으로는
+  # Quartz와 infra build가 겹칠 수 있어, VPS 빌드 피크를 측정하기 전에는 전역 1로 둔다.
+  # 이 제한은 Docker daemon의 BuildKit 메모리 상한은 아니므로 별도 관측이 필요하다.
+  numExecutors: 1
 
   # anonymous read 차단 + signup 차단.
   authorizationStrategy:

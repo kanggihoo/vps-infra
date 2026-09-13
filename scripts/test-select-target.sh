@@ -50,6 +50,17 @@ mixed="$(git rev-parse HEAD)"
 git commit -q --allow-empty -m empty
 empty="$(git rev-parse HEAD)"
 
+# Jenkins가 마지막 커밋만 보면 놓치는 실제 push 순서.
+# nginx 변경 뒤 portal 변경이 따로 들어오면 누적 범위는 all이어야 한다.
+mkdir -p nginx
+echo nginx-change > nginx/site.conf
+git add -A && git commit -qm infra-before-portal
+infra_before_portal="$(git rev-parse HEAD)"
+
+echo portal-after-infra > portal/App.tsx
+git add -A && git commit -qm portal-after-infra
+portal_after_infra="$(git rev-parse HEAD)"
+
 # --- 검증 ---
 expect "portal/ 아래만 바뀌면 portal" \
   portal 0 "$base" "$portal_only"
@@ -59,6 +70,12 @@ expect "portal/ 밖 파일이 섞이면 all" \
 
 expect "인프라 파일만 바뀌면 all" \
   all 0 "$base" "$mixed"
+
+expect "최신 커밋만 보면 portal인 변경" \
+  portal 0 "$infra_before_portal" "$portal_after_infra"
+
+expect "누적 범위에 인프라 변경이 있으면 all" \
+  all 0 "$empty" "$portal_after_infra"
 
 # 핵심 결정: 빈 diff는 portal이 아니라 판정 불가다.
 expect "변경 파일이 없으면 판정 불가로 실패" \
