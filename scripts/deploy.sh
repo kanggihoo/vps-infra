@@ -30,8 +30,23 @@ set -a
 . ./.env
 set +a
 
+# live TLS에서 test/test fixture로 시작하면 notes 인증이 공개된다.
+# 로컬 clean clone은 fixture를 계속 쓸 수 있고, 운영 진입점만 명확히 막는다.
+if [ "${TLS_MODE:-none}" = "live" ] && \
+   [ "${NOTES_HTPASSWD:-}" = "./nginx/test-fixtures/notes.htpasswd" ]; then
+  echo "[deploy] TLS_MODE=live에서는 NOTES_HTPASSWD에 실제 secret 파일이 필요하다" >&2
+  exit 2
+fi
+
 echo "[deploy] validating compose"
 docker compose config >/dev/null
+
+validate_nginx_template() {
+  echo "[deploy] validating rendered nginx template"
+  # nginx 공식 entrypoint가 envsubst를 실행한 뒤 nginx -t를 수행한다.
+  # 포트를 publish하지 않는 일회성 컨테이너라 현재 nginx에 영향이 없다.
+  docker compose run --rm --no-deps nginx nginx -t
+}
 
 if [ "$target" = "portal" ]; then
   echo "[deploy] applying portal only"
@@ -48,8 +63,15 @@ fi
 echo "[deploy] pulling images"
 docker compose pull --ignore-buildable
 
+validate_nginx_template
+
 echo "[deploy] applying stack"
 docker compose up -d --build --wait --wait-timeout 120
+
+# bind mount의 template만 바뀌면 일반 up은 nginx를 재생성하지 않는다.
+# 후보 설정 검증을 통과한 뒤 nginx만 강제로 재생성해 envsubst 결과를 갱신한다.
+echo "[deploy] recreating nginx for rendered configuration"
+docker compose up -d --no-deps --force-recreate --wait --wait-timeout 120 nginx
 
 echo "[deploy] compose status"
 docker compose ps

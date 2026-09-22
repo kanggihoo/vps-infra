@@ -1,0 +1,10 @@
+[Unit]
+Description=Run VPS TLS certificate renewal twice daily
+
+[Timer]
+OnBootSec=10m
+OnUnitActiveSec=12h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

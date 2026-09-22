@@ -14,9 +14,14 @@ server {
 
     include /etc/nginx/tls/${TLS_MODE}.conf;
 
+    # 후보 nginx 설정은 backend가 아직 없는 최초 배포에서도 검사해야 한다.
+    # 변수 upstream은 Docker DNS 해석을 요청 시점으로 미뤄 `nginx -t`를 가능하게 한다.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     location / {
         # whoami 이미지는 80번 포트에서 듣는다 (portal의 8080과 다름).
-        proxy_pass http://whoami:80;
+        set $whoami_upstream "whoami:80";
+        proxy_pass http://$whoami_upstream$request_uri;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

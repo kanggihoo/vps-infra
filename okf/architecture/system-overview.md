@@ -3,7 +3,7 @@ type: Architecture
 title: 시스템 아키텍처 개요
 description: Hostinger VPS 1대에서 Jenkins, nginx, Docker Compose, PostgreSQL, Redis가 연결되는 현재 구조.
 tags: [architecture, vps, docker-compose, nginx, deployment]
-timestamp: 2026-08-25T00:00:00+09:00
+timestamp: 2026-09-13T00:00:00+09:00
 ---
 
 # 개요
@@ -39,7 +39,8 @@ Internet
           -> portal
           -> PostgreSQL
           -> Redis
-      -> certbot (인증서 발급/갱신, public 포트 미점유)
+      -> certbot (인증서 발급, public 포트 미점유)
+      -> host systemd timer (certbot 갱신 후 nginx reload)
 ```
 
 # Docker 네트워크

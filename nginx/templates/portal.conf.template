@@ -26,6 +26,10 @@ server {
     # TLS 지시자를 모드별 파일로 분리한다. 로컬은 빈 파일이므로 인증서 없이 기동된다.
     include /etc/nginx/tls/${TLS_MODE}.conf;
 
+    # portal을 재생성하면 Docker IP가 바뀔 수 있다. 변수 upstream은 이름 해석을
+    # 요청 시점으로 미뤄 nginx가 이전 IP를 계속 쓰는 502를 막는다.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     # 이 도메인으로 들어온 모든 경로를 처리.
     location / {
         # 요청을 뒤쪽 컨테이너로 그대로 전달한다.
@@ -34,7 +38,10 @@ server {
         # 8080 = portal 컨테이너 안에서 Go 서버가 듣고 있는 포트.
         #        호스트에 publish되지 않았으므로 외부에서는 접근 불가.
         # http = nginx와 컨테이너 사이 내부 구간은 암호화하지 않는다.
-        proxy_pass http://portal:8080;
+        set $portal_upstream "portal:8080";
+        # 변수를 쓴 proxy_pass는 경로를 자동으로 이어붙이지 않으므로,
+        # 원래 경로와 쿼리를 명시해서 /skills?tab=raw 같은 요청을 보존한다.
+        proxy_pass http://$portal_upstream$request_uri;
 
         # --- 아래 4줄이 필요한 이유 ---
         # nginx가 대신 요청을 보내면, 뒤쪽 앱 입장에서는

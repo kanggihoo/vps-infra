@@ -18,6 +18,8 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 
 # 핵심 개념
 
+* [Jenkins·nginx 보안 및 운영 리뷰](/architecture/infra-review-2026-09-11.md) - 2026-09-11 저장소 정적 리뷰와 운영 확인 항목, 개선 우선순위.
+
 * [로컬 우선 인프라 재구성](spec/0001-local-first-infra.md) - 단계 0~5 구현과 단계 6~8 후속 작업의 범위와 순서.
 * [Jenkins가 VPS에서 이미지를 빌드한다](adr/0006-jenkins-builds-on-vps.md) - 빌드를 외부 CI로 넘기지 않는 근거와 리소스 실측.
 * [프로젝트별 독립 Compose](adr/0007-per-project-compose.md) - 각 프로젝트가 자기 레포에서 compose와 이미지를 소유한다.
