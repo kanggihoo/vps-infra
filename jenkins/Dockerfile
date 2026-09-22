@@ -1,9 +1,11 @@
 # 버전 고정: lts-jdk21은 새 LTS 릴리스가 나오면 같은 태그가 다른 이미지를
 # 가리키므로, Dockerfile이 바뀌지 않았는데도 로컬과 VPS가 다른 Jenkins를 갖는다.
-FROM jenkins/jenkins:2.568.2-lts-jdk21
+FROM jenkins/jenkins:2.568.3-lts-jdk21
 
 USER root
 
+# Jenkins 파이프라인에서 호스트 Docker 데몬을 제어하기 위한 Docker CLI 및 Compose 플러그인 설치 (DooD 방식).
+# Docker 데몬은 호스트의 /var/run/docker.sock을 공유하므로, 컨테이너 내부에는 명령을 실행할 CLI 도구만 설치한다.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl gnupg git \
     && install -m 0755 -d /etc/apt/keyrings \

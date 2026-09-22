@@ -33,3 +33,10 @@ docker-workflow:653.v2f2c08eff0ec
 configuration-as-code:2117.vc05a_0b_e6b_f4e
 # Job 정의를 코드화
 job-dsl:3732.v9a_c49a_61a_313
+
+# --- 보안 취약점 패치 고정 (2026-09 Security Advisory) ---
+# 하위 의존성이지만 취약점이 보고되어 명시적으로 패치 버전을 고정한다(ADR 0009).
+script-security:1422.v06869826dd9b_
+workflow-multibranch:842.v3a_b_59b_57b_e6e
+pipeline-build-step:601.v6d4c6d1a_9dc7
+pipeline-groovy-lib:805.va_fc79344957d

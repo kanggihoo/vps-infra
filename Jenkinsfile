@@ -1,16 +1,22 @@
 // 오케스트레이션만 담는다. 판정 로직은 scripts/select-target.sh에 있다.
 // 여기에 Groovy 로직을 다시 넣으면 로컬에서 실행할 수 없게 된다.
 pipeline {
+    // 사용 가능한 어떤 Jenkins 에이전트(노드)에서든 파이프라인 실행
     agent any
 
     options {
+        // Jenkins 기본 자동 체크아웃 비활성화 (아래 Checkout 스테이지에서 $APP_DIR로 직접 제어)
         skipDefaultCheckout(true)
+        // 이전 빌드가 실행 중일 때 새 Git push가 오면 동시 실행하지 않고 큐에 대기
         disableConcurrentBuilds()
+        // 파이프라인이 15분 이상 지연되면 무한 루프 방지를 위해 자동 중단(타임아웃)
         timeout(time: 15, unit: 'MINUTES')
+        // 빌드 콘솔 출력 로그의 각 줄마다 실행 시각(타임스탬프) 기록
         timestamps()
     }
 
     parameters {
+        // 수동 빌드 실행 시 배포 범위를 선택할 수 있는 파라미터 드롭다운 제공
         // auto = 스크립트가 판정한다. 판정 불가면 빌드가 멈춘다.
         // portal/all = 판정을 건너뛰고 그 대상으로 배포한다(수동 빌드, 재배포).
         choice(
@@ -32,6 +38,7 @@ pipeline {
     // AccessDeniedException으로 실패한다. 대신 sh 안에서 cd 한다.
 
     stages {
+        // [1단계] 배포 경로의 소스 코드를 최신 Git 커밋으로 동기화
         stage('Checkout') {
             steps {
                 script {
@@ -62,6 +69,7 @@ pipeline {
             }
         }
 
+        // [2단계] Git diff를 분석하여 배포 대상 결정 (portal만 배포 vs all 전체 배포)
         stage('Select target') {
             steps {
                 script {
@@ -81,12 +89,14 @@ pipeline {
             }
         }
 
+        // [3단계] 판정된 대상에 따라 Docker Compose 빌드 및 컨테이너 재배포
         stage('Deploy') {
             steps {
                 sh 'cd "$APP_DIR" && chmod +x scripts/*.sh && ./scripts/deploy.sh "$RESOLVED_TARGET"'
             }
         }
 
+        // [4단계] Nginx 및 주요 서비스가 정상 작동(200 OK)하는지 최종 헬스체크 검증
         stage('Health check') {
             steps {
                 // Jenkins 안에서는 공개 DNS를 거치지 않고 nginx 컨테이너로
