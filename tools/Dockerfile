@@ -7,6 +7,7 @@ FROM alpine:3.24
 # curl      헬스체크와 seam 2 검증
 # docker-cli+compose  docker.sock을 통해 호스트 Docker를 제어
 # sops, age secret 복호화 (단계 3)
+# vim       환경변수 및 설정 편집(SOPS edit 등) 편의성 제공 (yG, ggyG, visual 모드 지원)
 RUN apk add --no-cache \
       bash \
       git \
@@ -14,8 +15,11 @@ RUN apk add --no-cache \
       docker-cli \
       docker-cli-compose \
       sops \
-      age
+      age \
+      vim
 
 WORKDIR /repo
+
+ENV EDITOR=vim
 
 ENTRYPOINT ["/bin/bash"]
