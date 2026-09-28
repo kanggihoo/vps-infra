@@ -23,6 +23,7 @@ GitHub push
 -> GitHub webhook
 -> Jenkins container
 -> ~/app/vps-infra checkout
+-> SOPS 복호화 (sops-age-key credential, ENV_NAME=prod -> .env, secret 파일)
 -> docker compose config
 -> scripts/deploy.sh
 -> scripts/healthcheck.sh
@@ -36,6 +37,9 @@ Pipeline은 checkout 갱신 직후 SHA를 이번 배포 SHA로 고정한다. `.d
 Jenkins가 Docker socket을 사용하므로 host Docker daemon에 높은 권한을 가진다.
 Jenkins 관리자와 Pipeline 수정 권한을 제한하고, public 접근은 nginx HTTPS와
 Jenkins 인증 뒤에 둔다.
+
+VPS의 `.env`는 매 배포마다 `secrets/env.prod.sops.env`에서 다시 만들어진다. VPS에서 `.env`를
+직접 고치면 다음 배포에서 덮어써지므로 값은 항상 SOPS 파일에서 바꾼다.
 
 # 초기화
 

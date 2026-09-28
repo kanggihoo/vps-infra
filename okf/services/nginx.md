@@ -42,8 +42,9 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
   참조하게 한다.
 - 갱신은 상주 `vps-certbot` 컨테이너가 12시간마다 확인하고, nginx가 하루 한 번 스스로
   reload해 새 인증서를 읽는다([ADR 0011](/adr/0011-certbot-container-renewal.md)).
-- 새 서브도메인은 `CHALLENGE_DOMAINS`에 넣고 `certonly --expand`에 전체 `-d` 목록을 다시 줘서
-  같은 인증서(`--cert-name kkh-hub.tech`)에 추가한다.
+- 새 서브도메인은 `secrets/env.prod.sops.env`의 `CHALLENGE_DOMAINS`에 넣고 push한다.
+  `deploy.sh`(all 대상, `TLS_MODE=live`)가 인증서에 빠진 도메인을 찾아 전체 `-d` 목록으로
+  같은 인증서(`--cert-name kkh-hub.tech`)를 `--expand`한다.
 - HTTP(`:80`)의 `/.well-known/acme-challenge/`는 `nginx/templates/00-http-challenge.conf.template`가
   webroot로 정적 서빙한다. 나머지 HTTP 요청은 HTTPS로 301 redirect한다.
 

@@ -120,6 +120,44 @@ docker compose up -d --build --wait --wait-timeout 120
 echo "[deploy] recreating nginx for rendered configuration"
 docker compose up -d --no-deps --force-recreate --wait --wait-timeout 120 nginx
 
+# ------------------------------------------------------------------------------
+# 운영(live TLS): CHALLENGE_DOMAINS가 모두 인증서에 들어 있는지 확인
+# ------------------------------------------------------------------------------
+# HTTP-01은 이름마다 검증하므로 새 서브도메인은 인증서에 따로 추가해야 한다.
+# 빠진 도메인이 있으면 전체 목록으로 같은 인증서를 확장(--expand)한다.
+# nginx가 방금 새 CHALLENGE_DOMAINS로 challenge 경로를 서빙하므로 여기서 발급할 수 있다.
+# cert_name은 nginx/tls/live.conf의 인증서 경로와 같아야 한다.
+if [ "${TLS_MODE:-none}" = "live" ]; then
+  cert_name=kkh-hub.tech
+  echo "[deploy] checking certificate domains"
+  current_domains="$(docker compose run --rm --no-deps -T --entrypoint certbot certbot \
+    certificates --cert-name "$cert_name" 2>/dev/null \
+    | sed -nE 's/^[[:space:]]*(Domains|Identifiers):[[:space:]]*//p')"
+
+  missing_domains=""
+  domain_args=""
+  for domain in ${CHALLENGE_DOMAINS:?CHALLENGE_DOMAINS is required}; do
+    case " $current_domains " in
+      *" $domain "*) ;;
+      *) missing_domains="$missing_domains $domain" ;;
+    esac
+    domain_args="$domain_args -d $domain"
+  done
+
+  if [ -n "$missing_domains" ]; then
+    echo "[deploy] adding to certificate:$missing_domains"
+    # domain_args는 "-d a -d b" 형태로 단어 분리되어야 하므로 따옴표를 두지 않는다.
+    # shellcheck disable=SC2086
+    docker compose run --rm --no-deps -T --entrypoint certbot certbot \
+      certonly --webroot -w /var/www/certbot --cert-name "$cert_name" \
+      --expand --non-interactive $domain_args
+    docker compose exec -T nginx nginx -t
+    docker compose exec -T nginx nginx -s reload
+  else
+    echo "[deploy] certificate covers all CHALLENGE_DOMAINS"
+  fi
+fi
+
 # 배포된 컨테이너 상태 목록 출력
 echo "[deploy] compose status"
 docker compose ps

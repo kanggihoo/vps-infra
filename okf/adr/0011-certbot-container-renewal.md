@@ -37,7 +37,8 @@ certbot 컨테이너가 nginx를 직접 reload하려면 Docker socket이나 PID 
 
 - `systemd/`와 `scripts/renew-certificates.sh`를 삭제했다.
 - 로컬에서도 certbot 컨테이너가 뜨지만 인증서가 없어 `No renewals were attempted`만 남긴다.
-- 새 서브도메인은 여전히 `CHALLENGE_DOMAINS` 수정과 `certbot certonly --expand` 1회가 필요하다.
+- 새 서브도메인은 `secrets/env.prod.sops.env`의 `CHALLENGE_DOMAINS`에 넣고 push한다. 파이프라인이
+  `.env`를 복호화하고, `deploy.sh`가 인증서에 빠진 도메인을 찾아 `certonly --expand`로 추가한다.
   HTTP-01은 이름마다 검증하므로 와일드카드 인증서를 받을 수 없다. 와일드카드는 DNS API가 있는
   DNS 관리처(DNS-01)가 전제다.
 - 옛 상주 컨테이너가 reload하지 않던 결함(갱신해도 nginx가 옛 인증서를 계속 씀)도 함께 해소된다.

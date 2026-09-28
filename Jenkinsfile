@@ -118,6 +118,17 @@ pipeline {
             }
         }
 
+        // 커밋된 SOPS 파일로 .env와 secret 파일을 다시 만든다. 운영 값의 원본은 레포다.
+        // VPS에서 .env를 직접 고치면 다음 배포에서 덮어써진다.
+        // SECRETS_ENV는 로컬 Jenkins에서 local로 바꾼다(jenkins/compose.yml).
+        stage('Decrypt secrets') {
+            steps {
+                withCredentials([file(credentialsId: 'sops-age-key', variable: 'SOPS_AGE_KEY_FILE')]) {
+                    sh 'cd "$APP_DIR" && ENV_NAME="${SECRETS_ENV:-prod}" ./scripts/secrets.sh decrypt'
+                }
+            }
+        }
+
         // [3단계] 판정된 대상에 따라 Docker Compose 빌드 및 컨테이너 재배포
         stage('Deploy') {
             steps {
