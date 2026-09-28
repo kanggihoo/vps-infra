@@ -121,7 +121,8 @@ pipeline {
         // [3단계] 판정된 대상에 따라 Docker Compose 빌드 및 컨테이너 재배포
         stage('Deploy') {
             steps {
-                sh 'cd "$APP_DIR" && chmod +x scripts/*.sh && ./scripts/deploy.sh "$RESOLVED_TARGET"'
+                // 실행 권한은 git에 755로 커밋한다. chmod는 checkout에 로컬 변경을 남겨 다음 git pull을 막는다.
+                sh 'cd "$APP_DIR" && ./scripts/deploy.sh "$RESOLVED_TARGET"'
             }
         }
 
