@@ -28,6 +28,7 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 * [SOPS 기반 secret 관리](adr/0010-sops-secrets.md) - secret을 암호화해 레포에 커밋하고 복호화 key만 각 환경에 둔다.
 * [GitHub Actions 검증](services/github-actions-deploy.md) - 폐기된 SSH 배포 경로와 현재 검증 workflow.
 * [Jenkins 배포](services/jenkins-deploy.md) - VPS 내부 Jenkins가 GitHub webhook을 받아 Docker Compose 배포를 실행한다.
+* [vps-info (Signal Archive)](services/vps-info.md) - 자기 레포에서 compose와 Jenkinsfile을 소유하는 첫 외부 프로젝트.
 * [nginx 리버스 프록시](services/nginx.md) - VPS의 public HTTP/HTTPS 진입점.
 * [공용 인프라 포털](services/portal.md) - 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털.
 * [Frontend Design Skills](tooling/frontend-design-skills.md) - 포털과 frontend 작업을 위해 project scope로 설치된 Codex frontend design skill set.

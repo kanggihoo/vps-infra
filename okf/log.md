@@ -1,6 +1,9 @@
 # 변경 기록
 
 ## 2026-09-28
+* **생성**: [vps-info](/services/vps-info.md) 배포를 연결했다. Jenkins 이미지에 sops를 넣고 `vps-info` Job, `info` 서브도메인, `CHALLENGE_DOMAINS`를 추가했다. spec 0001 단계 8에 해당한다.
+* **수정**: Jenkinsfile의 `DEPLOY_SHA` 대입이 `script` 블록 밖에 있어 2026-09-13 이후 vps-infra 파이프라인이 컴파일 단계에서 실패하던 문제를 고쳤다.
+* **정리**: `quartz-deploy` Job 정의와 `QUARTZ_SCM_URL`을 제거했다.
 * **갱신**: VPS Jenkins가 JCasC 이미지로 동작함을 확인해(`CASC_JENKINS_CONFIG` 설정됨) [인수 절차](/runbooks/local-first-handover.md)의 단계 6-b를 완료로 바꿨다.
 
 ## 2026-09-13

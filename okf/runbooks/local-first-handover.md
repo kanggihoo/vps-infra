@@ -199,7 +199,6 @@ Jenkins 전환까지 끝나고 안정화된 뒤에 정리한다.
 | 단계 | 내용 | 선행 조건 |
 |------|------|-----------|
 | 7 | Quartz 이미지화 | `quartz-site-private` 레포 수정 필요 |
-| 8 | 신규 프로젝트 추가 | 대상 프로젝트 미정 |
 
 Jenkins 전환 시 `github-pat` 암호화가 필요하다. VPS Jenkins가 GitHub에서
 checkout하므로 로컬과 달리 PAT가 실제로 쓰인다.
