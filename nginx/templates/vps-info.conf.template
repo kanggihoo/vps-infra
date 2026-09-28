@@ -1,0 +1,32 @@
+# ============================================================
+# info.${BASE_DOMAIN} -> vps-info app 컨테이너
+#
+# vps-info는 자기 레포의 compose.yml로 배포된다(ADR 0007).
+# 앱에 사용자 개념이 없어 접근 제어는 여기 Basic Auth가 맡는다.
+# 자격증명은 notes와 같은 파일을 쓴다.
+# ============================================================
+
+server {
+    listen ${NGINX_LISTEN};
+    server_name info.${BASE_DOMAIN};
+
+    include /etc/nginx/tls/${TLS_MODE}.conf;
+
+    auth_basic           "vps-info";
+    auth_basic_user_file /etc/nginx/notes.htpasswd;
+
+    # vps-info가 떠 있지 않아도 nginx가 기동하도록 이름 해석을 요청 시점으로 미룬다.
+    # 떠 있지 않으면 이 도메인만 502가 된다.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
+    location / {
+        # vps-info compose가 vps_proxy에 붙인 alias. 서비스 이름 `app`은 다른 프로젝트와 겹칠 수 있다.
+        set $vps_info_upstream "vps-info-app:8000";
+        proxy_pass http://$vps_info_upstream$request_uri;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

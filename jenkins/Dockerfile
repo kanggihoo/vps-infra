@@ -18,6 +18,20 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends docker-ce-cli docker-buildx-plugin docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
+# 프로젝트 파이프라인이 sops-age-key credential로 운영 .env를 복호화한다(ADR 0010).
+# Debian 패키지가 없어 release 바이너리를 받고, 버전과 checksum을 고정한다.
+ARG SOPS_VERSION=3.13.3
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
+        amd64) sum=e5bec3346a873ae91d871550f3e698c1aad962aff462a080e40f25fde17fef6b ;; \
+        arm64) sum=53b0abacd38ef1b12a66d6c100956691b9cefce018d91f81e73ddf7438b94d77 ;; \
+        *) echo "unsupported arch: $arch" >&2; exit 1 ;; \
+       esac \
+    && curl -fsSL -o /usr/local/bin/sops \
+        "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${arch}" \
+    && echo "${sum}  /usr/local/bin/sops" | sha256sum -c - \
+    && chmod +x /usr/local/bin/sops
+
 # 배포 경로의 부모 디렉터리를 jenkins 소유로 만든다.
 # Jenkins의 dir() 스텝은 작업 디렉터리 옆에 "<dir>@tmp"를 만들므로
 # 부모가 쓰기 가능해야 한다. root 소유면 AccessDeniedException이 난다.

@@ -46,3 +46,32 @@ pipelineJob('vps-infra-pipeline') {
         }
     }
 }
+
+// vps-info는 자기 레포가 Dockerfile, compose.yml, Jenkinsfile을 소유한다(ADR 0007).
+// public 레포라 checkout에 credential이 필요 없다. 로컬 시험은 환경변수로 로컬 경로를 준다.
+pipelineJob('vps-info') {
+    description('vps-info 빌드와 배포. 정의는 vps-infra/jenkins/jobs.groovy에 있다.')
+
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        url(System.getenv('VPS_INFO_SCM_URL') ?: 'https://github.com/kanggihoo/vps-info.git')
+                    }
+                    branch('*/main')
+                }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(false)
+        }
+    }
+
+    properties {
+        pipelineTriggers {
+            triggers {
+                githubPush()
+            }
+        }
+    }
+}
