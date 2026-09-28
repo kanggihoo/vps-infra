@@ -12,3 +12,4 @@
 * [nginx 설정의 환경 템플릿화](0008-nginx-env-templates.md) - envsubst 템플릿 한 벌로 로컬과 VPS를 모두 커버한다.
 * [Jenkins 설정을 코드로 관리](0009-jenkins-config-as-code.md) - JCasC와 job-dsl로 시스템 설정과 Job을 레포에서 관리한다.
 * [SOPS 기반 secret 관리](0010-sops-secrets.md) - secret을 암호화해 레포에 커밋하고 복호화 key만 각 환경에 둔다.
+* [인증서 갱신을 컨테이너 안에서 끝낸다](0011-certbot-container-renewal.md) - 상주 certbot이 갱신하고 nginx가 하루 한 번 스스로 reload한다.

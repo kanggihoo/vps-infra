@@ -1,6 +1,7 @@
 # 변경 기록
 
 ## 2026-09-28
+* **결정**: [ADR 0011](/adr/0011-certbot-container-renewal.md)로 인증서 갱신을 상주 certbot 컨테이너와 nginx 일일 reload로 바꾸고 systemd timer와 `renew-certificates.sh`를 삭제했다. timer가 VPS에 설치되지 않아 옛 상주 컨테이너 제거 후 자동 갱신 주체가 없던 문제를 해소한다.
 * **생성**: [vps-info](/services/vps-info.md) 배포를 연결했다. Jenkins 이미지에 sops를 넣고 `vps-info` Job, `info` 서브도메인, `CHALLENGE_DOMAINS`를 추가했다. spec 0001 단계 8에 해당한다.
 * **수정**: Jenkinsfile의 `DEPLOY_SHA` 대입이 `script` 블록 밖에 있어 2026-09-13 이후 vps-infra 파이프라인이 컴파일 단계에서 실패하던 문제를 고쳤다.
 * **정리**: `quartz-deploy` Job 정의와 `QUARTZ_SCM_URL`을 제거했다.

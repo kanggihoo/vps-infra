@@ -40,9 +40,10 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
   -d health.kkh-hub.tech -d jenkins.kkh-hub.tech`처럼 SAN 인증서 1장으로 발급해
   모든 conf가 같은 `ssl_certificate` 경로(`/etc/letsencrypt/live/kkh-hub.tech/`)를
   참조하게 한다.
-- 갱신은 호스트의 `vps-infra-certbot-renew.timer`가 12시간마다 실행한다.
-  `scripts/renew-certificates.sh`가 certbot 갱신 성공 뒤 `nginx -t`와 reload를 수행한다.
-  certbot은 일반 Compose 기동 시 상주하지 않는다.
+- 갱신은 상주 `vps-certbot` 컨테이너가 12시간마다 확인하고, nginx가 하루 한 번 스스로
+  reload해 새 인증서를 읽는다([ADR 0011](/adr/0011-certbot-container-renewal.md)).
+- 새 서브도메인은 `CHALLENGE_DOMAINS`에 넣고 `certonly --expand`에 전체 `-d` 목록을 다시 줘서
+  같은 인증서(`--cert-name kkh-hub.tech`)에 추가한다.
 - HTTP(`:80`)의 `/.well-known/acme-challenge/`는 `nginx/templates/00-http-challenge.conf.template`가
   webroot로 정적 서빙한다. 나머지 HTTP 요청은 HTTPS로 301 redirect한다.
 

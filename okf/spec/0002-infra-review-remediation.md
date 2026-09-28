@@ -36,6 +36,8 @@ TLS live 모드에서는 공개 notes fixture를 사용한 배포를 거부한�
 
 # 인증서 갱신
 
+> 2026-09-28 [ADR 0011](/adr/0011-certbot-container-renewal.md)이 이 방식을 대체했다. timer는 VPS에 설치된 적이 없다.
+
 certbot Compose 서비스의 상주 갱신 루프를 제거한다. 호스트 systemd timer가 12시간마다
 `scripts/renew-certificates.sh`를 실행한다. 스크립트는 certbot 갱신 성공 뒤 nginx 설정을
 검사하고 reload한다. systemd unit은 `APP_DIR`만 가진 root 소유 환경 파일을 읽는다.

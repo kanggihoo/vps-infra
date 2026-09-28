@@ -5,6 +5,18 @@ services:
     image: nginx:1.31.4-alpine
     container_name: vps-nginx
     restart: unless-stopped
+    # certbot은 nginx에 신호를 보낼 수 없으므로 nginx가 하루 한 번 스스로 reload해
+    # 갱신된 인증서를 읽는다(ADR 0011). reload는 연결을 끊지 않는다.
+    # 인자가 있으면(`compose run nginx nginx -t`) 루프 없이 그 명령만 실행한다.
+    # compose에서 entrypoint를 바꾸면 이미지 기본 command도 비워진다.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        [ "$$#" -gt 0 ] && exec /docker-entrypoint.sh "$$@"
+        while :; do sleep 86400 & wait $$!; nginx -s reload; done &
+        exec /docker-entrypoint.sh nginx -g 'daemon off;'
+      - nginx-with-daily-reload
     ports:
       - "80:80"
       - "443:443"
@@ -43,16 +55,20 @@ services:
   certbot:
     # 태그를 생략하면 latest이므로 명시적으로 고정한다.
     image: certbot/certbot:v5.7.0
+    container_name: vps-certbot
+    restart: unless-stopped
+    # 12시간마다 만료 30일 이내인지 확인하고, 그때만 실제로 갱신한다(ADR 0011).
+    # 새 도메인 추가(--expand)와 최초 발급은
+    # `docker compose run --rm --no-deps --entrypoint certbot certbot certonly ...`로 실행한다.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $$!; done"
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-www:/var/www/certbot
     networks:
       - proxy
-    # certbot은 상주 서비스가 아니다. 호스트 systemd timer가 12시간마다
-    # `scripts/renew-certificates.sh`로 갱신하고 nginx를 reload한다.
-    # scale 0은 일반 `docker compose up`이 갱신 컨테이너를 남기지 않게 한다.
-    # 최초 발급과 갱신은 `docker compose run --rm --entrypoint certbot certbot ...`로 실행한다.
-    scale: 0
 
   whoami:
     image: traefik/whoami:v1.10

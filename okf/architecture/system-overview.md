@@ -39,8 +39,7 @@ Internet
           -> portal
           -> PostgreSQL
           -> Redis
-      -> certbot (인증서 발급, public 포트 미점유)
-      -> host systemd timer (certbot 갱신 후 nginx reload)
+      -> certbot (상주, 12시간마다 갱신 확인, public 포트 미점유)
 ```
 
 # Docker 네트워크
