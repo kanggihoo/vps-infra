@@ -3,7 +3,7 @@ type: Runbook
 title: 로컬 우선 인프라 인수 절차
 description: spec 0001 단계 0~5 구현 후 사용자가 직접 해야 하는 작업과 로컬 검증 명령을 정리한다.
 tags: [runbook, local-development, sops, jenkins, handover]
-timestamp: 2026-08-23T00:00:00+09:00
+timestamp: 2026-09-28T00:00:00+09:00
 ---
 
 # 이 문서의 범위
@@ -167,7 +167,8 @@ cd jenkins && docker compose down -v
 
 # 단계 6 진행 상황
 
-**인프라 전환 완료** (2026-08-24). Jenkins JCasC 전환은 미완이다.
+**인프라 전환 완료** (2026-08-24). Jenkins JCasC 전환도 적용된 상태로 확인되었다
+(2026-09-28, `vps-jenkins`에 `CASC_JENKINS_CONFIG=/usr/share/jenkins/casc/jenkins.yaml`).
 
 | 항목 | 상태 |
 |------|------|
@@ -175,7 +176,7 @@ cd jenkins && docker compose down -v
 | nginx | 템플릿 구조로 전환, 운영 인증서로 동작 |
 | secret | `ENV_NAME=prod`로 복호화해 사용 |
 | notes 콘텐츠 | `vps_quartz_site` named volume (68개 파일) |
-| Jenkins | **옛 설정 그대로.** JCasC 미적용 |
+| Jenkins | JCasC 이미지로 동작 (2026-09-28 확인) |
 
 검증: portal/health/apex 200, notes 401, jenkins 403. seam 2 운영 HTTPS 통과.
 
@@ -197,7 +198,6 @@ Jenkins 전환까지 끝나고 안정화된 뒤에 정리한다.
 
 | 단계 | 내용 | 선행 조건 |
 |------|------|-----------|
-| 6-b | Jenkins JCasC 전환 | volume 백업 완료됨. plugin 94개/GUI Job 2개와 충돌 가능 |
 | 7 | Quartz 이미지화 | `quartz-site-private` 레포 수정 필요 |
 | 8 | 신규 프로젝트 추가 | 대상 프로젝트 미정 |
 

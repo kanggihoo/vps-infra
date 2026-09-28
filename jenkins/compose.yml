@@ -40,7 +40,6 @@ services:
       # Job이 checkout할 SCM. 로컬은 레포 경로, VPS는 GitHub URL.
       # 로컬 경로를 쓰면 push하지 않은 커밋으로도 파이프라인을 테스트할 수 있다.
       INFRA_SCM_URL: ${INFRA_SCM_URL:?INFRA_SCM_URL is required}
-      QUARTZ_SCM_URL: ${QUARTZ_SCM_URL:-}
       SCM_CREDENTIAL_ID: ${SCM_CREDENTIAL_ID:-}
 
       # 파이프라인이 배포에 사용할 경로. 컨테이너 안/밖이 같아야 한다.

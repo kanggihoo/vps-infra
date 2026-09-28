@@ -1,5 +1,8 @@
 # 변경 기록
 
+## 2026-09-28
+* **갱신**: VPS Jenkins가 JCasC 이미지로 동작함을 확인해(`CASC_JENKINS_CONFIG` 설정됨) [인수 절차](/runbooks/local-first-handover.md)의 단계 6-b를 완료로 바꿨다.
+
 ## 2026-09-13
 * **생성**: [Jenkins·nginx 리뷰 보완](/spec/0002-infra-review-remediation.md) 스펙을 추가했다.
 * **구현**: nginx 후보 설정 검사·강제 재생성, portal 경로 healthcheck, private notes 캐시 정책, Jenkins 누적 SHA 배포 상태, systemd 기반 인증서 갱신을 추가했다.

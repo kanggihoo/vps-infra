@@ -15,7 +15,8 @@ timestamp: 2026-09-11T00:00:00+09:00
 P2는 재현성·운영 안전성 개선 항목이다. 실제 침해나 장애 발생을 뜻하지 않는다.
 
 [인수 절차](/runbooks/local-first-handover.md)의 2026-08-24 기록은 nginx 전환 완료,
-Jenkins JCasC 미적용을 명시한다. 따라서 레포의 Jenkins 설정은 운영 상태의 증거가 아니다.
+Jenkins JCasC 미적용을 명시했다. 이후 2026-09-28에 VPS Jenkins가 JCasC 이미지로
+동작함을 확인했다.
 
 # 확인된 보완점
 
