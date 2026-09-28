@@ -69,10 +69,13 @@ pipeline {
 
                 // 이 실행이 배포할 소스를 여기서 한 번 고정한다.
                 // 이후 GitHub에 새 push가 와도 현재 checkout의 SHA는 바뀌지 않는다.
-                env.DEPLOY_SHA = sh(
-                    script: 'cd "$APP_DIR" && git rev-parse HEAD',
-                    returnStdout: true
-                ).trim()
+                // 대입문은 declarative steps에 바로 둘 수 없어 script 블록이 필요하다.
+                script {
+                    env.DEPLOY_SHA = sh(
+                        script: 'cd "$APP_DIR" && git rev-parse HEAD',
+                        returnStdout: true
+                    ).trim()
+                }
                 echo "Deploy SHA: ${env.DEPLOY_SHA}"
             }
         }
