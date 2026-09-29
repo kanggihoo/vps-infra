@@ -13,6 +13,8 @@ pipeline {
         timeout(time: 15, unit: 'MINUTES')
         // 빌드 콘솔 출력 로그의 각 줄마다 실행 시각(타임스탬프) 기록
         timestamps()
+        // 콘솔의 ANSI 색상 코드를 색으로 보여준다(ansicolor plugin)
+        ansiColor('xterm')
     }
 
     parameters {
@@ -184,6 +186,18 @@ pipeline {
                     echo "[reload] JCasC reloaded"
                 '''
             }
+        }
+    }
+
+    // 성공·실패를 Mattermost로 알린다. notifyMattermost는 JCasC가 implicit으로 등록한
+    // vps-shared 라이브러리에 있다(jenkins/shared-lib, ADR 0012).
+    post {
+        always {
+            notifyMattermost(
+                commit: env.DEPLOY_SHA,
+                repoUrl: env.INFRA_SCM_URL,
+                fields: ['배포 대상': env.RESOLVED_TARGET]
+            )
         }
     }
 }
