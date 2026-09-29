@@ -39,6 +39,11 @@ RUN mkdir -p /app && chown jenkins:jenkins /app
 
 USER jenkins
 
+# plugin 다운로드 미러를 고정한다. 기본 주소는 요청마다 미러가 바뀌고, VPS(자카르타) 빌드가
+# 시카고 미러(ftp-chi.osuosl.org)에 붙어 20분 넘게 재시도만 한 적이 있다(2026-09-29).
+# 싱가포르 미러가 VPS에서 가장 빨랐다. 다른 곳에서 빌드할 때는 --build-arg로 바꾼다.
+ARG JENKINS_UC_DOWNLOAD_URL=https://mirror.freedif.org/jenkins/plugins
+
 # plugin 설치. 최상위만 고정하고 하위 의존성은 CLI가 MANIFEST로 해석한다.
 COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
