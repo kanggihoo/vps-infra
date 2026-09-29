@@ -31,6 +31,7 @@ jobs:
           INFRA_SCM_URL: /home/jenkins/app/vps-infra
           JENKINS_ADMIN_ID: ci
           JENKINS_ADMIN_PASSWORD: ci
+          CASC_RELOAD_TOKEN: ci
 
       # nginx 템플릿은 envsubst 치환 전에는 유효한 conf가 아니다.
       # 이미지 entrypoint와 같은 방식으로 렌더한 뒤 `nginx -t`로 문법을 본다.

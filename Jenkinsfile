@@ -164,5 +164,26 @@ pipeline {
                 '''
             }
         }
+
+        // jenkins/casc/는 Jenkins에 마운트되어 있어 Checkout의 git pull로 이미 최신이다.
+        // JCasC는 기동과 reload 때만 파일을 읽으므로 여기서 reload한다(ADR 0009).
+        // 같은 설정을 다시 적용해도 결과가 같아 변경 여부를 판정하지 않는다.
+        // 설정 오류가 있으면 이 단계가 실패한다.
+        stage('Reload Jenkins config') {
+            steps {
+                // set +x: sh 스텝의 xtrace가 토큰을 콘솔 로그에 남기지 않게 한다.
+                sh '''
+                    set +x
+                    # 설정 오류는 HTTP 오류가 아니라 {"status":"error"} 본문으로 올 수 있다.
+                    response="$(curl -fsS -X POST \
+                        "http://localhost:8080/reload-configuration-as-code/?casc-reload-token=$CASC_RELOAD_TOKEN")"
+                    if printf '%s' "$response" | grep -q '"status" *: *"error"'; then
+                        echo "[reload] failed: $response" >&2
+                        exit 1
+                    fi
+                    echo "[reload] JCasC reloaded"
+                '''
+            }
+        }
     }
 }

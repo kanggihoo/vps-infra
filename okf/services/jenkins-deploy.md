@@ -3,7 +3,7 @@ type: Deployment Service
 title: Jenkins 배포
 description: VPS 내부 Docker Jenkins가 GitHub webhook을 받아 인프라를 배포한다.
 tags: [deployment, jenkins, docker, webhook]
-timestamp: 2026-09-13T00:00:00+09:00
+timestamp: 2026-09-29T00:00:00+09:00
 ---
 
 # 개요
@@ -43,19 +43,48 @@ VPS의 `.env`는 매 배포마다 `secrets/env.prod.sops.env`에서 다시 만�
 
 # 초기화
 
-Jenkins 설치는 관리자 SSH 또는 VPS console에서 1회 수행한다.
+Jenkins 설치는 관리자 SSH 또는 VPS console에서 `kkh` 사용자로 1회 수행한다.
+`sudo`는 필요 없다.
 
 ```bash
+git clone https://github.com/kanggihoo/vps-infra.git ~/app/vps-infra
 cd ~/app/vps-infra/jenkins
-sudo mkdir -p /opt/jenkins
-sudo cp .env.example /opt/jenkins/.env
-sudo sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(getent group docker | cut -d: -f3)/" /opt/jenkins/.env
-docker compose --env-file /opt/jenkins/.env up -d --build
+cp .env.example .env
+sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(getent group docker | cut -d: -f3)/" .env
+# 관리자 비밀번호, PAT, 경로, age key(base64 한 줄)를 채운다.
+docker compose --env-file .env up -d --build
 ```
 
-이후 배포마다 관리자가 수동 SSH로 배포하거나 VPS 내부에서 별도로 `git clone`할
-필요가 없다. Jenkins가 checkout과 Docker 명령을 수행한다. 관리자 SSH는 초기 설정과
-비상 조치에만 사용한다.
+Jenkins 자신의 설정 파일은 `~/app/vps-infra/jenkins/.env`다. Git에 커밋되지 않으며
+SOPS 관리 대상도 아니다. `/opt/jenkins/.env`는 옛 경로이며 더 이상 쓰지 않는다.
+
+# age key 위치
+
+VPS에는 같은 age key가 두 형태로 있다(2026-09-29 해시 비교로 확인).
+
+| 위치 | 용도 |
+|------|------|
+| `~/app/vps-infra/jenkins/.env`의 `SOPS_AGE_KEY_CONTENT` | base64 한 줄. JCasC가 `sops-age-key` credential로 등록하고 파이프라인이 이것으로 복호화한다. |
+| `~/.config/sops/age/keys.txt` | 원본. 관리자가 VPS에서 `sops`를 직접 실행할 때 쓴다. 파이프라인은 읽지 않는다. |
+
+key를 교체하면 두 곳을 함께 바꾸고 Jenkins를 재기동한다.
+
+# 자동화 범위
+
+push 이후 checkout 갱신(`git pull`), 복호화, 서비스 배포, healthcheck는 Jenkins가
+수행한다. 관리자가 수동 SSH로 서비스를 배포할 필요는 없다.
+
+JCasC 설정(`jenkins/casc/`)은 컨테이너에 마운트되어 있다. 파이프라인은 마지막 단계에서
+JCasC를 reload하므로 `jenkins.yaml` 수정과 Job 추가는 push만으로 반영된다
+([ADR 0009](/adr/0009-jenkins-config-as-code.md)). reload는 Jenkins를 재시작하지 않는다.
+
+Jenkins 컨테이너 자체는 파이프라인이 재생성하지 않는다(ADR 0007). `plugins.txt`,
+`Dockerfile`, `compose.yml`, `jenkins/.env`를 바꾸면 VPS에서 다음을 직접 실행해야 반영된다.
+이때 Jenkins가 잠깐 내려가며, 그 사이의 webhook은 유실될 수 있다.
+
+```bash
+cd ~/app/vps-infra/jenkins && docker compose --env-file .env up -d --build
+```
 
 # 보안
 

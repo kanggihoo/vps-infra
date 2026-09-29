@@ -19,8 +19,10 @@ notes.htpasswd     notes 서브도메인 Basic Auth
 github-pat         Jenkins가 checkout에 사용하는 credential
 ```
 
-VPS의 age key는 `~/.config/sops/age/keys.txt`에 둔다. 홈 디렉터리이므로 `sudo`가
-필요 없다. Jenkins는 이 key를 credential(secret file)로 등록해 사용한다.
+VPS의 age key 원본은 `~/.config/sops/age/keys.txt`에 둔다. 홈 디렉터리이므로 `sudo`가
+필요 없다. Jenkins는 이 파일을 직접 읽지 않는다. 같은 key를 base64 한 줄로 만들어
+`~/app/vps-infra/jenkins/.env`의 `SOPS_AGE_KEY_CONTENT`에 넣으면, JCasC가 이를
+credential(secret file) `sops-age-key`로 등록하고 파이프라인이 그것으로 복호화한다.
 
 # 이유
 
@@ -41,9 +43,10 @@ checkout이 실패해 반쪽 복구가 되기 때문이다.
 
 - age key를 분실하면 secret을 복호화할 수 없다. key 백업이 운영 요구사항이 된다.
 - SOPS와 age 설치가 로컬·VPS·CI에 필요하다.
-- Jenkins credential로 key를 주입하므로 호스트에 key를 노출하지 않는다.
+- key는 호스트의 두 파일(`keys.txt`, `jenkins/.env`)에 존재한다. 둘 다 `kkh`
+  홈 아래에 있고 Git에 커밋되지 않는다. key를 교체하면 두 곳을 함께 바꾼다.
   Jenkins는 이미 `/var/run/docker.sock`을 통해 host Docker 제어 권한을 가지므로,
-  이 선택으로 실질 권한이 늘어나지는 않는다.
+  credential로 key를 넘겨도 실질 권한이 늘어나지는 않는다.
 
 # 거절한 대안
 

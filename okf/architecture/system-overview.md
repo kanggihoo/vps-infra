@@ -111,7 +111,7 @@ Git에 포함한다.
 compose.yml
 nginx templates (`nginx/templates/*.template`)
 scripts
-jenkins/ (Dockerfile, plugins.txt, jenkins.yaml)
+jenkins/ (Dockerfile, plugins.txt, casc/jenkins.yaml, casc/jobs.groovy)
 .env.example
 SOPS 암호화 secret (`secrets/*.sops.env`, `secrets/*.sops.txt`)
 docs

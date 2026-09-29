@@ -192,20 +192,23 @@ jenkins/
 ├── compose.yml
 ├── Dockerfile
 ├── .env.example
-├── jenkins.yaml
-├── jobs.groovy
+├── casc/
+│   ├── jenkins.yaml
+│   └── jobs.groovy
 └── plugins.txt
 ```
 
-실행 환경변수 파일은 repository 밖에 둔다. 예시는 `/opt/jenkins/.env`이며,
-`/opt`는 필수 경로가 아니다.
+`casc/`는 이미지에 넣지 않고 컨테이너에 마운트한다. push하면 vps-infra 파이프라인이
+`git pull` 후 JCasC를 reload하므로, 설정 변경이나 Job 추가에 재빌드가 필요 없다.
+`plugins.txt`, `Dockerfile`, `.env`를 바꿀 때만 VPS에서 `up -d --build`를 실행한다.
+
+실행 환경변수 파일은 `~/app/vps-infra/jenkins/.env`다. Git에 커밋되지 않는다.
 
 ```bash
 cd ~/app/vps-infra/jenkins
-sudo mkdir -p /opt/jenkins
-sudo cp .env.example /opt/jenkins/.env
-sudo sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(getent group docker | cut -d: -f3)/" /opt/jenkins/.env
-docker compose --env-file /opt/jenkins/.env up -d --build
+cp .env.example .env
+sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(getent group docker | cut -d: -f3)/" .env
+docker compose --env-file .env up -d --build
 ```
 
 `DOCKER_GID`는 host의 `docker` 그룹 숫자 ID다. Compose의 `group_add`가 이 값을

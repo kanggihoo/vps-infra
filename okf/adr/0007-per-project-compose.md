@@ -30,8 +30,9 @@ Jenkins를 별도 Compose project로 분리한 이유(배포 중 자기 자신�
 
 # 결과
 
-- Quartz 노트가 이 원칙의 첫 적용 대상이다. 지금은 Jenkins가 빌드 산출물을 호스트
-  `/opt/quartz-site`에 놓고 nginx가 bind mount로 직접 서빙하는데, 이를
+- Quartz 노트가 이 원칙의 첫 적용 대상이다. 결정 당시에는 Jenkins가 빌드 산출물을 호스트
+  `/opt/quartz-site`에 놓고 nginx가 bind mount로 직접 서빙했다(이후 `vps_quartz_site`
+  named volume으로 옮겼고 `/opt/quartz-site`는 2026-09-29 정리). 이를
   `nginx:alpine` 기반 이미지에 정적 파일을 담아 `vps_proxy`에 붙이는 방식으로
   바꾼다. `Dockerfile`과 `compose.yml`은 `quartz-site-private` 레포가 소유한다.
   이로써 호스트 경로 의존이 사라지고 **이전 이미지 태그로 되돌리는 rollback**이

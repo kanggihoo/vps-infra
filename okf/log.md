@@ -1,5 +1,12 @@
 # 변경 기록
 
+## 2026-09-29
+* **결정 변경**: [ADR 0009](/adr/0009-jenkins-config-as-code.md)에 따라 `jenkins.yaml`과 `jobs.groovy`를 `jenkins/casc/`로 옮기고 이미지 `COPY` 대신 폴더 마운트로 바꿨다. vps-infra 파이프라인이 마지막 단계에서 JCasC를 token reload하므로 Job 추가와 설정 변경에 Jenkins 재빌드가 필요 없다. `jenkins/.env`에 `CASC_RELOAD_TOKEN`이 필요하다.
+* **정리**: VPS의 옛 `/opt/jenkins`, `/opt/nginx-auth`, `/opt/vps-infra`, `/opt/quartz-build`, `/opt/quartz-site`가 어디에서도 참조되지 않음을 확인하고 삭제 대상으로 정했다. [인수 절차](/runbooks/local-first-handover.md)의 `/opt` 롤백 경로를 폐기했다.
+* **갱신**: [Jenkins 배포](/services/jenkins-deploy.md) 초기화를 `~/app/vps-infra/jenkins/.env` 기준으로 고치고, age key 위치와 Jenkins 자신은 수동 재기동이라는 자동화 범위를 기록했다.
+* **삭제**: 폐기된 SSAFY Workspace Webhook POC 서비스 문서(`services/ssafy-workspace-webhook.md`)를 제거했다.
+* **수정**: [ADR 0010](/adr/0010-sops-secrets.md)의 "호스트에 key를 노출하지 않는다"를 실제 구성(`keys.txt`와 `jenkins/.env` 두 곳)에 맞게 고쳤다.
+
 ## 2026-09-28
 * **구현**: vps-infra 파이프라인이 배포 전 SOPS로 `.env`를 복호화하고, `deploy.sh`가 `CHALLENGE_DOMAINS` 중 인증서에 빠진 도메인을 `--expand`로 추가한다. 새 서브도메인 추가에 SSH가 필요 없다.
 * **결정**: [ADR 0011](/adr/0011-certbot-container-renewal.md)로 인증서 갱신을 상주 certbot 컨테이너와 nginx 일일 reload로 바꾸고 systemd timer와 `renew-certificates.sh`를 삭제했다. timer가 VPS에 설치되지 않아 옛 상주 컨테이너 제거 후 자동 갱신 주체가 없던 문제를 해소한다.

@@ -94,7 +94,7 @@ app2.example.com             -> app2 public
 ### Jenkins 배포 전략
 
 인프라 repository는 VPS 내부 Jenkins로 배포한다. Jenkins는 GitHub webhook으로
-실행되고, 기존 `/opt/vps-infra` checkout에서 Docker Compose를 적용한다.
+실행되고, `~/app/vps-infra` checkout에서 Docker Compose를 적용한다.
 
 기본 흐름:
 
@@ -102,7 +102,7 @@ app2.example.com             -> app2 public
 push to infra repo
 -> GitHub webhook
 -> Jenkins container
--> /opt/vps-infra checkout
+-> ~/app/vps-infra checkout
 -> docker compose config
 -> docker compose up -d --build
 ```

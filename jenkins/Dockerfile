@@ -43,11 +43,9 @@ USER jenkins
 COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
-# JCasC 설정과 job-dsl 스크립트.
-# /var/jenkins_home은 volume이라 런타임에 덮이므로 그 밖에 둔다.
-# 이미지에 담아야 volume이 유실되어도 기동만으로 설정이 복원된다(ADR 0009).
-COPY --chown=jenkins:jenkins jenkins.yaml /usr/share/jenkins/casc/jenkins.yaml
-COPY --chown=jenkins:jenkins jobs.groovy /usr/share/jenkins/casc/jobs.groovy
+# JCasC 설정과 job-dsl 스크립트는 이미지에 넣지 않고 compose가 casc/ 폴더를 마운트한다.
+# 이미지에 넣으면 Job 하나를 추가해도 재빌드와 Jenkins 재기동이 필요하다(ADR 0009).
+# /var/jenkins_home은 volume이라 그 밖의 경로를 쓴다.
 ENV CASC_JENKINS_CONFIG=/usr/share/jenkins/casc/jenkins.yaml
 
 # 초기 설정 위저드 건너뛰기와 heap 상한은 compose의 JAVA_OPTS에서 준다.

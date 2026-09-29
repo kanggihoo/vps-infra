@@ -3,13 +3,13 @@ type: Decision
 title: Jenkins 설정을 코드로 관리
 description: JCasC와 job-dsl로 Jenkins 시스템 설정과 Job 정의를 레포에서 관리하고, GUI는 편집 수단으로 쓰지 않는다.
 tags: [jenkins, jcasc, job-dsl, configuration-as-code]
-timestamp: 2026-08-23T00:00:00+09:00
+timestamp: 2026-09-29T00:00:00+09:00
 ---
 
 # 결정
 
-Jenkins 시스템 설정과 Job 정의를 `jenkins/jenkins.yaml`(Configuration as Code)과
-job-dsl로 레포에서 관리한다. plugin 목록은 `jenkins/plugins.txt`에 **최상위 plugin만**
+Jenkins 시스템 설정과 Job 정의를 `jenkins/casc/jenkins.yaml`(Configuration as Code)과
+`jenkins/casc/jobs.groovy`(job-dsl)로 레포에서 관리한다. plugin 목록은 `jenkins/plugins.txt`에 **최상위 plugin만**
 버전을 고정해 적고, 하위 의존성은 `jenkins-plugin-cli`가 자동 해석한다.
 
 # 이유
@@ -31,8 +31,8 @@ JCasC를 시스템 설정에만 적용하고 Job을 GUI에 남기면 이 이점�
 
 # 결과
 
-- **GUI에서 변경한 설정은 재기동 시 사라진다.** JCasC가 관리하는 항목을 기동 시
-  덮어쓰기 때문이다. 설정 변경은 항상 `jenkins.yaml` 수정 → 커밋 → 배포로 한다.
+- **GUI에서 변경한 설정은 reload나 재기동 시 사라진다.** JCasC가 관리하는 항목을
+  그때마다 덮어쓰기 때문이다. 설정 변경은 항상 `jenkins/casc/` 수정 → 커밋 → push로 한다.
   GUI는 조회와 빌드 실행에만 쓴다. 이 제약이 JCasC의 대가다.
 - `configuration-as-code`와 `job-dsl` plugin은 현재 미설치이므로 새로 추가한다.
   즉 기존 94개 목록을 그대로 고정하는 선택지는 성립하지 않는다.
@@ -44,6 +44,28 @@ JCasC를 시스템 설정에만 적용하고 Job을 GUI에 남기면 이 이점�
   = `latest`), `nginx:alpine` 등 다른 image에도 버전을 명시한다.
 - JCasC 전환 시 기존 수동 설정과 충돌할 수 있다. 로컬에서 먼저 구축해 충돌을
   겪고, VPS 적용 전에 Jenkins volume을 백업한다.
+
+# 설정 파일 전달 방식 (2026-09-29 변경)
+
+처음에는 `jenkins.yaml`과 `jobs.groovy`를 이미지에 `COPY`했다. volume이 유실되어도
+이미지만으로 설정이 복원된다는 이유였다. 그러나 Job 하나를 추가해도 VPS에 SSH로 들어가
+재빌드해야 했고, 컨테이너 교체 동안 Jenkins가 내려가 webhook을 놓칠 수 있었다.
+오픈소스 Jenkins는 컨트롤러가 하나라 이 다운타임을 없앨 방법이 없다.
+
+그래서 두 파일을 `jenkins/casc/`로 옮기고 이 폴더를 컨테이너의 `/usr/share/jenkins/casc`에
+read-only로 마운트한다. vps-infra 파이프라인은 `git pull`로 checkout을 갱신한 뒤 마지막 단계에서
+token reload endpoint(`CASC_RELOAD_TOKEN`)로 JCasC를 다시 읽힌다. reload는 재시작이 아니므로
+다운타임이 없다.
+
+- 파일이 아니라 폴더를 마운트한다. `git pull`은 파일을 새로 만들어 바꿔치기하므로 파일 단위
+  bind mount는 옛 inode를 계속 보여준다.
+- volume 유실 시 복원 근거는 이미지에서 VPS checkout으로 옮겨진다. checkout은 배포에 어차피
+  필요하므로 새로 생기는 위험은 작다. 대신 VPS checkout을 직접 고치면 Jenkins 설정이 레포와
+  어긋날 수 있다.
+- `plugins.txt`와 `Dockerfile`은 빌드 때 설치가 일어나므로 계속 이미지에 둔다. 이것과
+  `jenkins/.env`를 바꿀 때만 재빌드나 재기동이 필요하다. 새 plugin을 쓰는 설정은 plugin 반영
+  (재빌드) 후에 push해야 reload가 실패하지 않는다.
+- 놓친 webhook을 되살리는 `pollSCM`이나 기동 시 1회 확인은 실제 유실이 생기기 전까지 두지 않는다.
 
 # 거절한 대안
 

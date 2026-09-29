@@ -26,8 +26,8 @@ Docker label 기반 동적 라우팅은 없다. 전체 배포는 후보 템플�
 | `jenkins.kkh-hub.tech` | [Jenkins](/services/jenkins-deploy.md) | `nginx/templates/jenkins.conf.template` |
 
 Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
-(`ssafy.kkh-hub.tech`)은 nginx 전환과 함께 제거했다. SSAFY Workspace Webhook POC는
-현재 `vps-infra`를 통해 외부로 노출되지 않는다.
+(`ssafy.kkh-hub.tech`)은 nginx 전환과 함께 제거했다. SSAFY Workspace Webhook POC 서비스
+자체도 폐기되었다.
 
 # 인증서 발급 (certbot)
 

@@ -29,7 +29,7 @@ build-timeout:1.41
 docker-workflow:653.v2f2c08eff0ec
 
 # --- 아래 둘은 신규 추가. 현재 VPS에 미설치다. ---
-# jenkins.yaml로 시스템 설정을 코드화
+# casc/jenkins.yaml로 시스템 설정을 코드화
 configuration-as-code:2117.vc05a_0b_e6b_f4e
 # Job 정의를 코드화
 job-dsl:3732.v9a_c49a_61a_313

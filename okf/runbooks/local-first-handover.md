@@ -154,8 +154,8 @@ cd jenkins && docker compose down -v
 
 # 알아야 할 제약
 
-- **GUI에서 바꾼 Jenkins 설정은 재기동 시 사라진다.** JCasC가 기동 시
-  덮어쓴다. 설정 변경은 `jenkins/jenkins.yaml` 수정 → 커밋 → 재배포로 한다
+- **GUI에서 바꾼 Jenkins 설정은 reload나 재기동 시 사라진다.** JCasC가 그때마다
+  덮어쓴다. 설정 변경은 `jenkins/casc/` 수정 → 커밋 → push로 한다
   ([ADR 0009](/adr/0009-jenkins-config-as-code.md)).
 - **빈 diff는 배포하지 않고 실패한다.** 판정 불가를 "portal만 변경"으로
   해석하면 인프라 변경이 조용히 누락되기 때문이다. 의도적 배포는
@@ -172,7 +172,7 @@ cd jenkins && docker compose down -v
 
 | 항목 | 상태 |
 |------|------|
-| 배포 경로 | `~/app/vps-infra` (옛 `/opt/vps-infra`는 롤백용으로 보존) |
+| 배포 경로 | `~/app/vps-infra` (옛 `/opt/*` 잔재는 2026-09-29 정리) |
 | nginx | 템플릿 구조로 전환, 운영 인증서로 동작 |
 | secret | `ENV_NAME=prod`로 복호화해 사용 |
 | notes 콘텐츠 | `vps_quartz_site` named volume (68개 파일) |
@@ -183,16 +183,13 @@ cd jenkins && docker compose down -v
 백업 위치: `~/backups/stage6-20260824/`
 (Jenkins volume 525M, 인증서, postgres 논리 백업, 설정 파일 — 복원 가능성 검증됨)
 
-## 롤백 방법
+## 옛 경로 정리
 
-```bash
-cd ~/app/vps-infra && docker compose down
-cd /opt/vps-infra && docker compose up -d
-```
-
-볼륨(DB·인증서·notes)을 공유하므로 데이터 손실이 없다.
-`/opt/vps-infra`와 `/opt/quartz-site`를 지우면 이 경로가 사라지므로,
-Jenkins 전환까지 끝나고 안정화된 뒤에 정리한다.
+단계 6 전환이 안정화되어 옛 구조로의 롤백 경로는 폐기했다(2026-09-29).
+`/opt/jenkins`, `/opt/nginx-auth`, `/opt/vps-infra`, `/opt/quartz-build`,
+`/opt/quartz-site`는 실행 중인 컨테이너, compose 프로젝트, cron, systemd 어디에서도
+참조되지 않음을 확인한 뒤 삭제 대상으로 정했다. 복구가 필요하면
+`~/backups/stage6-20260824/`를 쓴다.
 
 # 남은 작업
 

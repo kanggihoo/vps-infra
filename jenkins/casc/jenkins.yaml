@@ -1,12 +1,13 @@
 # Jenkins Configuration as Code.
 #
-# ⚠️ GUI에서 변경한 설정은 재기동 시 사라진다.
-#    JCasC가 관리하는 항목을 기동 시 덮어쓰기 때문이다(ADR 0009).
-#    설정 변경은 항상 이 파일 수정 -> 커밋 -> 재배포로 한다.
+# ⚠️ GUI에서 변경한 설정은 다음 reload나 재기동 때 사라진다.
+#    JCasC가 관리하는 항목을 그때마다 덮어쓰기 때문이다(ADR 0009).
+#    설정 변경은 항상 이 파일 수정 -> 커밋 -> push로 한다.
+#    vps-infra 파이프라인이 매 배포 끝에 reload하므로 재빌드는 필요 없다.
 #    GUI는 조회와 빌드 실행에만 쓴다.
 
 jenkins:
-  systemMessage: "이 Jenkins는 jenkins/jenkins.yaml로 관리된다. GUI 변경은 재기동 시 사라진다."
+  systemMessage: "이 Jenkins는 jenkins/casc/jenkins.yaml로 관리된다. GUI 변경은 다음 배포(reload) 때 사라진다."
 
   # 서로 다른 Job도 한 번에 하나만 실행한다. Job별 disableConcurrentBuilds만으로는
   # Quartz와 infra build가 겹칠 수 있어, VPS 빌드 피크를 측정하기 전에는 전역 1로 둔다.

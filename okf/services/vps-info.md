@@ -37,9 +37,10 @@ vps-info main push -> GitHub webhook -> Jenkins vps-info Job
 
 # 주의
 
-- Jenkins 설정은 이미지에 복사되므로 `jobs.groovy`에 Job을 추가하면 Jenkins 재빌드가 필요하다
-  ([ADR 0009](/adr/0009-jenkins-config-as-code.md)). 2026-09-28 적용 때는 재빌드 후 Job의
-  `config.xml`만 생기고 목록에 나타나지 않아 한 번 더 재시작해야 했다.
+- Job은 `jenkins/casc/jobs.groovy`에 추가하고 push하면 vps-infra 파이프라인의 JCasC reload로
+  생긴다. 재빌드는 필요 없다([ADR 0009](/adr/0009-jenkins-config-as-code.md)). 이미지에 복사하던
+  2026-09-28에는 재빌드 후 Job의 `config.xml`만 생기고 목록에 나타나지 않아 한 번 더 재시작해야
+  했다. reload 경로에서도 같은 증상이 나는지는 아직 확인하지 않았다.
 - macOS의 sops는 age key를 `~/Library/Application Support/sops/age/keys.txt`에서 찾는다.
   key가 `~/.config/sops/age/keys.txt`에 있으면 `SOPS_AGE_KEY_FILE`로 지정한다.
 
