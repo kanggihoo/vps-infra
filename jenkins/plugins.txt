@@ -19,14 +19,17 @@ matrix-auth:3.3
 # 빌드 로그 타임스탬프
 timestamper:1.30
 
-# 빌드 후 워크스페이스 정리
-ws-cleanup:0.49
+# 콘솔 로그의 ANSI 색상 코드를 색으로 표시(vitest, docker compose 출력)
+ansicolor:542.v03d235fee02d
 
-# 빌드 타임아웃
-build-timeout:1.41
+# 빌드를 단계별 그래프로 표시
+pipeline-graph-view:1041.v107d70db_b_1a_f
 
-# Pipeline에서 docker 명령 사용
-docker-workflow:653.v2f2c08eff0ec
+# 테스트 결과(JUnit XML) 집계와 추이 그래프. notifyMattermost가 실패한 테스트를 읽는다.
+junit:1431.vc0d98912a_756
+
+# ws-cleanup, build-timeout, docker-workflow는 쓰지 않아 뺐다(2026-09-29, ADR 0009).
+# pipeline의 timeout()은 기본 스텝이고, docker는 sh로만 호출한다.
 
 # --- 아래 둘은 신규 추가. 현재 VPS에 미설치다. ---
 # casc/jenkins.yaml로 시스템 설정을 코드화

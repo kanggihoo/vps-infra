@@ -42,6 +42,25 @@ unclassified:
   location:
     url: "${JENKINS_URL}"
 
+  # 모든 job이 @Library 없이 쓰는 공용 라이브러리(ADR 0012).
+  # vps-infra 레포의 jenkins/shared-lib/를 main 기준으로 읽는다.
+  globalLibraries:
+    libraries:
+      - name: "vps-shared"
+        defaultVersion: "main"
+        implicit: true
+        allowVersionOverride: false
+        # true면 라이브러리 커밋이 vps-info 같은 다른 job의 변경 목록에 섞이고,
+        # vps-infra push가 그 job들의 빌드까지 일으킨다.
+        includeInChangesets: false
+        retriever:
+          modernSCM:
+            libraryPath: "jenkins/shared-lib/"
+            scm:
+              git:
+                remote: "${INFRA_SCM_URL}"
+                credentialsId: "${SCM_CREDENTIAL_ID}"
+
 credentials:
   system:
     domainCredentials:
@@ -69,6 +88,13 @@ credentials:
               fileName: "keys.txt"
               secretBytes: "${SOPS_AGE_KEY_CONTENT}"
               description: "age key for SOPS decryption (base64)"
+          # 빌드 알림용 Mattermost incoming webhook URL(ADR 0012).
+          # 비어 있으면 notifyMattermost()가 알림을 건너뛴다(로컬 Jenkins).
+          - string:
+              scope: GLOBAL
+              id: "mattermost-webhook"
+              secret: "${MATTERMOST_WEBHOOK_URL:-}"
+              description: "Mattermost incoming webhook for build notifications"
 
 jobs:
   # job-dsl seed. 아래 스크립트가 Job을 만든다.

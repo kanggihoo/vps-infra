@@ -41,6 +41,9 @@ vps-info main push -> GitHub webhook -> Jenkins vps-info Job
   생긴다. 재빌드는 필요 없다([ADR 0009](/adr/0009-jenkins-config-as-code.md)). 이미지에 복사하던
   2026-09-28에는 재빌드 후 Job의 `config.xml`만 생기고 목록에 나타나지 않아 한 번 더 재시작해야
   했다. reload 경로에서도 같은 증상이 나는지는 아직 확인하지 않았다.
+- 테스트는 `JUNIT_OUTPUT_DIR`을 준 컨테이너에서 돌고, 결과 XML은 `docker cp`로 꺼내 `junit`에 넘긴다.
+  Jenkins workspace가 named volume 안에 있어 `-v` bind mount로는 가리킬 수 없기 때문이다.
+  빌드 결과는 `notifyMattermost()`로 알린다([ADR 0012](/adr/0012-mattermost-build-notification.md)).
 - macOS의 sops는 age key를 `~/Library/Application Support/sops/age/keys.txt`에서 찾는다.
   key가 `~/.config/sops/age/keys.txt`에 있으면 `SOPS_AGE_KEY_FILE`로 지정한다.
 

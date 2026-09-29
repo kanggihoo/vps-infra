@@ -38,6 +38,9 @@ services:
       GITHUB_PAT_USER: ${GITHUB_PAT_USER:-git}
       GITHUB_PAT_TOKEN: ${GITHUB_PAT_TOKEN:-unset}
 
+      # 빌드 알림 webhook. credential(mattermost-webhook)로 등록된다. 비우면 알림을 건너뛴다.
+      MATTERMOST_WEBHOOK_URL: ${MATTERMOST_WEBHOOK_URL:-}
+
       # SOPS 복호화 key 내용. credential(secret file)로 등록된다.
       SOPS_AGE_KEY_CONTENT: ${SOPS_AGE_KEY_CONTENT:-}
 

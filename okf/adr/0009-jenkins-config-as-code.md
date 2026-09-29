@@ -67,6 +67,19 @@ token reload endpoint(`CASC_RELOAD_TOKEN`)로 JCasC를 다시 읽힌다. reload�
   (재빌드) 후에 push해야 reload가 실패하지 않는다.
 - 놓친 webhook을 되살리는 `pollSCM`이나 기동 시 1회 확인은 실제 유실이 생기기 전까지 두지 않는다.
 
+# plugin 정리 (2026-09-29)
+
+- 제거: `ws-cleanup`(`cleanWs()`를 쓰지 않음), `build-timeout`(freestyle용. pipeline `timeout()`은
+  기본 스텝), `docker-workflow`(docker를 `sh`로만 호출).
+- 추가: `pipeline-graph-view`(단계별 그래프), `ansicolor`(콘솔 색상), `junit`(테스트 결과 추이,
+  [ADR 0012](/adr/0012-mattermost-build-notification.md)의 실패 테스트 요약). `junit`은 이미 하위
+  의존성으로 설치되어 있었지만 직접 쓰므로 최상위에 고정한다.
+- **기동마다 volume의 `plugins/`를 비운다(`jenkins/start.sh`).** Jenkins는 plugin을 `JENKINS_HOME/plugins`에서만
+  읽고, 공식 `jenkins.sh`는 이미지의 `/usr/share/jenkins/ref/plugins`를 그곳으로 복사만 하고 지우지 않는다.
+  그래서 `plugins.txt`에서 뺀 plugin이 volume에 남아 계속 로드됐다. 이제 `plugins.txt`가 실제 설치 목록이고
+  추가·업그레이드·삭제 모두 재빌드로 끝난다. GUI로 설치한 plugin은 재기동 때 사라지며, 이는 JCasC 원칙과 같다.
+  기동 때 전체 plugin을 다시 복사하므로 기동이 조금 느려진다.
+
 # 거절한 대안
 
 - **multibranch / organization folder**: Job 정의가 아예 불필요해지지만 프로젝트

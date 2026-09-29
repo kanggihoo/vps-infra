@@ -86,6 +86,13 @@ Jenkins 컨테이너 자체는 파이프라인이 재생성하지 않는다(ADR 
 cd ~/app/vps-infra/jenkins && docker compose --env-file .env up -d --build
 ```
 
+# 빌드 알림
+
+모든 job은 `post { always { notifyMattermost() } }`로 성공·실패를 SSAFY Mattermost 한 채널에 보낸다.
+함수는 `jenkins/shared-lib/`에 있고 JCasC가 implicit 라이브러리 `vps-shared`로 등록한다. webhook URL은
+`jenkins/.env`의 `MATTERMOST_WEBHOOK_URL`이며 비어 있으면 알림을 건너뛴다
+([ADR 0012](/adr/0012-mattermost-build-notification.md)).
+
 # 보안
 
 - Jenkins를 기존 `compose.yml`에 넣지 않는다. 배포 중 Jenkins 재생성을 피한다.

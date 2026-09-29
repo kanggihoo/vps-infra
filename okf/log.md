@@ -1,6 +1,8 @@
 # 변경 기록
 
 ## 2026-09-29
+* **결정**: [ADR 0012](/adr/0012-mattermost-build-notification.md)로 모든 Jenkins job이 implicit Shared Library `vps-shared`의 `notifyMattermost()`로 성공·실패를 SSAFY Mattermost에 알린다. vps-info는 vitest JUnit 결과를 `docker cp`로 꺼내 `junit`으로 집계한다.
+* **정리**: [ADR 0009](/adr/0009-jenkins-config-as-code.md)에 plugin 정리를 기록했다. `ws-cleanup`, `build-timeout`, `docker-workflow`를 빼고 `pipeline-graph-view`, `ansicolor`, `junit`을 넣었다. `jenkins/start.sh`가 기동마다 volume의 `plugins/`를 비워 `plugins.txt`를 실제 설치 목록으로 만든다.
 * **결정 변경**: [ADR 0009](/adr/0009-jenkins-config-as-code.md)에 따라 `jenkins.yaml`과 `jobs.groovy`를 `jenkins/casc/`로 옮기고 이미지 `COPY` 대신 폴더 마운트로 바꿨다. vps-infra 파이프라인이 마지막 단계에서 JCasC를 token reload하므로 Job 추가와 설정 변경에 Jenkins 재빌드가 필요 없다. `jenkins/.env`에 `CASC_RELOAD_TOKEN`이 필요하다.
 * **정리**: VPS의 옛 `/opt/jenkins`, `/opt/nginx-auth`, `/opt/vps-infra`, `/opt/quartz-build`, `/opt/quartz-site`가 어디에서도 참조되지 않음을 확인하고 삭제 대상으로 정했다. [인수 절차](/runbooks/local-first-handover.md)의 `/opt` 롤백 경로를 폐기했다.
 * **갱신**: [Jenkins 배포](/services/jenkins-deploy.md) 초기화를 `~/app/vps-infra/jenkins/.env` 기준으로 고치고, age key 위치와 Jenkins 자신은 수동 재기동이라는 자동화 범위를 기록했다.

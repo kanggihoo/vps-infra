@@ -43,6 +43,11 @@ USER jenkins
 COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
+# 기동마다 volume의 plugins/를 비우고 위에서 설치한 plugin만 다시 복사한다.
+# 이것이 없으면 plugins.txt에서 뺀 plugin이 volume에 남는다(start.sh 참고).
+COPY --chmod=755 start.sh /usr/local/bin/start.sh
+ENTRYPOINT ["/usr/local/bin/start.sh"]
+
 # JCasC 설정과 job-dsl 스크립트는 이미지에 넣지 않고 compose가 casc/ 폴더를 마운트한다.
 # 이미지에 넣으면 Job 하나를 추가해도 재빌드와 Jenkins 재기동이 필요하다(ADR 0009).
 # /var/jenkins_home은 volume이라 그 밖의 경로를 쓴다.
