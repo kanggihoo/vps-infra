@@ -27,7 +27,7 @@ env_name="${ENV_NAME:-local}"
 
 declare -A TARGETS=(
   ["secrets/env.${env_name}.sops.env"]=".env"
-  ["secrets/notes.htpasswd.sops.txt"]="secrets/notes.htpasswd"
+  ["secrets/basic-auth.htpasswd.sops.txt"]="secrets/basic-auth.htpasswd"
   ["secrets/github-pat.sops.txt"]="secrets/github-pat"
 )
 

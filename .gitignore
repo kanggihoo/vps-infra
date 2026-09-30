@@ -7,7 +7,7 @@
 # 암호화 파일은 `secrets/*.sops`이며 위 패턴에 걸리지 않으므로 그대로 커밋된다.
 secrets/github-pat
 # 공개 테스트 fixture(test/test). 실제 secret이 아니므로 커밋한다.
-!nginx/test-fixtures/notes.htpasswd
+!nginx/test-fixtures/basic-auth.htpasswd
 # age 복호화 key는 절대 커밋하지 않는다.
 keys.txt
 *.age

@@ -44,8 +44,8 @@ services:
       # 즉 clean clone에서 `up`이 실패해 로컬 검증을 시작할 수 없다.
       #
       # 실제 secret을 쓰려면 SOPS로 복호화한 뒤 이 변수를 덮어쓴다(단계 3):
-      #   NOTES_HTPASSWD=./secrets/notes.htpasswd
-      - ${NOTES_HTPASSWD:-./nginx/test-fixtures/notes.htpasswd}:/etc/nginx/notes.htpasswd:ro
+      #   BASIC_AUTH_HTPASSWD=./secrets/basic-auth.htpasswd
+      - ${BASIC_AUTH_HTPASSWD:-./nginx/test-fixtures/basic-auth.htpasswd}:/etc/nginx/basic-auth.htpasswd:ro
     networks:
       - proxy
     depends_on:

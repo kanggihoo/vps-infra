@@ -139,14 +139,14 @@ Jenkins route는 별도 Compose 프로젝트의 컨테이너가 늦게 올라올
 ```text
 secrets/env.local.sops.env
 secrets/env.prod.sops.env
-secrets/notes.htpasswd.sops.txt
+secrets/basic-auth.htpasswd.sops.txt
 secrets/github-pat.sops.txt
 ```
 
 - SOPS: 암호화·복호화 관리 도구
 - age: 복호화 key backend
 - age private key: `~/.config/sops/age/keys.txt`에만 보관
-- 복호화 결과: `.env`, `secrets/notes.htpasswd` 등 Gitignored 파일
+- 복호화 결과: `.env`, `secrets/basic-auth.htpasswd` 등 Gitignored 파일
 
 ```bash
 HOST_UID=$(id -u) HOST_GID=$(id -g) \

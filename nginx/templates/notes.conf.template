@@ -19,9 +19,9 @@ server {
     root /var/www/notes;
 
     # 개인 노트이므로 Basic Auth로 보호한다.
-    # 사용자 파일은 SOPS로 복호화해 secrets/notes.htpasswd에 생성한다(단계 3).
+    # 사용자 파일은 SOPS로 복호화해 secrets/basic-auth.htpasswd에 생성한다(단계 3).
     auth_basic           "Notes";
-    auth_basic_user_file /etc/nginx/notes.htpasswd;
+    auth_basic_user_file /etc/nginx/basic-auth.htpasswd;
 
     location / {
         # Quartz는 /some/note 처럼 확장자 없는 URL을 만든다.
@@ -41,7 +41,7 @@ server {
         # 이 블록은 위 server 단위 auth_basic을 상속하지만,
         # location 블록에서 다시 선언해야 확실히 적용된다.
         auth_basic           "Notes";
-        auth_basic_user_file /etc/nginx/notes.htpasswd;
+        auth_basic_user_file /etc/nginx/basic-auth.htpasswd;
 
         try_files $uri =404;
     }

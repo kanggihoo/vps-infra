@@ -8,7 +8,7 @@
 #   BASE_URL 로 대상 변경 가능 (기본 http://127.0.0.1)
 #
 # notes 자격증명은 환경변수로 받는다. 기본값은 공개 fixture(test/test)이며,
-# 실제 secret(secrets/notes.htpasswd)을 마운트한 상태에서 검증하려면
+# 실제 secret(secrets/basic-auth.htpasswd)을 마운트한 상태에서 검증하려면
 # NOTES_USER / NOTES_PASS 를 넘긴다. 하드코딩하면 secret을 바꾼 뒤 깨진다.
 set -euo pipefail
 

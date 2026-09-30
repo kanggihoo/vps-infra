@@ -3,7 +3,7 @@
 #
 # vps-info는 자기 레포의 compose.yml로 배포된다(ADR 0007).
 # 앱에 사용자 개념이 없어 접근 제어는 여기 Basic Auth가 맡는다.
-# 자격증명은 notes와 같은 파일(secrets/notes.htpasswd.sops.txt)을 쓴다.
+# 자격증명은 공용 Basic Auth 파일(secrets/basic-auth.htpasswd.sops.txt)을 쓴다.
 # ============================================================
 
 server {
@@ -13,7 +13,7 @@ server {
     include /etc/nginx/tls/${TLS_MODE}.conf;
 
     auth_basic           "vps-info";
-    auth_basic_user_file /etc/nginx/notes.htpasswd;
+    auth_basic_user_file /etc/nginx/basic-auth.htpasswd;
 
     # vps-info가 떠 있지 않아도 nginx가 기동하도록 이름 해석을 요청 시점으로 미룬다.
     # 떠 있지 않으면 이 도메인만 502가 된다.

@@ -29,7 +29,7 @@ if [ "$found" -eq 0 ]; then
 fi
 
 # 평문 secret이 실수로 커밋 대상에 들어갔는지 확인한다.
-for leak in .env secrets/notes.htpasswd secrets/github-pat; do
+for leak in .env secrets/basic-auth.htpasswd secrets/github-pat; do
   if git ls-files --error-unmatch "$leak" >/dev/null 2>&1; then
     echo "FAIL - 평문 secret이 git에 추적되고 있다: $leak" >&2
     fail=1

@@ -60,7 +60,7 @@ RFC 9111의 public은 Authorization 요청 응답도 공유 캐시가 재사용�
 ## P1: 운영에서 공개 테스트 비밀번호로 시작할 수 있다
 
 근거: `compose.yml:30`, `compose.yml:36`.
-NOTES_HTPASSWD가 누락되면 공개 fixture인 test/test가 사용되며 포트는 모든
+BASIC_AUTH_HTPASSWD가 누락되면 공개 fixture인 test/test가 사용되며 포트는 모든
 호스트 인터페이스에 publish된다. 운영 .env가 실제로 누락됐다는 뜻은 아니다.
 로컬 편의 기본값을 운영 진입점에서도 허용하는 것이 문제다.
 

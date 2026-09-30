@@ -23,7 +23,7 @@ age key 생성과 secret 암호화는 **완료되었다.** 아래는 현재 상�
 | 공개키 | `.sops.yaml`에 반영됨 |
 | `.env` (로컬) | `secrets/env.local.sops.env`로 암호화 |
 | `.env` (VPS) | `secrets/env.prod.sops.env`로 암호화, 운영 DB 값 보존 |
-| notes Basic Auth | `secrets/notes.htpasswd.sops.txt` (VPS 기존 자격증명 그대로) |
+| notes Basic Auth | `secrets/basic-auth.htpasswd.sops.txt` (VPS 기존 자격증명 그대로) |
 | `github-pat` | **미암호화.** PAT 발급이 필요하다(아래 참조) |
 
 ## ⚠️ age key 백업 (남은 필수 작업)
@@ -70,7 +70,7 @@ docker compose run --rm tools ./scripts/secrets.sh encrypt .env secrets/env.loca
 (spec 사용자 스토리 14).
 
 암호화 파일(`secrets/*.sops.*`)은 커밋한다. 복호화 결과(`.env`,
-`secrets/notes.htpasswd`)는 gitignored다.
+`secrets/basic-auth.htpasswd`)는 gitignored다.
 
 **파일명이 `.sops.env` / `.sops.txt`인 이유**: `creation_rules`는 암호화할
 때만 적용되고, 복호화할 때 SOPS는 **확장자**로 형식을 판단한다. `.sops`로
@@ -82,12 +82,12 @@ docker compose run --rm tools ./scripts/secrets.sh encrypt .env secrets/env.loca
 cp jenkins/.env.example jenkins/.env
 ```
 
-`.env.example`의 `NOTES_HTPASSWD`는 공개 테스트 fixture(`test`/`test`)를
+`.env.example`의 `BASIC_AUTH_HTPASSWD`는 공개 테스트 fixture(`test`/`test`)를
 가리킨다. clean clone에서도 `docker compose up`이 성공하도록 한 기본값이다.
 실제 secret으로 바꿀 때만 수정한다.
 
 ```bash
-NOTES_HTPASSWD=./secrets/notes.htpasswd
+BASIC_AUTH_HTPASSWD=./secrets/basic-auth.htpasswd
 ```
 
 `jenkins/.env`에서 **반드시** 수정할 항목:

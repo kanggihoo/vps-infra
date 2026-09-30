@@ -15,7 +15,7 @@ GitHub Secrets에는 그 key 하나만 저장한다.
 
 ```txt
 .env               DB 비밀번호 등 런타임 secret
-notes.htpasswd     notes 서브도메인 Basic Auth
+basic-auth.htpasswd     notes 서브도메인 Basic Auth
 github-pat         Jenkins가 checkout에 사용하는 credential
 ```
 
@@ -33,7 +33,7 @@ GitHub Secrets는 쓰기 전용이라 로컬 개발자가 읽을 수 없고, 결
 암호화된 파일을 레포에 두면 로컬·CI·VPS가 **같은 파일 하나**를 보고 key만 각자
 갖는다. 어떤 secret이 언제 바뀌었는지 git 이력에도 남는다.
 
-현재 `/opt/nginx-auth/notes.htpasswd`가 root 소유 호스트 경로에 있어 로컬에서 재현할
+현재 `/opt/nginx-auth/basic-auth.htpasswd`가 root 소유 호스트 경로에 있어 로컬에서 재현할
 수 없다. 이를 암호화해 레포에 넣으면 로컬에서도 같은 인증이 동작한다.
 
 `github-pat`을 포함하는 이유는, Job이 코드로 복원되더라도 credential이 없으면

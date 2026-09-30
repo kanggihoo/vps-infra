@@ -64,8 +64,8 @@ set +a
 # live TLS에서 test/test fixture로 시작하면 notes 인증이 공개된다.
 # 로컬 clean clone은 fixture를 계속 쓸 수 있고, 운영 진입점만 명확히 막는다.
 if [ "${TLS_MODE:-none}" = "live" ] && \
-   [ "${NOTES_HTPASSWD:-}" = "./nginx/test-fixtures/notes.htpasswd" ]; then
-  echo "[deploy] TLS_MODE=live에서는 NOTES_HTPASSWD에 실제 secret 파일이 필요하다" >&2
+   [ "${BASIC_AUTH_HTPASSWD:-}" = "./nginx/test-fixtures/basic-auth.htpasswd" ]; then
+  echo "[deploy] TLS_MODE=live에서는 BASIC_AUTH_HTPASSWD에 실제 secret 파일이 필요하다" >&2
   exit 2
 fi
 

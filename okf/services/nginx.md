@@ -61,7 +61,7 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 - 다른 서비스는 `80`, `443`을 publish하지 않는다.
 - 인증서(`certbot-etc`)와 webroot(`certbot-www`) volume은 VPS에만 상태로 존재하고
   Git에 커밋하지 않는다.
-- `TLS_MODE=live` 배포는 공개 notes fixture를 거부한다. `NOTES_HTPASSWD`에 SOPS로
+- `TLS_MODE=live` 배포는 공개 Basic Auth fixture를 거부한다. `BASIC_AUTH_HTPASSWD`에 SOPS로
   복호화한 실제 파일을 지정해야 한다.
 - 이전 Traefik 시절 존재하던 dashboard/Basic Auth 보호 대상은 없다. 상태 확인은
   `health.kkh-hub.tech` 응답과 `docker compose ps`로 대체한다.
