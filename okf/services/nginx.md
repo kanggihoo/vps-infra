@@ -24,6 +24,7 @@ Docker label 기반 동적 라우팅은 없다. 전체 배포는 후보 템플�
 | `health.kkh-hub.tech` | [whoami](/services/whoami.md) | `nginx/templates/health.conf.template` |
 | `portal.kkh-hub.tech` | [공용 인프라 포털](/services/portal.md) | `nginx/templates/portal.conf.template` |
 | `jenkins.kkh-hub.tech` | [Jenkins](/services/jenkins-deploy.md) | `nginx/templates/jenkins.conf.template` |
+| `erd.kkh-hub.tech` | [ERD 서빙](/services/erd.md) (정적 파일, Basic Auth) | `nginx/templates/erd.conf.template` |
 
 Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 (`ssafy.kkh-hub.tech`)은 nginx 전환과 함께 제거했다. SSAFY Workspace Webhook POC 서비스

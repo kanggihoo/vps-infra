@@ -1,0 +1,40 @@
+# ============================================================
+# erd.${BASE_DOMAIN}/<프로젝트>/ -> Liam ERD 정적 산출물
+#
+# proxy_pass가 없다. 각 프로젝트의 Jenkins job이 `liam erd build` 결과(dist)를
+# erd-site 볼륨의 /<프로젝트>/ 에 넣고, nginx가 파일을 직접 읽어 응답한다.
+# 파일은 요청마다 디스크에서 읽으므로 산출물이 바뀌어도 nginx reload가 필요 없다.
+#
+# 스키마는 DB 구조를 그대로 보여주므로 공용 Basic Auth를 건다.
+# ============================================================
+
+server {
+    listen ${NGINX_LISTEN};
+    server_name erd.${BASE_DOMAIN};
+
+    include /etc/nginx/tls/${TLS_MODE}.conf;
+
+    root /var/www/erd;
+
+    auth_basic           "ERD";
+    auth_basic_user_file /etc/nginx/basic-auth.htpasswd;
+
+    # 루트에서는 배포된 프로젝트 폴더 목록을 보여준다.
+    location = / {
+        autoindex on;
+    }
+
+    location / {
+        # Liam은 상대 경로(./assets, ./schema.json)를 쓰므로 하위 경로에서도 동작한다.
+        # $uri/ 를 쓰면 /vps-info 처럼 슬래시가 없을 때 nginx가 /vps-info/ 로 redirect한다.
+        # $uri/index.html 로 직접 서빙하면 redirect 없이 200이 되어 ./assets 가 /assets 로 풀려 깨진다.
+        try_files $uri $uri/ =404;
+    }
+
+    # 파일명이 고정인 index.html과 schema.json은 갱신이 바로 보이도록 캐시하지 않는다.
+    # assets/ 는 파일명에 해시가 붙어 있어 기본 캐시를 그대로 쓴다.
+    location ~* \.(html|json)$ {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+}

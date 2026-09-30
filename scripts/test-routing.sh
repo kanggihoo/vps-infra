@@ -108,6 +108,27 @@ docker run --rm -v "${QUARTZ_VOLUME:-vps_quartz_site}":/w alpine:3.24 \
 body_contains "확장자 없는 /probe가 probe.html로 해석" \
   "notes.${base_domain}" "/probe" "note body" -u "${notes_user}:${notes_pass}"
 
+echo "--- ERD 정적 서빙 (하위 경로) ---"
+# erd-site 볼륨에 /probe 프로젝트 폴더를 만들고 Liam 산출물과 같은 모양(index.html, schema.json)을 넣는다.
+docker run --rm -v "${ERD_VOLUME:-vps_erd_site}":/w alpine:3.24 \
+  sh -c 'mkdir -p /w/probe && echo "<h1>erd body</h1>" > /w/probe/index.html && echo "{\"tables\":{}}" > /w/probe/schema.json' >/dev/null 2>&1 || true
+check "erd 인증 없이 401" "erd.${base_domain}" /probe/ 401
+body_contains "erd /probe/ 가 index.html 서빙" \
+  "erd.${base_domain}" "/probe/" "erd body" -u "${notes_user}:${notes_pass}"
+body_contains "erd /probe/schema.json 서빙" \
+  "erd.${base_domain}" "/probe/schema.json" "tables" -u "${notes_user}:${notes_pass}"
+# 슬래시 없는 경로는 nginx가 슬래시를 붙여 redirect한다.
+check "erd /probe 는 /probe/ 로 redirect" "erd.${base_domain}" /probe 301 -u "${notes_user}:${notes_pass}"
+# 파일명이 고정인 json은 캐시되면 갱신이 안 보인다.
+build_req "erd.${base_domain}" "/probe/schema.json"
+if curl -sI --connect-timeout 5 --max-time 15 -u "${notes_user}:${notes_pass}" "${REQ[@]}" \
+   | grep -qi '^cache-control: no-cache'; then
+  echo "ok   - erd schema.json은 no-cache"
+else
+  echo "FAIL - erd schema.json에 Cache-Control: no-cache가 없다" >&2
+  fail=1
+fi
+
 echo "--- 별도 compose 프로젝트 라우팅 ---"
 # jenkins는 jenkins/compose.yml이 띄우므로 이 스택만으로는 없을 수 있다.
 # 어느 쪽이든 "nginx가 기동되어 이 server 블록을 처리한다"가 증명되어야 한다.

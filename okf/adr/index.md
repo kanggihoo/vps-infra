@@ -14,3 +14,4 @@
 * [SOPS 기반 secret 관리](0010-sops-secrets.md) - secret을 암호화해 레포에 커밋하고 복호화 key만 각 환경에 둔다.
 * [인증서 갱신을 컨테이너 안에서 끝낸다](0011-certbot-container-renewal.md) - 상주 certbot이 갱신하고 nginx가 하루 한 번 스스로 reload한다.
 * [빌드 결과를 Shared Library로 Mattermost에 알린다](0012-mattermost-build-notification.md) - implicit 라이브러리의 `notifyMattermost()`가 모든 job의 성공·실패를 한 채널에 보낸다.
+* [DB 스키마 ERD를 Liam으로 빌드해 nginx에서 정적으로 서빙한다](0013-liam-erd-static-hosting.md) - 프로젝트 Jenkins job이 ERD를 빌드해 erd-site 볼륨에 넣고 nginx가 Basic Auth 뒤에서 서빙한다.

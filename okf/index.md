@@ -28,6 +28,8 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 * [SOPS 기반 secret 관리](adr/0010-sops-secrets.md) - secret을 암호화해 레포에 커밋하고 복호화 key만 각 환경에 둔다.
 * [인증서 갱신을 컨테이너 안에서 끝낸다](adr/0011-certbot-container-renewal.md) - systemd timer 대신 상주 certbot과 nginx 일일 reload를 쓴다.
 * [빌드 결과를 Shared Library로 Mattermost에 알린다](adr/0012-mattermost-build-notification.md) - 모든 Jenkins job이 `notifyMattermost()`로 성공·실패를 알린다.
+* [DB 스키마 ERD를 Liam으로 빌드해 nginx에서 정적으로 서빙한다](adr/0013-liam-erd-static-hosting.md) - 프로젝트 Jenkins job이 ERD를 빌드해 erd-site 볼륨에 넣고 nginx가 Basic Auth 뒤에서 서빙한다.
+* [ERD 서빙 (Liam ERD)](services/erd.md) - 프로젝트 DB 스키마의 ER 다이어그램을 erd 서브도메인에서 정적 파일로 제공한다.
 * [GitHub Actions 검증](services/github-actions-deploy.md) - 폐기된 SSH 배포 경로와 현재 검증 workflow.
 * [Jenkins 배포](services/jenkins-deploy.md) - VPS 내부 Jenkins가 GitHub webhook을 받아 Docker Compose 배포를 실행한다.
 * [vps-info (Signal Archive)](services/vps-info.md) - 자기 레포에서 compose와 Jenkinsfile을 소유하는 첫 외부 프로젝트.

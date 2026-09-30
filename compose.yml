@@ -37,6 +37,8 @@ services:
       # Quartz 정적 사이트. named volume이므로 호스트 경로 의존이 없다.
       # 단계 7에서 Quartz를 이미지화하면 이 마운트 자체가 사라진다.
       - quartz-site:/var/www/notes:ro
+      # Liam ERD 산출물. 각 프로젝트의 Jenkins job이 /<프로젝트>/ 폴더에 채운다.
+      - erd-site:/var/www/erd:ro
       # Basic Auth 사용자 파일.
       #
       # 기본값이 공개 fixture(test/test)인 이유: 이 경로에 파일이 없으면
@@ -168,3 +170,6 @@ volumes:
   # Quartz 빌드 산출물. 호스트 경로(/opt/quartz-site) 의존을 제거했다.
   quartz-site:
     name: vps_quartz_site
+  # Liam ERD 산출물. 프로젝트 Jenkinsfile이 `-v vps_erd_site:/out`으로 채운다.
+  erd-site:
+    name: vps_erd_site

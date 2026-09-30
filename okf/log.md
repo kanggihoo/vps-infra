@@ -1,5 +1,9 @@
 # 변경 기록
 
+## 2026-09-30
+* **결정**: [ADR 0013](/adr/0013-liam-erd-static-hosting.md)으로 DB 스키마 ERD를 Liam으로 빌드해 `erd.<도메인>/<프로젝트>/`에서 정적으로 서빙한다. `erd.conf.template`, `vps_erd_site` volume, `CHALLENGE_DOMAINS`의 `erd`, routing 테스트를 추가했다. vps-info Drizzle 스키마(5개 테이블) 파싱과 하위 경로 서빙을 로컬에서 확인했다.
+* **변경**: notes 전용이던 `notes.htpasswd`·`NOTES_HTPASSWD`를 `basic-auth.htpasswd`·`BASIC_AUTH_HTPASSWD`로 바꾸고, 계정은 `scripts/set-basic-auth.sh`로 바꾼다.
+
 ## 2026-09-29
 * **결정**: [ADR 0012](/adr/0012-mattermost-build-notification.md)로 모든 Jenkins job이 implicit Shared Library `vps-shared`의 `notifyMattermost()`로 성공·실패를 SSAFY Mattermost에 알린다. vps-info는 vitest JUnit 결과를 `docker cp`로 꺼내 `junit`으로 집계한다.
 * **정리**: [ADR 0009](/adr/0009-jenkins-config-as-code.md)에 plugin 정리를 기록했다. `ws-cleanup`, `build-timeout`, `docker-workflow`를 빼고 `pipeline-graph-view`, `ansicolor`, `junit`을 넣었다. `jenkins/start.sh`가 기동마다 volume의 `plugins/`를 비워 `plugins.txt`를 실제 설치 목록으로 만든다.
