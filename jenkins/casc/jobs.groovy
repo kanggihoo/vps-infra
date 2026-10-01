@@ -48,30 +48,30 @@ pipelineJob('vps-infra-pipeline') {
 }
 
 // vps-info는 자기 레포가 Dockerfile, compose.yml, Jenkinsfile을 소유한다(ADR 0007).
-// public 레포라 checkout에 credential이 필요 없다. 로컬 시험은 환경변수로 로컬 경로를 준다.
-pipelineJob('vps-info') {
-    description('vps-info 빌드와 배포. 정의는 vps-infra/jenkins/casc/jobs.groovy에 있다.')
+// multibranch로 main과 같은 레포 PR을 빌드한다. PR은 Jenkinsfile의 when 조건 때문에 Test만 돌고,
+// 결과는 GitHub commit status로 보고되어 브랜치 보호의 필수 check가 된다.
+// fork PR은 발견하지 않는다. 이 Jenkins는 docker.sock을 쓰므로 외부 코드를 실행하면 안 된다.
+// GitHub를 직접 조회하므로 로컬 Jenkins에서는 push하지 않은 커밋을 시험할 수 없다(이전 단일 job과 다른 점).
+multibranchPipelineJob('vps-info') {
+    description('vps-info PR 검증과 main 배포. 정의는 vps-infra/jenkins/casc/jobs.groovy에 있다.')
 
-    definition {
-        cpsScm {
-            scm {
-                git {
-                    remote {
-                        url(System.getenv('VPS_INFO_SCM_URL') ?: 'https://github.com/kanggihoo/vps-info.git')
-                    }
-                    branch('*/main')
-                }
+    branchSources {
+        github {
+            id('vps-info-github')
+            repoOwner('kanggihoo')
+            repository('vps-info')
+            scanCredentialsId('github-pat')
+            traits {
+                // 브랜치: 1 = PR이 없는 브랜치만 빌드(PR 중복 빌드 방지). PR: 1 = 대상 브랜치와 병합한 결과로 빌드.
+                gitHubBranchDiscovery { strategyId(1) }
+                gitHubPullRequestDiscovery { strategyId(1) }
             }
-            scriptPath('Jenkinsfile')
-            lightweight(false)
         }
     }
 
-    properties {
-        pipelineTriggers {
-            triggers {
-                githubPush()
-            }
-        }
+    // Jenkinsfile 경로는 기본값(레포 루트)이다. 다른 브랜치는 PR이 생기기 전까지 Jenkinsfile의 when으로 배포가 막힌다.
+
+    orphanedItemStrategy {
+        discardOldItems { numToKeep(20) }
     }
 }

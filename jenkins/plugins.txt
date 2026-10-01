@@ -9,6 +9,8 @@ workflow-aggregator:608.v67378e9d3db_1
 # SCM
 git:5.10.1
 github:1.47.0
+# multibranch job이 GitHub PR을 발견하고 commit status를 보고한다.
+github-branch-source
 
 # credential을 빌드 환경변수/파일로 주입
 credentials-binding:728.v902a_273b_8947

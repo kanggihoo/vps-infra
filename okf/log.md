@@ -1,5 +1,9 @@
 # 변경 기록
 
+## 2026-10-01
+* **결정**: [ADR 0014](/adr/0014-multibranch-pr-ci.md)로 `vps-info` job을 multibranch(github-branch-source)로 바꿔 PR마다 Test를 돌려 commit status로 보고하고, 배포는 main 빌드에서만 한다. `plugins.txt`에 `github-branch-source`를 추가했다(Jenkins 이미지 재빌드 필요).
+* **변경**: `notifyMattermost()`에 `kind` 인자를 추가해 PR 빌드는 `CI`, main 빌드는 `CD`로 알린다. PR 빌드의 브랜치는 `BRANCH_NAME`(PR-n)을 쓴다.
+
 ## 2026-09-30
 * **결정**: [ADR 0013](/adr/0013-liam-erd-static-hosting.md)으로 DB 스키마 ERD를 Liam으로 빌드해 `erd.<도메인>/<프로젝트>/`에서 정적으로 서빙한다. `erd.conf.template`, `vps_erd_site` volume, `CHALLENGE_DOMAINS`의 `erd`, routing 테스트를 추가했다. vps-info Drizzle 스키마(5개 테이블) 파싱과 하위 경로 서빙을 로컬에서 확인했다.
 * **변경**: notes 전용이던 `notes.htpasswd`·`NOTES_HTPASSWD`를 `basic-auth.htpasswd`·`BASIC_AUTH_HTPASSWD`로 바꾸고, 계정은 `scripts/set-basic-auth.sh`로 바꾼다.

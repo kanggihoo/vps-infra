@@ -3,6 +3,7 @@
 //
 //   post { always { notifyMattermost() } }
 //   notifyMattermost(commit: env.DEPLOY_SHA, repoUrl: env.INFRA_SCM_URL, fields: ['배포 대상': 'all'])
+//   notifyMattermost(kind: 'CI')   // 제목 앞말. 생략하면 '배포'
 //
 // 신뢰된 global library라 sandbox 밖에서 돈다. 그래서 빌드 로그, flow graph, JUnit 결과를
 // 직접 읽을 수 있다. 알림 실패는 빌드 결과를 바꾸지 않는다.
@@ -24,7 +25,9 @@ def call(Map args = [:]) {
                 duration: currentBuild.durationString.replace(' and counting', ''),
                 commit  : args.commit ?: env.GIT_COMMIT,
                 repoUrl : args.repoUrl ?: env.GIT_URL,
-                branch  : (env.GIT_BRANCH ?: 'main').replaceFirst(/^origin\//, ''),
+                kind    : args.kind ?: '배포',
+                // multibranch의 PR 빌드는 BRANCH_NAME이 PR-7이다. 단일 job은 GIT_BRANCH를 쓴다.
+                branch  : env.BRANCH_NAME ?: (env.GIT_BRANCH ?: 'main').replaceFirst(/^origin\//, ''),
                 fields  : args.fields ?: [:],
             ])
             int status = sendWebhook(env.MATTERMOST_HOOK, payload)
@@ -58,7 +61,7 @@ String buildPayload(run, Map b) {
         username   : 'Jenkins',
         attachments: [[
             color     : color,
-            title     : "배포 ${label} · ${b.job} #${b.number}",
+            title     : "${b.kind} ${label} · ${b.job} #${b.number}",
             title_link: b.url,
             text      : text,
             fields    : fields,

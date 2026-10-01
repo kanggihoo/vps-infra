@@ -16,13 +16,14 @@ timestamp: 2026-09-28T00:00:00+09:00
 | 위치 | 소유 |
 |------|------|
 | vps-info 레포 | `Dockerfile`, `compose.yml`(프로젝트 이름 `vps-info`), `Jenkinsfile`, `secrets/env.prod.sops.env` |
-| vps-infra 레포 | `jenkins/jobs.groovy`의 `vps-info` Job, `nginx/templates/vps-info.conf.template`, `CHALLENGE_DOMAINS` |
+| vps-infra 레포 | `jenkins/casc/jobs.groovy`의 `vps-info` multibranch Job, `nginx/templates/vps-info.conf.template`, `CHALLENGE_DOMAINS` |
 | VPS 1회 작업 | 공용 postgres의 `vps_info` 사용자·DB (superuser를 공유하지 않는다) |
 
 # 배포 흐름
 
 ```txt
-vps-info main push -> GitHub webhook -> Jenkins vps-info Job
+PR -> GitHub webhook -> vps-info/PR-<n> -> Test만 -> GitHub commit status(병합 필수 check)
+vps-info main push -> GitHub webhook -> Jenkins vps-info/main (ADR 0014)
 -> docker build --target test (단위 테스트)
 -> sops-age-key credential로 secrets/env.prod.sops.env 복호화 -> .env
 -> docker compose up -d --build --wait (migrate 성공 후 app, collector)
@@ -43,7 +44,7 @@ vps-info main push -> GitHub webhook -> Jenkins vps-info Job
   했다. reload 경로에서도 같은 증상이 나는지는 아직 확인하지 않았다.
 - 테스트는 `JUNIT_OUTPUT_DIR`을 준 컨테이너에서 돌고, 결과 XML은 `docker cp`로 꺼내 `junit`에 넘긴다.
   Jenkins workspace가 named volume 안에 있어 `-v` bind mount로는 가리킬 수 없기 때문이다.
-  빌드 결과는 `notifyMattermost()`로 알린다([ADR 0012](/adr/0012-mattermost-build-notification.md)).
+  빌드 결과는 `notifyMattermost()`로 알린다. PR 빌드는 CI, main 빌드는 CD다([ADR 0012](/adr/0012-mattermost-build-notification.md), [ADR 0014](/adr/0014-multibranch-pr-ci.md)).
 - macOS의 sops는 age key를 `~/Library/Application Support/sops/age/keys.txt`에서 찾는다.
   key가 `~/.config/sops/age/keys.txt`에 있으면 `SOPS_AGE_KEY_FILE`로 지정한다.
 
