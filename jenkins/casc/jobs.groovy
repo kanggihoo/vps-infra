@@ -61,11 +61,15 @@ multibranchPipelineJob('vps-info') {
             repoOwner('kanggihoo')
             repository('vps-info')
             scanCredentialsId('github-pat')
-            traits {
-                // 브랜치: 1 = PR이 없는 브랜치만 빌드(PR 중복 빌드 방지). PR: 1 = 대상 브랜치와 병합한 결과로 빌드.
-                gitHubBranchDiscovery { strategyId(1) }
-                gitHubPullRequestDiscovery { strategyId(1) }
-            }
+            // 이 Job DSL 버전의 github 소스는 traits 대신 아래 옵션을 직접 받는다.
+            // 같은 레포의 main(PR이 없는 브랜치)과 PR을 빌드한다. PR은 대상 브랜치와 병합한 결과로 빌드한다.
+            buildOriginBranch(true)
+            buildOriginBranchWithPR(false)
+            buildOriginPRMerge(true)
+            buildOriginPRHead(false)
+            // fork PR은 빌드하지 않는다.
+            buildForkPRMerge(false)
+            buildForkPRHead(false)
         }
     }
 

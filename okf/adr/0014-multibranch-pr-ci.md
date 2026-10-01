@@ -20,7 +20,7 @@ main 병합 -> GitHub webhook(push) -> vps-info/main
 - `Jenkinsfile`은 하나다. Decrypt, Deploy, ERD stage에 `when { branch 'main' }`을 둬 PR 빌드가 운영 secret을 읽거나 배포하지 못하게 한다.
 - main의 Test는 남긴다. squash merge면 main 커밋 SHA가 PR에서 테스트한 SHA와 다르고, 배포 직전 한 번 더 검증하는 비용이 작다.
 - GitHub 브랜치 보호(main): PR 필수, Jenkins check 필수, 브랜치가 최신이어야 병합. 설정은 GitHub UI·`gh api`에 있고 이 레포 코드에는 없다.
-- fork PR은 발견하지 않는다(`gitHubForkDiscovery` 없음). Jenkins가 docker.sock을 써서 외부 코드 실행은 호스트 권한과 같다.
+- fork PR은 발견하지 않는다(`buildForkPRMerge`·`buildForkPRHead`를 false로 둔다). Jenkins가 docker.sock을 써서 외부 코드 실행은 호스트 권한과 같다.
 - 알림은 CI(PR 빌드)와 CD(main 빌드)의 성공·실패만 보낸다([ADR 0012](/adr/0012-mattermost-build-notification.md)). PR 생성·승인 알림은 두지 않는다.
 
 # 이유
