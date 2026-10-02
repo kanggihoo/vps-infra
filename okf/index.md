@@ -13,6 +13,7 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 * [결정 (ADR)](adr/) - 아키텍처와 운영 결정 기록.
 * [스펙](spec/) - 구현 전 합의된 변경 계획.
 * [런북](runbooks/) - 배포 검증과 장애 진단 절차.
+* [트러블슈팅](troubleshooting/) - 운영 중 겪은 문제의 증상, 조사, 원인, 조치 사례.
 * [환경](environments/) - 배포 대상 VPS와 public 운영 메타데이터.
 * [도구](tooling/) - 프로젝트 개발과 운영을 지원하는 도구 및 skill.
 
@@ -30,6 +31,8 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 * [빌드 결과를 Shared Library로 Mattermost에 알린다](adr/0012-mattermost-build-notification.md) - 모든 Jenkins job이 `notifyMattermost()`로 성공·실패를 알린다.
 * [DB 스키마 ERD를 Liam으로 빌드해 nginx에서 정적으로 서빙한다](adr/0013-liam-erd-static-hosting.md) - 프로젝트 Jenkins job이 ERD를 빌드해 erd-site 볼륨에 넣고 nginx가 Basic Auth 뒤에서 서빙한다.
 * [vps-info는 multibranch job으로 PR을 검증하고 main에서만 배포한다](adr/0014-multibranch-pr-ci.md) - PR마다 Test를 돌려 필수 check로 보고하고, 배포 stage는 main 빌드에서만 실행한다.
+* [vps-info multibranch가 15분마다 스캔해 유실된 webhook을 보완한다](adr/0015-multibranch-periodic-scan.md) - webhook은 자동 재시도가 없어, 놓친 PR을 주기 스캔으로 잡는다.
+* [PR 생성 webhook이 유실되어 PR이 Jenkins에 나타나지 않는다](troubleshooting/webhook-pr-event-lost.md) - 연결 단계 실패로 PR #3만 누락된 사례의 조사 과정과 진단 순서.
 * [ERD 서빙 (Liam ERD)](services/erd.md) - 프로젝트 DB 스키마의 ER 다이어그램을 erd 서브도메인에서 정적 파일로 제공한다.
 * [GitHub Actions 검증](services/github-actions-deploy.md) - 폐기된 SSH 배포 경로와 현재 검증 workflow.
 * [Jenkins 배포](services/jenkins-deploy.md) - VPS 내부 Jenkins가 GitHub webhook을 받아 Docker Compose 배포를 실행한다.

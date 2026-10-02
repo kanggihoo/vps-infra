@@ -1,5 +1,10 @@
 # 변경 기록
 
+## 2026-10-03
+* **결정**: [ADR 0015](/adr/0015-multibranch-periodic-scan.md)로 `vps-info` multibranch에 15분 주기 스캔을 추가해 유실된 webhook을 보완한다. `jobs.groovy`에 `periodicFolderTrigger`를 넣었다.
+* **변경**: `notifyMattermost()`가 PR 번호·제목·작성자·브랜치와 main 빌드의 병합 PR을 알림에 싣는다([ADR 0012](/adr/0012-mattermost-build-notification.md)). 제목의 `#번호`가 빌드 번호라 어느 PR인지 알 수 없던 문제를 고친다.
+* **기록**: PR #3의 webhook 유실 사례를 [트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)으로 남기고 `troubleshooting/` 그룹을 만들었다.
+
 ## 2026-10-01
 * **결정**: [ADR 0014](/adr/0014-multibranch-pr-ci.md)로 `vps-info` job을 multibranch(github-branch-source)로 바꿔 PR마다 Test를 돌려 commit status로 보고하고, 배포는 main 빌드에서만 한다. `plugins.txt`에 `github-branch-source`를 추가했다(Jenkins 이미지 재빌드 필요).
 * **변경**: `notifyMattermost()`에 `kind` 인자를 추가해 PR 빌드는 `CI`, main 빌드는 `CD`로 알린다. PR 빌드의 브랜치는 `BRANCH_NAME`(PR-n)을 쓴다.

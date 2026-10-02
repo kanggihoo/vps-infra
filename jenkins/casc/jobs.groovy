@@ -75,6 +75,12 @@ multibranchPipelineJob('vps-info') {
 
     // Jenkinsfile 경로는 기본값(레포 루트)이다. 다른 브랜치는 PR이 생기기 전까지 Jenkinsfile의 when으로 배포가 막힌다.
 
+    // GitHub webhook은 자동 재시도가 없어 연결이 한 번 실패하면 PR 생성 이벤트가 유실된다.
+    // 15분마다 스캔해 놓친 PR·브랜치를 보완한다. webhook은 즉시 반응용으로 그대로 둔다.
+    triggers {
+        periodicFolderTrigger { interval('15m') }
+    }
+
     orphanedItemStrategy {
         discardOldItems { numToKeep(20) }
     }

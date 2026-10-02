@@ -16,3 +16,4 @@
 * [빌드 결과를 Shared Library로 Mattermost에 알린다](0012-mattermost-build-notification.md) - implicit 라이브러리의 `notifyMattermost()`가 모든 job의 성공·실패를 한 채널에 보낸다.
 * [DB 스키마 ERD를 Liam으로 빌드해 nginx에서 정적으로 서빙한다](0013-liam-erd-static-hosting.md) - 프로젝트 Jenkins job이 ERD를 빌드해 erd-site 볼륨에 넣고 nginx가 Basic Auth 뒤에서 서빙한다.
 * [vps-info는 multibranch job으로 PR을 검증하고 main에서만 배포한다](0014-multibranch-pr-ci.md) - PR마다 Test를 돌려 필수 check로 보고하고, 배포 stage는 main 빌드에서만 실행한다.
+* [vps-info multibranch가 15분마다 스캔해 유실된 webhook을 보완한다](0015-multibranch-periodic-scan.md) - webhook은 자동 재시도가 없어, 놓친 PR을 주기 스캔으로 잡는다.
