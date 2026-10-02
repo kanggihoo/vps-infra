@@ -5,6 +5,9 @@
 //   notifyMattermost(commit: env.DEPLOY_SHA, repoUrl: env.INFRA_SCM_URL, fields: ['배포 대상': 'all'])
 //   notifyMattermost(kind: 'CI')   // 제목 앞말. 생략하면 '배포'
 //
+// PR 번호·제목은 multibranch PR 빌드의 CHANGE_* 환경변수에서, main 빌드는 커밋 메시지
+// (`Merge pull request #N` 또는 squash의 `제목 (#N)`)에서 읽는다.
+//
 // 신뢰된 global library라 sandbox 밖에서 돈다. 그래서 빌드 로그, flow graph, JUnit 결과를
 // 직접 읽을 수 있다. 알림 실패는 빌드 결과를 바꾸지 않는다.
 
@@ -17,18 +20,29 @@ def call(Map args = [:]) {
                 echo '[notify] mattermost-webhook이 비어 있어 알림을 건너뛴다'
                 return
             }
+            def sha = args.commit ?: env.GIT_COMMIT
+            def git = gitInfo(sha)
             def payload = buildPayload(currentBuild.rawBuild, [
                 result  : currentBuild.currentResult,
                 job     : env.JOB_NAME,
                 number  : env.BUILD_NUMBER,
                 url     : env.BUILD_URL,
                 duration: currentBuild.durationString.replace(' and counting', ''),
-                commit  : args.commit ?: env.GIT_COMMIT,
+                commit  : sha,
                 repoUrl : args.repoUrl ?: env.GIT_URL,
                 kind    : args.kind ?: '배포',
                 // multibranch의 PR 빌드는 BRANCH_NAME이 PR-7이다. 단일 job은 GIT_BRANCH를 쓴다.
                 branch  : env.BRANCH_NAME ?: (env.GIT_BRANCH ?: 'main').replaceFirst(/^origin\//, ''),
                 fields  : args.fields ?: [:],
+                // PR 빌드에만 있다. main 빌드는 아래 git 정보에서 PR 번호를 찾는다.
+                changeId    : env.CHANGE_ID,
+                changeTitle : env.CHANGE_TITLE,
+                changeAuthor: env.CHANGE_AUTHOR,
+                changeBranch: env.CHANGE_BRANCH,
+                changeTarget: env.CHANGE_TARGET,
+                changeUrl   : env.CHANGE_URL,
+                git         : git,
+                pr          : parsePr(git.subject ?: '', git.body ?: ''),
             ])
             int status = sendWebhook(env.MATTERMOST_HOOK, payload)
             echo "[notify] mattermost ${status}"
@@ -48,14 +62,41 @@ String buildPayload(run, Map b) {
     ]
     def (label, color) = styles[b.result] ?: [b.result, '#8b8b8b']
 
-    def fields = [
-        ['short': true, title: '커밋', value: commitLink(b.commit, b.repoUrl)],
-        ['short': true, title: '브랜치', value: b.branch],
-        ['short': true, title: '소요 시간', value: b.duration],
-    ]
-    b.fields.each { k, v -> fields << ['short': true, title: k as String, value: (v ?: '-') as String] }
+    def prNumber = b.changeId ?: b.pr.number
+    def prTitle = b.changeTitle ?: b.pr.title
+    def rm = b.repoUrl =~ /^https:\/\/github\.com\/(.+?)(\.git)?\/?$/
+    def repo = rm.find() ? rm.group(1) : null
+    def prUrl = b.changeUrl ?: (prNumber && repo ? "https://github.com/${repo}/pull/${prNumber}" : null)
+    def prLink = prNumber ? (prUrl ? "[#${prNumber}](${prUrl})" : "#${prNumber}") : null
 
-    def text = b.result == 'SUCCESS' ? '' : failureText(run)
+    def fields = []
+    if (prLink) {
+        fields << ['short': true, title: 'PR', value: prLink]
+    }
+    if (b.changeId) {
+        fields << ['short': true, title: '작성자', value: b.changeAuthor ?: '-']
+        fields << ['short': true, title: '브랜치 → 대상', value: "${b.changeBranch} → ${b.changeTarget}".toString()]
+    } else if (prNumber) {
+        fields << ['short': true, title: '병합자', value: b.git.author ?: '-']
+    } else {
+        fields << ['short': true, title: '브랜치', value: b.branch]
+    }
+    fields << ['short': true, title: '커밋', value: commitLink(b.commit, b.repoUrl)]
+    fields << ['short': true, title: '소요 시간', value: b.duration]
+    // Jenkinsfile이 넘기던 PR 필드는 위에서 이미 만들었으므로 중복을 뺀다.
+    b.fields.each { k, v ->
+        if (!(prLink && k == 'PR')) {
+            fields << ['short': true, title: k as String, value: (v ?: '-') as String]
+        }
+    }
+
+    // 요약 한 줄: PR 번호와 제목. PR이 아니면 커밋 제목이다.
+    def subject = prTitle ?: b.git.subject
+    def summary = [prNumber ? "PR #${prNumber}" : null, subject ? "「${subject}」" : null].findAll { it }.join(' ')
+    if (b.kind == 'CI' && summary) {
+        summary += b.result == 'SUCCESS' ? ' 검증을 통과했습니다. 리뷰 가능합니다.' : " 검증 결과: ${label}"
+    }
+    def text = [summary, b.result == 'SUCCESS' ? '' : failureText(run)].findAll { it }.join('\n\n')
 
     JsonOutput.toJson([
         username   : 'Jenkins',
@@ -67,6 +108,32 @@ String buildPayload(run, Map b) {
             fields    : fields,
         ]],
     ])
+}
+
+// 커밋 제목·작성자·본문. sha가 없거나 git 호출이 실패하면 빈 값이라 알림은 PR 정보 없이 나간다.
+Map gitInfo(String sha) {
+    if (!(sha ==~ /[0-9a-f]{7,40}/)) {
+        return [:]
+    }
+    try {
+        def out = sh(script: "git log -1 --format=%s%x1f%an%x1f%b ${sha}", returnStdout: true).trim()
+        def p = out.split('\u001f', -1)
+        return [subject: p[0], author: p.length > 1 ? p[1] : '', body: p.length > 2 ? p[2] : '']
+    } catch (e) {
+        echo "[notify] 커밋 정보를 읽지 못했다: ${e}"
+        return [:]
+    }
+}
+
+// 병합 커밋 `Merge pull request #3 from a/b`(제목은 본문 첫 줄)와 squash `제목 (#3)`를 알아본다.
+@NonCPS
+Map parsePr(String subject, String body) {
+    def m = subject =~ /^Merge pull request #(\d+) from \S+/
+    if (m.find()) {
+        return [number: m.group(1), title: body.readLines().find { it.trim() }?.trim() ?: subject]
+    }
+    m = subject =~ /^(.*) \(#(\d+)\)$/
+    m.find() ? [number: m.group(2), title: m.group(1)] : [:]
 }
 
 @NonCPS
