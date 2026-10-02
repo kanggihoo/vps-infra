@@ -4,6 +4,7 @@
 //   post { always { notifyMattermost() } }
 //   notifyMattermost(commit: env.DEPLOY_SHA, repoUrl: env.INFRA_SCM_URL, fields: ['배포 대상': 'all'])
 //   notifyMattermost(kind: 'CI')   // 제목 앞말. 생략하면 '배포'
+//   notifyMattermost(gitDir: env.APP_DIR)   // 커밋을 읽을 git 디렉터리. 생략하면 현재 workspace
 //
 // PR 번호·제목은 multibranch PR 빌드의 CHANGE_* 환경변수에서, main 빌드는 커밋 메시지
 // (`Merge pull request #N` 또는 squash의 `제목 (#N)`)에서 읽는다.
@@ -21,7 +22,7 @@ def call(Map args = [:]) {
                 return
             }
             def sha = args.commit ?: env.GIT_COMMIT
-            def git = gitInfo(sha)
+            def git = gitInfo(sha, args.gitDir)
             def payload = buildPayload(currentBuild.rawBuild, [
                 result  : currentBuild.currentResult,
                 job     : env.JOB_NAME,
@@ -111,12 +112,13 @@ String buildPayload(run, Map b) {
 }
 
 // 커밋 제목·작성자·본문. sha가 없거나 git 호출이 실패하면 빈 값이라 알림은 PR 정보 없이 나간다.
-Map gitInfo(String sha) {
-    if (!(sha ==~ /[0-9a-f]{7,40}/)) {
+Map gitInfo(String sha, String gitDir = null) {
+    if (!(sha ==~ /[0-9a-f]{7,40}/) || (gitDir && !(gitDir ==~ /[\w.\/-]+/))) {
         return [:]
     }
     try {
-        def out = sh(script: "git log -1 --format=%s%x1f%an%x1f%b ${sha}", returnStdout: true).trim()
+        def cd = gitDir ? "cd '${gitDir}' && " : ''
+        def out = sh(script: "${cd}git log -1 --format=%s%x1f%an%x1f%b ${sha}", returnStdout: true).trim()
         def p = out.split('\u001f', -1)
         return [subject: p[0], author: p.length > 1 ? p[1] : '', body: p.length > 2 ? p[2] : '']
     } catch (e) {

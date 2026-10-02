@@ -196,6 +196,7 @@ pipeline {
             notifyMattermost(
                 commit: env.DEPLOY_SHA,
                 repoUrl: env.INFRA_SCM_URL,
+                gitDir: env.APP_DIR,
                 fields: ['배포 대상': env.RESOLVED_TARGET]
             )
         }
