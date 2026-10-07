@@ -12,7 +12,7 @@ pipelineJob('vps-infra-pipeline') {
     description('vps-infra 공통 인프라 배포. 정의는 jenkins/casc/jobs.groovy에 있다.')
 
     parameters {
-        choiceParam('DEPLOY_TARGET', ['auto', 'all', 'portal'],
+        choiceParam('DEPLOY_TARGET', ['auto', 'all', 'portal', 'observability'],
             '배포 대상. auto는 변경 파일로 판정하고, 판정 불가 시 실패한다.')
     }
 

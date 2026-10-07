@@ -1,0 +1,15 @@
+# 대시보드 JSON은 레포 파일이 원본이다(ADR 0016). git pull로 파일이 바뀌면
+# Grafana가 updateIntervalSeconds마다 다시 읽는다. 재시작이 필요 없다.
+# UI에서 고친 내용은 저장할 수 없다. 고치려면 JSON을 export해 커밋한다.
+apiVersion: 1
+
+providers:
+  - name: default
+    type: file
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    disableDeletion: false
+    options:
+      path: /etc/grafana/dashboards
+      # 하위 폴더 이름이 Grafana 폴더가 된다.
+      foldersFromFilesStructure: true

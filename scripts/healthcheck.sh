@@ -63,5 +63,8 @@ check_public_route() {
 # whoami는 DNS, TLS, nginx 경로를 확인하고 portal은 실제 배포 대상을 확인한다.
 check_public_route "health" "$health_host"
 check_public_route "portal" "$portal_host"
+# 관측 스택(ADR 0016). 별도 compose 프로젝트라 nginx 라우팅과 함께 확인한다.
+# 루트는 /login으로 302를 주며, -f는 3xx를 실패로 보지 않는다.
+check_public_route "grafana" "grafana.${BASE_DOMAIN:-localhost}"
 
 echo "[healthcheck] ok"

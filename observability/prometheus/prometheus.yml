@@ -1,0 +1,17 @@
+# Prometheus는 저장소 역할만 한다. 수집은 Alloy가 remote_write로 밀어 넣는다(ADR 0016).
+# 그래서 scrape 대상은 자기 자신뿐이다.
+global:
+  scrape_interval: 30s
+
+storage:
+  tsdb:
+    # 시간과 크기 중 먼저 닿는 쪽으로 오래된 블록을 지운다.
+    # 3.x에서 --storage.tsdb.retention.* 플래그는 deprecated이고 이 설정이 우선한다.
+    retention:
+      time: 15d
+      size: 5GB
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

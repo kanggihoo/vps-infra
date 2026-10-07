@@ -1,0 +1,156 @@
+# 알림 설정. contact point, 정책, 규칙 모두 이 파일이 원본이다(ADR 0016).
+# 바꾸면 deploy.sh가 checksum으로 감지해 Grafana를 재생성한다.
+#
+# Grafana에는 Mattermost 전용 연동이 없다. slack 타입에 Mattermost incoming webhook URL만
+# 주면(token 없이) Slack incoming webhook 형식으로 보내고, Mattermost가 이를 받는다.
+# provisioning 파일 안의 문자 그대로 $는 $$로 쓴다($는 환경변수 치환이다).
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: mattermost
+    receivers:
+      - uid: mattermost
+        type: slack
+        settings:
+          url: $GRAFANA_ALERT_WEBHOOK_URL
+          username: grafana
+
+policies:
+  - orgId: 1
+    receiver: mattermost
+    group_by: [grafana_folder, alertname]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+
+# 1차 규칙(ADR 0016). VPS 전체 다운은 Grafana도 함께 죽으므로 외부 UptimeRobot이 맡는다.
+groups:
+  - orgId: 1
+    name: vps
+    folder: Alerts
+    interval: 1m
+    rules:
+      - uid: disk-usage-high
+        title: 디스크 사용률 85% 초과
+        condition: C
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $$labels.mountpoint }} 사용률 {{ printf \"%.0f\" $$values.B.Value }}%"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              refId: A
+              instant: true
+              expr: 100 * (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [85] }
+
+      # swap이 없어 메모리가 바닥나면 OOM으로 프로세스가 바로 죽는다.
+      - uid: memory-available-low
+        title: 메모리 available 500MB 미만
+        condition: C
+        for: 2m
+        noDataState: NoData
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: "available {{ printf \"%.0f\" $$values.B.Value }}MB"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              refId: A
+              instant: true
+              expr: node_memory_MemAvailable_bytes / 1024 / 1024
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [500] }
+
+      - uid: probe-failed
+        title: 서브도메인 응답 실패
+        condition: C
+        for: 2m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $$labels.job }} 응답 실패"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              refId: A
+              instant: true
+              expr: probe_success
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+
+      # executor가 전역 1개라 빌드가 겹치면 잠깐 큐에 쌓이는 것은 정상이다.
+      # 파이프라인 timeout(15분)보다 길게 대기하면 무언가 멈춘 것이다.
+      # Jenkins가 꺼져 데이터가 없으면 probe-failed가 알리므로 여기서는 OK로 둔다.
+      - uid: jenkins-queue-stuck
+        title: Jenkins 큐 적체
+        condition: C
+        for: 20m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: "실행 대기 빌드 {{ printf \"%.0f\" $$values.B.Value }}개가 20분 넘게 남아 있다"
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              refId: A
+              instant: true
+              expr: max(jenkins_queue_buildable)
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }

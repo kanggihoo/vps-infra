@@ -3,7 +3,7 @@
 #
 #   select-target.sh <before-rev> <after-rev>
 #
-# stdout  portal | all
+# stdout  portal | observability | all
 # exit 0  판정 성공
 # exit 1  판정 불가 (변경 파일 목록을 얻을 수 없음)
 # exit 2  사용법 오류
@@ -34,10 +34,13 @@ if [ -z "$changed" ]; then
   exit 1
 fi
 
-# portal/ 밖의 파일이 하나라도 있으면 전체 배포.
+# 한 디렉터리 안에서만 바뀌었을 때만 그 대상만 배포하고, 그 밖은 전체 배포.
 # grep -qv는 "매칭되지 않는 줄이 있는가"를 묻는다.
-if printf '%s\n' "$changed" | grep -qv '^portal/'; then
-  echo all
-else
+# observability/는 별도 Compose project라 인프라 재적용 없이 따로 올린다(ADR 0016).
+if ! printf '%s\n' "$changed" | grep -qv '^portal/'; then
   echo portal
+elif ! printf '%s\n' "$changed" | grep -qv '^observability/'; then
+  echo observability
+else
+  echo all
 fi

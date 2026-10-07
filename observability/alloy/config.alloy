@@ -1,0 +1,190 @@
+// Alloy 하나가 메트릭·로그·트레이스 수집을 모두 맡는다(ADR 0016).
+//
+//   메트릭  내장 exporter(unix, cadvisor, blackbox) + Jenkins OTLP 메트릭 -> Prometheus remote_write
+//   로그    모든 컨테이너 stdout(Docker API)                          -> Loki
+//           Jenkins 빌드 로그(OTLP)                                  -> Loki OTLP
+//   트레이스 nginx, Jenkins(OTLP)                                      -> Tempo
+//
+// 설정을 바꾸면 deploy.sh가 checksum으로 감지해 컨테이너를 재생성한다.
+
+// ---------------------------------------------------------------------------
+// 메트릭
+// ---------------------------------------------------------------------------
+
+// 호스트 CPU·메모리·디스크·로드. 호스트 경로는 compose가 /host/* 로 마운트한다.
+prometheus.exporter.unix "host" {
+  procfs_path    = "/host/proc"
+  sysfs_path     = "/host/sys"
+  rootfs_path    = "/host/root"
+  udev_data_path = "/host/root/run/udev/data"
+}
+
+// 컨테이너별 자원. 기본값은 컨테이너당 200~400 시리즈라 소스에서 먼저 줄인다.
+//   store_container_labels=false  compose 라벨이 시리즈 라벨이 되면 값이 바뀔 때마다 새 시리즈가 생긴다.
+//   disabled_metrics              목록을 주면 기본 비활성 목록을 대체하므로 기본값(앞 11개)을 반복한다.
+//                                 disk, diskIO가 절감 폭이 가장 크다.
+prometheus.exporter.cadvisor "docker" {
+  docker_host            = "unix:///var/run/docker.sock"
+  docker_only            = true
+  store_container_labels = false
+  disabled_metrics       = [
+    "advtcp", "cpu_topology", "cpuset", "hugetlb", "memory_numa", "process",
+    "referenced_memory", "resctrl", "sched", "tcp", "udp",
+    "percpu", "disk", "diskIO", "perf_event",
+  ]
+}
+
+// 서브도메인 생존 확인. 공개 이름은 nginx의 vps_proxy alias라 실제 인증서와 SNI로
+// nginx를 거쳐 백엔드까지 간다(컨테이너는 공개 IP로 hairpin할 수 없다).
+// Basic Auth 뒤의 vps-info는 nginx 앞에서 401이 나므로 백엔드를 직접 본다.
+prometheus.exporter.blackbox "probe" {
+  config = "{ modules: { http_2xx: { prober: http, timeout: 5s, http: { preferred_ip_protocol: ip4 } } } }"
+
+  target {
+    name    = "health"
+    address = sys.env("PROBE_SCHEME") + "://health." + sys.env("BASE_DOMAIN") + "/"
+    module  = "http_2xx"
+  }
+
+  target {
+    name    = "portal"
+    address = sys.env("PROBE_SCHEME") + "://portal." + sys.env("BASE_DOMAIN") + "/"
+    module  = "http_2xx"
+  }
+
+  target {
+    name    = "jenkins"
+    address = sys.env("PROBE_SCHEME") + "://jenkins." + sys.env("BASE_DOMAIN") + "/login"
+    module  = "http_2xx"
+  }
+
+  target {
+    name    = "grafana"
+    address = sys.env("PROBE_SCHEME") + "://grafana." + sys.env("BASE_DOMAIN") + "/api/health"
+    module  = "http_2xx"
+  }
+
+  target {
+    name    = "vps-info"
+    address = "http://vps-info-app:8000/api/health"
+    module  = "http_2xx"
+  }
+}
+
+prometheus.scrape "host" {
+  targets         = array.concat(prometheus.exporter.unix.host.targets, prometheus.exporter.blackbox.probe.targets)
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.prom.receiver]
+}
+
+prometheus.scrape "cadvisor" {
+  targets         = prometheus.exporter.cadvisor.docker.targets
+  scrape_interval = "30s"
+  forward_to      = [prometheus.relabel.cadvisor.receiver]
+}
+
+// 허용 목록. 여기 없는 cadvisor 메트릭은 저장하지 않는다.
+prometheus.relabel "cadvisor" {
+  rule {
+    source_labels = ["__name__"]
+    regex         = "container_(cpu_usage_seconds_total|memory_working_set_bytes|memory_usage_bytes|network_(receive|transmit)_bytes_total|last_seen|oom_events_total|start_time_seconds)"
+    action        = "keep"
+  }
+  forward_to = [prometheus.remote_write.prom.receiver]
+}
+
+prometheus.remote_write "prom" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 컨테이너 로그
+// ---------------------------------------------------------------------------
+
+discovery.docker "all" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Loki 라벨은 적게 둔다. 라벨 조합마다 stream이 생긴다.
+discovery.relabel "logs" {
+  targets = discovery.docker.all.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "compose_project"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+}
+
+loki.source.docker "all" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.logs.output
+  forward_to = [loki.write.loki.receiver]
+}
+
+loki.write "loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// ---------------------------------------------------------------------------
+// OTLP (nginx 트레이스, Jenkins 트레이스·메트릭·빌드 로그)
+// ---------------------------------------------------------------------------
+
+otelcol.receiver.otlp "in" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.out.input]
+    logs    = [otelcol.processor.batch.out.input]
+    traces  = [otelcol.processor.batch.out.input]
+  }
+}
+
+otelcol.processor.batch "out" {
+  output {
+    metrics = [otelcol.exporter.prometheus.prom.input]
+    logs    = [otelcol.exporter.otlphttp.loki.input]
+    traces  = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.prometheus "prom" {
+  forward_to = [prometheus.remote_write.prom.receiver]
+}
+
+// Loki 3의 OTLP 수신 경로. 속성은 structured metadata로 들어간다.
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = "http://loki:3100/otlp"
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+
+    tls {
+      insecure = true
+    }
+  }
+}

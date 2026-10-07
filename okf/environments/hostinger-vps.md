@@ -32,6 +32,7 @@ CNAME  www        kkh-hub.tech
 A      health     187.77.114.68
 A      portal     187.77.114.68
 A      jenkins    187.77.114.68
+A      grafana    187.77.114.68
 ```
 
 # SSH / Docker 조건

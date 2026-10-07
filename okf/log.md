@@ -1,5 +1,12 @@
 # 변경 기록
 
+## 2026-10-08
+* **결정**: [ADR 0016](/adr/0016-self-hosted-observability.md)으로 Grafana·Prometheus·Loki·Tempo를 VPS에 셀프호스팅하고 Alloy 하나로 수집한다. Grafana Cloud를 전제로 한 루트 `OBSERVABILITY.md`를 삭제하고 유효한 내용(cAdvisor 필터, DB 트레이스는 앱이 만든다)을 ADR로 옮겼다.
+* **결정**: [ADR 0017](/adr/0017-nginx-starts-traces.md)로 외부 요청의 trace는 nginx otel 모듈이 시작하고 W3C `traceparent`로 전파한다. 앱은 이어받기만 한다.
+* **변경**: `grafana.kkh-hub.tech` DNS A 레코드를 추가했고 `secrets/env.prod.sops.env`의 `CHALLENGE_DOMAINS`에 넣었다.
+* **구현**: [관측 스택](/services/observability.md)을 `observability/compose.yml`로 추가했다. nginx를 `-otel` 이미지와 JSON access log로 바꾸고, Jenkins에 `opentelemetry` plugin을 넣었다(이미지 재빌드 필요). 배포 대상에 `observability`를 추가했고 `deploy.sh`가 설정 checksum으로 바뀐 서비스만 재생성한다. 로컬에서 메트릭·로그·트레이스·알림 규칙 로드를 확인했다.
+* **결정 변경**: Jenkins 메트릭은 OTel plugin이 OTLP로 내므로 `prometheus` plugin과 scrape 전용 계정을 두지 않는다([ADR 0016](/adr/0016-self-hosted-observability.md)).
+
 ## 2026-10-03
 * **결정**: [ADR 0015](/adr/0015-multibranch-periodic-scan.md)로 `vps-info` multibranch에 15분 주기 스캔을 추가해 유실된 webhook을 보완한다. `jobs.groovy`에 `periodicFolderTrigger`를 넣었다.
 * **변경**: `notifyMattermost()`가 PR 번호·제목·작성자·브랜치와 main 빌드의 병합 PR을 알림에 싣는다([ADR 0012](/adr/0012-mattermost-build-notification.md)). 제목의 `#번호`가 빌드 번호라 어느 PR인지 알 수 없던 문제를 고친다.

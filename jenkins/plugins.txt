@@ -30,6 +30,10 @@ pipeline-graph-view:1041.v107d70db_b_1a_f
 # 테스트 결과(JUnit XML) 집계와 추이 그래프. notifyMattermost가 실패한 테스트를 읽는다.
 junit:1431.vc0d98912a_756
 
+# 파이프라인 트레이스, Jenkins 메트릭(큐·executor·JVM), 빌드 로그를 OTLP로 Alloy에 보낸다(ADR 0016).
+# 메트릭도 이 plugin이 내므로 prometheus plugin과 그 scrape 전용 계정은 두지 않는다.
+opentelemetry:3.1603.ve3fa_cc8a_b_f5e
+
 # ws-cleanup, build-timeout, docker-workflow는 쓰지 않아 뺐다(2026-09-29, ADR 0009).
 # pipeline의 timeout()은 기본 스텝이고, docker는 sh로만 호출한다.
 

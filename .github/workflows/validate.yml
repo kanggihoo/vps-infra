@@ -22,6 +22,7 @@ jobs:
           cp .env.example .env
           docker compose config >/dev/null
           docker compose -f jenkins/compose.yml config >/dev/null
+          docker compose -f observability/compose.yml --env-file .env config >/dev/null
         env:
           # jenkins/compose.yml의 필수 변수. 값은 검증용 더미다.
           # 필수(:?)로 둔 이유는 조용한 기본값이 경로 불일치를 숨기기 때문이다.
@@ -74,7 +75,7 @@ jobs:
               -v "$PWD/nginx/tls:/etc/nginx/tls:ro" \
               -v "$PWD/nginx/test-fixtures/basic-auth.htpasswd:/etc/nginx/basic-auth.htpasswd:ro" \
               -v /tmp/le:/etc/letsencrypt:ro \
-              nginx:1.31.4-alpine \
+              nginx:1.31.4-alpine-otel \
               sh -c '/docker-entrypoint.sh nginx -t'
           }
 

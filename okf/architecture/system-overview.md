@@ -3,7 +3,7 @@ type: Architecture
 title: 시스템 아키텍처 개요
 description: Hostinger VPS 1대에서 Jenkins, nginx, Docker Compose, PostgreSQL, Redis가 연결되는 현재 구조.
 tags: [architecture, vps, docker-compose, nginx, deployment]
-timestamp: 2026-09-13T00:00:00+09:00
+timestamp: 2026-10-08T00:00:00+09:00
 ---
 
 # 개요
@@ -39,6 +39,7 @@ Internet
           -> portal
           -> PostgreSQL
           -> Redis
+          -> Grafana (관측 스택, 별도 compose project)
       -> certbot (상주, 12시간마다 갱신 확인, public 포트 미점유)
 ```
 
@@ -48,6 +49,7 @@ Internet
 |-----------------|----------------|------|
 | `proxy` | `vps_proxy` | nginx와 public HTTP backend가 연결되는 라우팅 경계. |
 | `data` | `vps_data` | PostgreSQL과 Redis가 외부 port publish 없이 연결되는 내부 데이터 경계. |
+| `observability` (`observability/compose.yml`) | `vps_observability` | Prometheus·Loki·Tempo 저장소 경계. Alloy와 Grafana만 `vps_proxy`와 함께 붙는다. |
 
 # 라우팅 구조
 
@@ -61,6 +63,9 @@ portal.kkh-hub.tech
 
 jenkins.kkh-hub.tech
   -> jenkins
+
+grafana.kkh-hub.tech
+  -> grafana
 ```
 
 라우팅은 [서브도메인 라우팅](/adr/0005-subdomain-routing.md) 결정을 따른다.
@@ -81,6 +86,7 @@ nginx 전환과 함께 제거했다.
 | [whoami](/services/whoami.md) | nginx 뒤 검증용 HTTP backend | 직접 노출 없음 |
 | [PostgreSQL](/services/postgresql.md) | 공통 DB container | `5432` 미노출 |
 | [Redis](/services/redis.md) | 공통 cache/session container | `6379` 미노출 |
+| [관측 스택](/services/observability.md) | 메트릭·로그·트레이스 수집과 조회 | Grafana만 nginx 뒤 HTTPS |
 
 # 데이터 서비스 격리 방향
 

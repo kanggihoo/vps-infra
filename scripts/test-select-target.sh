@@ -61,6 +61,17 @@ echo portal-after-infra > portal/App.tsx
 git add -A && git commit -qm portal-after-infra
 portal_after_infra="$(git rev-parse HEAD)"
 
+# 관측 스택만 바뀐 커밋. 별도 Compose project라 인프라 전체를 재적용하지 않는다(ADR 0016).
+mkdir -p observability
+echo alloy-change > observability/config.alloy
+git add -A && git commit -qm observability-only
+observability_only="$(git rev-parse HEAD)"
+
+echo portal-and-observability > portal/App.tsx
+echo alloy-change-2 > observability/config.alloy
+git add -A && git commit -qm portal-and-observability
+portal_and_observability="$(git rev-parse HEAD)"
+
 # --- 검증 ---
 expect "portal/ 아래만 바뀌면 portal" \
   portal 0 "$base" "$portal_only"
@@ -76,6 +87,12 @@ expect "최신 커밋만 보면 portal인 변경" \
 
 expect "누적 범위에 인프라 변경이 있으면 all" \
   all 0 "$empty" "$portal_after_infra"
+
+expect "observability/ 아래만 바뀌면 observability" \
+  observability 0 "$portal_after_infra" "$observability_only"
+
+expect "portal/과 observability/가 섞이면 all" \
+  all 0 "$observability_only" "$portal_and_observability"
 
 # 핵심 결정: 빈 diff는 portal이 아니라 판정 불가다.
 expect "변경 파일이 없으면 판정 불가로 실패" \

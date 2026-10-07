@@ -1,0 +1,41 @@
+# ============================================================
+# grafana.${BASE_DOMAIN} -> grafana 컨테이너 (ADR 0016)
+#
+# 기본 구조는 portal.conf.template과 동일. 상세 주석은 그쪽 참고.
+# 인증은 Grafana 자체 로그인이 맡는다. Basic Auth를 겹치면 Grafana가
+# Authorization 헤더를 자기 basic auth로 해석해 로그인이 꼬인다.
+#
+# grafana는 observability/compose.yml이 띄우는 별도 compose 프로젝트다.
+# jenkins와 같이 변수 upstream으로 두어, 관측 스택이 없어도 nginx는 기동하고
+# 이 서브도메인만 502를 준다.
+# ============================================================
+
+server {
+    listen ${NGINX_LISTEN};
+    server_name grafana.${BASE_DOMAIN};
+
+    include /etc/nginx/tls/${TLS_MODE}.conf;
+
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
+    location / {
+        set $grafana_upstream "grafana:3000";
+        proxy_pass http://$grafana_upstream$request_uri;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Grafana Live(대시보드 실시간 갱신, Explore live tail)는 WebSocket을 쓴다.
+    location /api/live/ {
+        set $grafana_upstream "grafana:3000";
+        proxy_pass http://$grafana_upstream$request_uri;
+
+        proxy_set_header Host $host;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}

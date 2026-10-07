@@ -3,7 +3,7 @@ type: Service
 title: nginx 리버스 프록시
 description: VPS의 public HTTP/HTTPS 진입점.
 tags: [nginx, reverse-proxy, tls, certbot, docker]
-timestamp: 2026-09-13T00:00:00+09:00
+timestamp: 2026-10-08T00:00:00+09:00
 ---
 
 # 개요
@@ -25,6 +25,7 @@ Docker label 기반 동적 라우팅은 없다. 전체 배포는 후보 템플�
 | `portal.kkh-hub.tech` | [공용 인프라 포털](/services/portal.md) | `nginx/templates/portal.conf.template` |
 | `jenkins.kkh-hub.tech` | [Jenkins](/services/jenkins-deploy.md) | `nginx/templates/jenkins.conf.template` |
 | `erd.kkh-hub.tech` | [ERD 서빙](/services/erd.md) (정적 파일, Basic Auth) | `nginx/templates/erd.conf.template` |
+| `grafana.kkh-hub.tech` | [관측 스택](/services/observability.md) (Grafana 자체 로그인) | `nginx/templates/grafana.conf.template` |
 
 Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 (`ssafy.kkh-hub.tech`)은 nginx 전환과 함께 제거했다. SSAFY Workspace Webhook POC 서비스
@@ -48,6 +49,16 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
   같은 인증서(`--cert-name kkh-hub.tech`)를 `--expand`한다.
 - HTTP(`:80`)의 `/.well-known/acme-challenge/`는 `nginx/templates/00-http-challenge.conf.template`가
   webroot로 정적 서빙한다. 나머지 HTTP 요청은 HTTPS로 301 redirect한다.
+
+# 로그와 트레이스
+
+- 이미지는 `nginx:1.31.4-alpine-otel`이다. OpenTelemetry 모듈이 요청마다 span을 Alloy(`alloy:4317`)로 보내고
+  `traceparent`를 백엔드로 전파한다([ADR 0017](/adr/0017-nginx-starts-traces.md)). Alloy가 없어도 nginx는 기동하고
+  export 실패만 error 로그로 남긴다.
+- UptimeRobot과 Alloy blackbox probe 요청은 user agent로 걸러 trace하지 않는다.
+- access log는 JSON 한 줄이다. `request_time`, `upstream_response_time`, `trace_id`를 담는다.
+- `vps_proxy`에서 공개 이름(`health`, `portal`, `jenkins`, `grafana`)을 alias로 갖는다. 컨테이너가 공개 IP로
+  hairpin하지 못하므로 내부 probe가 이 alias로 nginx를 거친다.
 
 # 책임
 

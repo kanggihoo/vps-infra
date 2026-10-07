@@ -8,9 +8,10 @@
 # 2. 로컬 / 운영 수동 배포: 터미널에서 전체 스택 또는 특정 대상을 배포할 때 직접 실행
 #
 # [사용법]
-#   ./scripts/deploy.sh [all|portal]
-#   - all (기본값): 전체 인프라 스택 배포 (Nginx, DB, Redis, Portal 등)
+#   ./scripts/deploy.sh [all|portal|observability]
+#   - all (기본값): 전체 인프라 스택 배포 (Nginx, DB, Redis, Portal 등) + 관측 스택
 #   - portal: 웹 애플리케이션(React/Go) 코드 변경 시 다른 인프라 중단 없이 Portal 단독 배포
+#   - observability: 관측 스택(observability/compose.yml)만 배포
 # ==============================================================================
 
 # 에러 발생 시 즉시 중단(-e), 정의되지 않은 변수 참조 시 중단(-u), 파이프라인 중간 에러 감지(-o pipefail)
@@ -26,10 +27,10 @@ cd "$(dirname "$0")/.."
 # 1. 대상 파라미터 유효성 검사
 # ------------------------------------------------------------------------------
 case "$target" in
-  all|portal) ;;
+  all|portal|observability) ;;
   *)
     echo "[deploy] unknown target: $target" >&2
-    echo "[deploy] usage: $0 [all|portal]" >&2
+    echo "[deploy] usage: $0 [all|portal|observability]" >&2
     exit 2
     ;;
 esac
@@ -86,7 +87,45 @@ validate_nginx_template() {
 }
 
 # ------------------------------------------------------------------------------
-# 7. 대상이 'portal'인 경우: Portal 웹 앱만 단독 배포 후 종료
+# 관측 스택 배포 함수 (ADR 0016)
+# ------------------------------------------------------------------------------
+# 별도 Compose project다. 인프라 배포가 관측 스택을 재생성하지 않아야 배포 중 장애를 관측할 수 있다.
+# up -d는 바뀐 서비스만 재생성하므로 매 배포마다 불러도 멈추지 않는다.
+#
+# 설정 파일은 bind mount라 내용만 바뀌면 compose가 컨테이너를 재생성하지 않는다.
+# 서비스별 설정 파일 checksum을 환경변수로 넘겨, 설정이 바뀐 서비스만 재생성되게 한다.
+# Grafana 대시보드는 Grafana가 스스로 다시 읽으므로 checksum에서 뺀다.
+config_checksum() {
+  find "$@" -type f | LC_ALL=C sort | xargs cat | cksum | cut -d' ' -f1
+}
+
+deploy_observability() {
+  echo "[deploy] applying observability"
+  ALLOY_CONFIG_SUM="$(config_checksum observability/alloy)"
+  PROMETHEUS_CONFIG_SUM="$(config_checksum observability/prometheus)"
+  LOKI_CONFIG_SUM="$(config_checksum observability/loki)"
+  TEMPO_CONFIG_SUM="$(config_checksum observability/tempo)"
+  GRAFANA_CONFIG_SUM="$(config_checksum observability/grafana/provisioning)"
+  export ALLOY_CONFIG_SUM PROMETHEUS_CONFIG_SUM LOKI_CONFIG_SUM TEMPO_CONFIG_SUM GRAFANA_CONFIG_SUM
+
+  local obs=(docker compose -f observability/compose.yml --env-file .env)
+  "${obs[@]}" config >/dev/null
+  "${obs[@]}" pull --ignore-buildable
+  "${obs[@]}" up -d --wait --wait-timeout 180
+  "${obs[@]}" ps
+}
+
+# ------------------------------------------------------------------------------
+# 7. 대상이 'observability'인 경우: 관측 스택만 배포 후 종료
+# ------------------------------------------------------------------------------
+if [ "$target" = "observability" ]; then
+  deploy_observability
+  echo "[deploy] complete"
+  exit 0
+fi
+
+# ------------------------------------------------------------------------------
+# 7-1. 대상이 'portal'인 경우: Portal 웹 앱만 단독 배포 후 종료
 # ------------------------------------------------------------------------------
 if [ "$target" = "portal" ]; then
   echo "[deploy] applying portal only"
@@ -161,6 +200,9 @@ fi
 # 배포된 컨테이너 상태 목록 출력
 echo "[deploy] compose status"
 docker compose ps
+
+# 인프라 뒤에 올린다. 관측 스택은 nginx(grafana 라우팅)와 vps_proxy·vps_data 네트워크를 전제한다.
+deploy_observability
 
 # ------------------------------------------------------------------------------
 # 9. 데이터베이스 및 캐시 서비스 로컬 연결 상태 검증

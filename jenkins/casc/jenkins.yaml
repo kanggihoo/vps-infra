@@ -42,6 +42,29 @@ unclassified:
   location:
     url: "${JENKINS_URL}"
 
+  # 파이프라인 트레이스·Jenkins 메트릭·빌드 로그를 Alloy로 보낸다(ADR 0016).
+  # Alloy는 별도 compose 프로젝트라 없을 수 있다. 그때는 export만 실패하고 빌드는 계속된다.
+  openTelemetry:
+    endpoint: "http://alloy:4317"
+    authentication: "noAuthentication"
+    serviceName: "jenkins"
+    serviceNamespace: "ci"
+    exportOtelConfigurationAsEnvironmentVariables: false
+    observabilityBackends:
+      - grafana:
+          # 빌드 화면의 "View pipeline with Grafana" 링크가 이 주소의 Tempo로 간다.
+          # 링크 전용이라 환경마다 나누지 않는다. 로컬 Jenkins의 링크도 운영 Grafana를 가리킨다.
+          grafanaBaseUrl: "https://grafana.kkh-hub.tech"
+          grafanaOrgId: "1"
+          # Tempo 데이터소스 UID. observability/grafana/provisioning/datasources와 같아야 한다.
+          tempoDataSourceIdentifier: "tempo"
+          tempoQueryType: "traceql"
+          # 빌드 로그를 Loki로 보내되 Jenkins 디스크에도 남긴다. Jenkins 화면은 디스크에서 읽으므로
+          # Loki가 죽어도 빌드 로그를 잃지 않는다(Jenkins가 관측 스택에 의존하지 않는다).
+          grafanaLogsBackend:
+            grafanaLogsBackendBackendWithLogMirroringInJenkins:
+              lokiOTelLogFormat: "LOKI_V3_OTEL_FORMAT"
+
   # 모든 job이 @Library 없이 쓰는 공용 라이브러리(ADR 0012).
   # vps-infra 레포의 jenkins/shared-lib/를 main 기준으로 읽는다.
   globalLibraries:

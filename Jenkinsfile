@@ -20,10 +20,10 @@ pipeline {
     parameters {
         // 수동 빌드 실행 시 배포 범위를 선택할 수 있는 파라미터 드롭다운 제공
         // auto = 스크립트가 판정한다. 판정 불가면 빌드가 멈춘다.
-        // portal/all = 판정을 건너뛰고 그 대상으로 배포한다(수동 빌드, 재배포).
+        // portal/observability/all = 판정을 건너뛰고 그 대상으로 배포한다(수동 빌드, 재배포).
         choice(
             name: 'DEPLOY_TARGET',
-            choices: ['auto', 'all', 'portal'],
+            choices: ['auto', 'all', 'portal', 'observability'],
             description: '배포 대상. auto는 변경 파일로 판정하고, 판정 불가 시 실패한다.'
         )
     }
@@ -82,7 +82,7 @@ pipeline {
             }
         }
 
-        // [2단계] Git diff를 분석하여 배포 대상 결정 (portal만 배포 vs all 전체 배포)
+        // [2단계] Git diff를 분석하여 배포 대상 결정 (portal만, observability만, all 전체)
         stage('Select target') {
             steps {
                 script {

@@ -2,7 +2,8 @@ services:
   nginx:
     # 버전 고정: 움직이는 태그(alpine)는 Dockerfile이 안 바뀌어도
     # 빌드 시점에 따라 로컬과 VPS가 다른 이미지를 갖게 한다.
-    image: nginx:1.31.4-alpine
+    # -otel 변형은 같은 nginx에 OpenTelemetry 모듈만 더한 공식 이미지다(ADR 0017).
+    image: nginx:1.31.4-alpine-otel
     container_name: vps-nginx
     restart: unless-stopped
     # certbot은 nginx에 신호를 보낼 수 없으므로 nginx가 하루 한 번 스스로 reload해
@@ -49,7 +50,15 @@ services:
       #   BASIC_AUTH_HTPASSWD=./secrets/basic-auth.htpasswd
       - ${BASIC_AUTH_HTPASSWD:-./nginx/test-fixtures/basic-auth.htpasswd}:/etc/nginx/basic-auth.htpasswd:ro
     networks:
-      - proxy
+      proxy:
+        # 컨테이너는 VPS의 공개 IP로 자기 자신(nginx)에 붙지 못한다(hairpin, 2026-10-08 확인).
+        # 공개 이름을 nginx의 내부 alias로 두면 같은 네트워크의 컨테이너가 실제 인증서와
+        # SNI로 nginx를 거친다. Alloy의 서브도메인 probe가 이 경로를 쓴다(ADR 0016).
+        aliases:
+          - health.${BASE_DOMAIN:-localhost}
+          - portal.${BASE_DOMAIN:-localhost}
+          - jenkins.${BASE_DOMAIN:-localhost}
+          - grafana.${BASE_DOMAIN:-localhost}
     depends_on:
       - whoami
       - portal

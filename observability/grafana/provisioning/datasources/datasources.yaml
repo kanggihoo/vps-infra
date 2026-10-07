@@ -1,0 +1,53 @@
+# 데이터소스 UID는 고정이다. 대시보드, 알림 규칙, Jenkins OTel plugin(tempoDataSourceIdentifier)이
+# 이 UID로 참조하므로 바꾸면 그쪽이 모두 깨진다(ADR 0016).
+# provisioning 파일 안의 문자 그대로 $는 $$로 쓴다($는 환경변수 치환이다).
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      # 로그 줄에서 Tempo 트레이스로 가는 링크(ADR 0017).
+      derivedFields:
+        # nginx JSON access log 안의 trace_id
+        - name: TraceID
+          datasourceUid: tempo
+          matcherType: regex
+          matcherRegex: '"trace_id":"(\w+)"'
+          url: "$${__value.raw}"
+          urlDisplayLabel: View trace
+        # Jenkins 빌드 로그(OTLP)는 trace_id를 structured metadata로 갖는다.
+        - name: trace_id
+          datasourceUid: tempo
+          matcherType: label
+          matcherRegex: trace_id
+          url: "$${__value.raw}"
+          urlDisplayLabel: View trace
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      # span에서 같은 trace_id의 로그로 간다.
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        filterByTraceID: true
+        tags:
+          - key: service.name
+            value: service_name
+      nodeGraph:
+        enabled: true

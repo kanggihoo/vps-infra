@@ -1,0 +1,57 @@
+# Loki 단일 바이너리, 파일시스템 저장(ADR 0016).
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    # 보존 삭제는 index period가 24h일 때만 동작한다.
+    - from: 2026-10-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# 보존 7일. compactor가 지난 로그를 실제로 지운다.
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+  delete_request_store: filesystem
+
+limits_config:
+  retention_period: 168h
+  # Jenkins 빌드 로그(OTLP)의 속성이 structured metadata로 들어간다.
+  allow_structured_metadata: true
+
+# 설정하지 않으면 chunk와 쿼리 결과에 100MB씩 내장 캐시를 잡는다. 작은 VPS라 줄인다.
+chunk_store_config:
+  chunk_cache_config:
+    embedded_cache:
+      enabled: true
+      max_size_mb: 64
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 32
+
+analytics:
+  reporting_enabled: false

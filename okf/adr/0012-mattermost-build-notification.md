@@ -63,7 +63,7 @@ post always
 - 알림 전송 실패는 빌드 결과를 바꾸지 않는다. credential이 비어 있으면(로컬 Jenkins) 건너뛴다.
 - 라이브러리가 쓰는 `ansiColor`, `junit` plugin을 먼저 설치한 뒤에 그것을 쓰는 `Jenkinsfile`을 push한다.
   순서가 바뀌면 declarative 검증에서 빌드가 시작부터 실패한다.
-- Jenkins 지표(prometheus plugin)는 이번 범위에서 뺐다. 모니터링 구축(`OBSERVABILITY.md` 설계) 때 다룬다.
+- Jenkins 지표(prometheus plugin)는 이번 범위에서 뺐다. 모니터링 구축([ADR 0016](/adr/0016-self-hosted-observability.md)) 때 다룬다.
 
 # 관련 개념
 
