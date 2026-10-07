@@ -31,9 +31,9 @@ otelcol.receiver.otlp         nginx·Jenkins 트레이스 → Tempo, Jenkins 빌
 ```
 
 1차 범위는 호스트 자원, 컨테이너 자원, 서브도메인 생존, 전체 컨테이너 로그, Jenkins(메트릭·파이프라인
-트레이스·빌드 로그)다. 메모리 상한 초기값은 Prometheus·Grafana 512m, Alloy·Loki·Tempo 384m다.
-2026-10-08 로컬 실측 사용량은 Alloy 185MiB, Grafana 358MiB(기동 직후), Loki 97MiB, Tempo 215MiB,
-Prometheus 80MiB로 합계 약 940MiB다. postgres/redis exporter와 vps-info 앱 계측은 범위 밖이다.
+트레이스·빌드 로그)다. 메모리 상한 초기값은 Alloy·Prometheus·Grafana 512m, Loki·Tempo 384m다.
+2026-10-08 VPS 첫 배포 직후 실측은 Alloy 310MiB, Grafana 397MiB, Loki 175MiB, Tempo 95MiB,
+Prometheus 97MiB로 합계 약 1.07GiB이고, 호스트 available은 5.4GB였다. postgres/redis exporter와 vps-info 앱 계측은 범위 밖이다.
 
 | 항목 | 값 |
 |------|----|
@@ -108,7 +108,8 @@ CPU     2코어
 - 컨테이너는 VPS 공개 IP로 자기 자신에 붙지 못한다(hairpin, 공개 IP와 host-gateway 모두 타임아웃, 2026-10-08 확인).
   그래서 nginx가 `vps_proxy`에서 공개 이름(`health.<도메인>` 등)을 alias로 갖고, Alloy probe는 실제 인증서와 SNI로
   nginx를 거친다. Basic Auth 뒤의 vps-info는 nginx 앞에서 401이 나므로 `vps-info-app:8000/api/health`를 직접 본다.
-- Docker 29의 cAdvisor는 containerd 소켓으로 컨테이너를 찾으므로 `/run/containerd`도 마운트한다. 로컬
+- Docker 29의 cAdvisor는 containerd 소켓으로 컨테이너를 찾으므로 `/run/containerd`도 마운트한다. 또 cgroup v2에서
+  Alloy가 다른 컨테이너의 cgroup을 보려면 `cgroup: host`가 필요하다. privileged만으로는 루트 cgroup 하나만 보인다. 로컬
   Docker(OrbStack) VM에는 이 소켓이 없어 로컬에서는 컨테이너별 메트릭과 `/` 파일시스템이 보이지 않는다.
 - Prometheus, Loki, Tempo는 내부 네트워크 `vps_observability`에만 둔다. `vps_proxy`의 앱은 저장소에 직접 닿지 않는다.
   Alloy와 Grafana만 두 네트워크에 붙는다.

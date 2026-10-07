@@ -15,7 +15,8 @@ services:
     image: grafana/alloy:v1.20.1
     container_name: vps-alloy
     restart: unless-stopped
-    mem_limit: 384m
+    # 384m에서 VPS 안정 상태 310MiB(81%)였다(2026-10-08). 컨테이너 메트릭을 더 수집하므로 올린다.
+    mem_limit: 512m
     command:
       - run
       - /etc/alloy/config.alloy
@@ -27,6 +28,10 @@ services:
     # Jenkins와 tools도 같은 권한이라 새 위험 등급은 아니다(ADR 0016).
     privileged: true
     pid: host
+    # cgroup v2에서 컨테이너는 기본으로 자기 cgroup namespace만 본다. cAdvisor가 다른 컨테이너의
+    # cgroup(/sys/fs/cgroup/system.slice/docker-*.scope)을 보려면 호스트 namespace가 필요하다.
+    # 없으면 루트 cgroup 하나만 나온다(VPS에서 private 0개, host 16개 확인).
+    cgroup: host
     environment:
       CONFIG_SUM: ${ALLOY_CONFIG_SUM:-}
       BASE_DOMAIN: ${BASE_DOMAIN:-localhost}
