@@ -50,6 +50,8 @@ admin 계정(`GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`)과 알림 webhook(`
 {service_name="jenkins"} | ci_pipeline_id="vps-infra-pipeline" | ci_pipeline_run_number="24"
 ```
 
+- 로그 레벨: Alloy가 nginx access log에는 HTTP 상태로(5xx error, 4xx warn, 나머지 info), pino JSON에는 숫자 레벨을
+  이름으로 바꿔 `level` structured metadata를 붙인다. 형식 없는 텍스트 줄(vps-info collector·llm의 console.log)은 unknown이다.
 - Jenkins 빌드 로그의 `ci_pipeline_id`, `ci_pipeline_run_number`, `trace_id`는 stream 라벨이 아니라
   structured metadata다. `{...}` 안에 쓰면 결과가 0줄이므로 `|` 뒤 필터로 쓴다.
 

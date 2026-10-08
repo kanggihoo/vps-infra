@@ -3,7 +3,8 @@
 #
 # Grafana에는 Mattermost 전용 연동이 없다. slack 타입에 Mattermost incoming webhook URL만
 # 주면(token 없이) Slack incoming webhook 형식으로 보내고, Mattermost가 이를 받는다.
-# provisioning 파일 안의 문자 그대로 $는 $$로 쓴다($는 환경변수 치환이다).
+# 환경변수 치환($VAR)은 contact point 설정에만 쓴다. 알림 규칙의 annotation 템플릿은 치환하지 않으므로
+# {{ $labels.x }}를 그대로 쓴다. $$로 쓰면 그대로 남아 템플릿 파싱이 실패한다(2026-10-08 VPS에서 확인).
 apiVersion: 1
 
 contactPoints:
@@ -40,7 +41,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "{{ $$labels.mountpoint }} 사용률 {{ printf \"%.0f\" $$values.B.Value }}%"
+          summary: "{{ $labels.mountpoint }} 사용률 {{ printf \"%.0f\" $values.B.Value }}%"
         data:
           - refId: A
             datasourceUid: prometheus
@@ -71,7 +72,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "available {{ printf \"%.0f\" $$values.B.Value }}MB"
+          summary: "available {{ printf \"%.0f\" $values.B.Value }}MB"
         data:
           - refId: A
             datasourceUid: prometheus
@@ -101,7 +102,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "{{ $$labels.job }} 응답 실패"
+          summary: "{{ $labels.job }} 응답 실패"
         data:
           - refId: A
             datasourceUid: prometheus
@@ -134,7 +135,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "실행 대기 빌드 {{ printf \"%.0f\" $$values.B.Value }}개가 20분 넘게 남아 있다"
+          summary: "실행 대기 빌드 {{ printf \"%.0f\" $values.B.Value }}개가 20분 넘게 남아 있다"
         data:
           - refId: A
             datasourceUid: prometheus
