@@ -50,8 +50,9 @@ admin 계정(`GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`)과 알림 webhook(`
 {service_name="jenkins"} | ci_pipeline_id="vps-infra-pipeline" | ci_pipeline_run_number="24"
 ```
 
-- 로그 레벨: nginx는 access log에 HTTP 상태로 정한 `level`(5xx error, 4xx warn, 나머지 info)을 직접 쓴다.
-  Alloy는 pino JSON의 숫자 레벨만 이름으로 바꿔 `level` structured metadata를 붙인다. 형식 없는 텍스트 줄
+- 로그 레벨은 로그를 만드는 쪽이 쓴다. nginx는 access log에 HTTP 상태로 정한 `level`(5xx error, 4xx warn,
+  나머지 info)을 쓰고, vps-info 서버는 pino 레벨을 이름(`"level":"info"`)으로 쓴다(vps-info
+  `docs/conventions/logging.md`). Alloy는 로그 내용을 바꾸지 않는다. 형식 없는 텍스트 줄
   (vps-info collector·llm의 console.log)은 unknown이다.
 - Jenkins 빌드 로그의 `ci_pipeline_id`, `ci_pipeline_run_number`, `trace_id`는 stream 라벨이 아니라
   structured metadata다. `{...}` 안에 쓰면 결과가 0줄이므로 `|` 뒤 필터로 쓴다.
@@ -70,6 +71,26 @@ admin 계정(`GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`)과 알림 webhook(`
 
 - nginx access log는 Grafana NGINX 연동의 `json_analytics` 포맷에 `level`, `trace_id`, `span_id`만 덧붙인 것이다.
   필드 이름을 바꾸면 NGINX Logs 대시보드가 깨진다.
+
+# 수집 규칙 바꾸기
+
+수집 경로와 로그 가공은 모두 `observability/alloy/config.alloy` 한 파일에 있다. 컴포넌트를 선으로 잇는
+구조이고(`forward_to`), 로그는 `loki.source.docker` → (가공) → `loki.write` 순서로 흐른다.
+
+- **원칙: 로그 형식은 로그를 만드는 쪽에서 고친다.** 레벨, 필드 이름, 비밀값 제거는 앱 코드나 nginx 설정에서 한다.
+  Alloy에서 고치면 인프라가 각 앱의 형식을 알아야 하고, `docker logs`로 볼 때는 고쳐지지 않는다.
+- **Alloy에서 가공하는 경우:** 소스를 바꿀 수 없는 서드파티 로그만 다룬다. 시끄러운 로그 버리기, 새어 나온 비밀값 가리기 등이다.
+  `loki.source.docker`와 `loki.write` 사이에 `loki.process`를 넣고 `stage.*`로 처리한다.
+  - `stage.match`: 대상 고르기. selector에는 라벨만 쓴다. 라인 필터의 백틱 문자열은 파서가 받지 않는다.
+  - `stage.regex`, `stage.json`: 값 뽑기
+  - `stage.template`: 값 만들기. 없는 키를 `eq`로 비교하지 말고 `{{ with .x }}`로 감싼다.
+  - `stage.structured_metadata`, `stage.labels`: 붙이기. 라벨은 stream 수를 늘리므로 값 종류가 적을 때만 쓴다.
+  - `stage.drop`: 버리기
+- **검증 순서:**
+  1. `docker run --rm -v "$PWD/observability/alloy:/a:ro" grafana/alloy:<버전> fmt /a/config.alloy`로 문법을 본다.
+  2. 로컬에서 `./scripts/deploy.sh observability`로 띄운다. 설정 평가 오류로 Alloy가 재시작을 반복하면 배포가 실패한다.
+  3. 시험 로그를 내는 컨테이너를 몇 초 이상 띄워(너무 빨리 끝나면 수집 전에 사라진다) Loki 결과를 확인한다.
+- 파일이 커지면 디렉터리로 나눌 수 있다. Alloy는 디렉터리를 주면 그 안의 `*.alloy`를 모두 읽는다.
 
 # 알림
 
