@@ -23,7 +23,7 @@ datasources:
         - name: TraceID
           datasourceUid: tempo
           matcherType: regex
-          matcherRegex: '"trace_id":"(\w+)"'
+          matcherRegex: '"trace_id":\s*"(\w+)"'
           url: "$${__value.raw}"
           urlDisplayLabel: View trace
         # Jenkins 빌드 로그(OTLP)는 trace_id를 structured metadata로 갖는다.

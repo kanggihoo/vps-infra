@@ -50,16 +50,26 @@ admin 계정(`GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`)과 알림 webhook(`
 {service_name="jenkins"} | ci_pipeline_id="vps-infra-pipeline" | ci_pipeline_run_number="24"
 ```
 
-- 로그 레벨: Alloy가 nginx access log에는 HTTP 상태로(5xx error, 4xx warn, 나머지 info), pino JSON에는 숫자 레벨을
-  이름으로 바꿔 `level` structured metadata를 붙인다. 형식 없는 텍스트 줄(vps-info collector·llm의 console.log)은 unknown이다.
+- 로그 레벨: nginx는 access log에 HTTP 상태로 정한 `level`(5xx error, 4xx warn, 나머지 info)을 직접 쓴다.
+  Alloy는 pino JSON의 숫자 레벨만 이름으로 바꿔 `level` structured metadata를 붙인다. 형식 없는 텍스트 줄
+  (vps-info collector·llm의 console.log)은 unknown이다.
 - Jenkins 빌드 로그의 `ci_pipeline_id`, `ci_pipeline_run_number`, `trace_id`는 stream 라벨이 아니라
   structured metadata다. `{...}` 안에 쓰면 결과가 0줄이므로 `|` 뒤 필터로 쓴다.
 
 - nginx 로그 줄의 `trace_id`와 Jenkins 빌드 로그의 `trace_id`는 Tempo 트레이스로 링크된다.
 - Jenkins 파이프라인 트레이스는 `{resource.service.name="jenkins"}`이며 stage마다 span이 있다. root span은 빌드가 끝나야 닫힌다.
 - Jenkins는 nginx가 전파한 `traceparent`를 이어받아 웹 요청도 span으로 낸다.
-- 대시보드: `Infra/Node Exporter Full`(grafana.com 1860 rev 45), `Infra/Docker monitoring`(15798 rev 16).
-  Docker monitoring의 디스크 I/O 패널은 cAdvisor diskIO를 껐으므로 비어 있다.
+- 대시보드는 모두 공개 대시보드를 받아 우리 라벨·메트릭에 맞춘 것이다. 직접 만든 것은 없다.
+
+| 대시보드 | 출처 | 맞춘 내용 |
+|---|---|---|
+| `Infra/Node Exporter Full` | grafana.com 1860 rev 45 | 없음 |
+| `Infra/Docker monitoring` | grafana.com 15798 rev 16 | 데이터소스 자리표시자. 디스크 I/O 패널은 cAdvisor diskIO를 꺼서 비어 있다 |
+| `Infra/NGINX Logs` | grafana/jsonnet-libs nginx-mixin `nginx-logs.json`(12559 기반) | 기본 변수 `container=vps-nginx`, geoip 패널 제거 |
+| `Infra/Jenkins overview (OpenTelemetry)` | jenkinsci/opentelemetry-plugin `src/main/grafana/jenkins-overview.json` | `service_name`→`job` 라벨, 소요 시간 단위(ms→s)와 결과 라벨 이름, JVM 메트릭 이름, 큐 대기 시간 패널을 큐 길이 패널로 교체 |
+
+- nginx access log는 Grafana NGINX 연동의 `json_analytics` 포맷에 `level`, `trace_id`, `span_id`만 덧붙인 것이다.
+  필드 이름을 바꾸면 NGINX Logs 대시보드가 깨진다.
 
 # 알림
 

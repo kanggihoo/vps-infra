@@ -121,6 +121,11 @@ CPU     2코어
   설정 파일은 bind mount라 내용만 바뀌면 compose가 재생성하지 않으므로, `deploy.sh`가 서비스별 설정 checksum을
   환경변수로 넘겨 바뀐 서비스만 재생성한다.
 - 로컬 Docker에서도 같은 compose를 띄운다. host 메트릭은 Docker VM 수치다.
+- 대시보드는 직접 만들지 않고 공개 대시보드를 가져와 우리 라벨·메트릭에 맞춘다. 그래서 nginx access log는
+  Grafana NGINX 연동의 `json_analytics` 포맷을 따른다. 로그 레벨은 로그를 만드는 쪽이 쓰는 것을 원칙으로 한다
+  (nginx는 `level` 필드를 직접 쓴다).
+- `deploy.sh`는 관측 스택을 올린 뒤 20초 동안 재시작 횟수가 늘지 않는지 확인한다. `up --wait`는 설정 오류로 기동
+  직후 죽는 컨테이너를 놓쳐, 파이프라인은 성공인데 수집이 멈춘 상태가 될 수 있다.
 - 로그 조회는 Grafana Explore의 LogQL이 기본이다. 관측 스택 자체가 죽었을 때만 `docker logs`를 쓴다.
 - 트레이스는 span이 끝날 때 전송된다. Jenkins 파이프라인의 root span은 빌드가 끝나야 닫히므로,
   진행 중인 빌드는 끝난 stage만 보인다.

@@ -112,6 +112,21 @@ deploy_observability() {
   "${obs[@]}" config >/dev/null
   "${obs[@]}" pull --ignore-buildable
   "${obs[@]}" up -d --wait --wait-timeout 180
+
+  # up --wait는 컨테이너가 뜬 순간 통과한다. 설정 오류로 기동 직후 죽고 재시작을 반복하는
+  # 컨테이너(Alloy 설정 평가 실패 등)는 놓치므로, 잠시 뒤 재시작 횟수가 늘지 않았는지 본다.
+  # 이 확인이 없으면 파이프라인은 성공인데 수집은 멈춘 상태가 된다.
+  local before after
+  before="$(docker inspect -f '{{.Name}} {{.RestartCount}}' $("${obs[@]}" ps -aq))"
+  sleep 20
+  after="$(docker inspect -f '{{.Name}} {{.RestartCount}}' $("${obs[@]}" ps -aq))"
+  if [ "$before" != "$after" ] || [ -n "$("${obs[@]}" ps -q --status restarting --status exited)" ]; then
+    echo "[deploy] observability container is restarting" >&2
+    printf '%s\n' "$after" >&2
+    "${obs[@]}" ps -a >&2
+    "${obs[@]}" logs --tail 20 >&2
+    exit 1
+  fi
   "${obs[@]}" ps
 }
 

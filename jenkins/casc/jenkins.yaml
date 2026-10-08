@@ -50,6 +50,9 @@ unclassified:
     serviceName: "jenkins"
     serviceNamespace: "ci"
     exportOtelConfigurationAsEnvironmentVariables: false
+    # 빌드 소요 시간 히스토그램(ci_pipeline_run_duration)을 job별로 나눈다. 기본값은 아무 job도
+    # 허용하지 않아 모두 ci_pipeline_id="#other#"로 묶인다. job이 몇 개뿐이라 전부 허용한다.
+    configurationProperties: "otel.instrumentation.jenkins.run.metric.duration.allow_list=.*"
     observabilityBackends:
       - grafana:
           # 빌드 화면의 "View pipeline with Grafana" 링크가 이 주소의 Tempo로 간다.

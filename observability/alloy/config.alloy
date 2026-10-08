@@ -134,27 +134,12 @@ loki.source.docker "all" {
   forward_to = [loki.process.level.receiver]
 }
 
-// 로그 레벨. Loki는 level 필드나 logfmt의 level=을 보고 레벨을 정하는데, 아래 두 형식은
+// 로그 레벨. Loki는 level 필드나 logfmt의 level=을 보고 레벨을 정하는데, pino의 숫자 레벨은
 // 알아보지 못해 Grafana에 unknown(UNK)으로 나온다. level을 structured metadata로 붙여 준다.
+// nginx는 access log에 level 필드를 직접 쓴다(nginx.conf).
 // 라벨이 아니라 structured metadata라 stream 수가 늘지 않는다.
 loki.process "level" {
   forward_to = [loki.write.loki.receiver]
-
-  // nginx JSON access log에는 레벨이 없다. HTTP 상태로 정한다: 5xx error, 4xx warn, 나머지 info.
-  // 텍스트로 나오는 nginx error log는 status가 없어 level을 붙이지 않고 Loki 자동 판별에 맡긴다.
-  // match selector는 라벨만 쓴다. 라인 필터(|~)의 백틱 문자열을 이 파서가 받지 않는다.
-  stage.match {
-    selector = "{compose_service=\"nginx\"}"
-
-    stage.regex {
-      expression = "^\\{.*\"status\":(?P<status_class>[1-5])"
-    }
-
-    stage.template {
-      source   = "level"
-      template = `{{ with .status_class }}{{ if eq . "5" }}error{{ else if eq . "4" }}warn{{ else }}info{{ end }}{{ end }}`
-    }
-  }
 
   // pino(Fastify) JSON은 level이 숫자다(30=info). 10·20·30·40·50·60을 이름으로 바꾼다.
   stage.regex {
@@ -163,7 +148,7 @@ loki.process "level" {
 
   stage.template {
     source   = "level"
-    template = `{{ if .level }}{{ .level }}{{ else }}{{ with .pino_level }}{{ if eq . "10" }}trace{{ else if eq . "20" }}debug{{ else if eq . "30" }}info{{ else if eq . "40" }}warn{{ else if eq . "50" }}error{{ else }}fatal{{ end }}{{ end }}{{ end }}`
+    template = `{{ with .pino_level }}{{ if eq . "10" }}trace{{ else if eq . "20" }}debug{{ else if eq . "30" }}info{{ else if eq . "40" }}warn{{ else if eq . "50" }}error{{ else }}fatal{{ end }}{{ end }}`
   }
 
   // 값이 빈 줄은 붙이지 않는다.

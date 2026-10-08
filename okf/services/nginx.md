@@ -56,7 +56,8 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
   `traceparent`를 백엔드로 전파한다([ADR 0017](/adr/0017-nginx-starts-traces.md)). Alloy가 없어도 nginx는 기동하고
   export 실패만 error 로그로 남긴다.
 - UptimeRobot과 Alloy blackbox probe 요청은 user agent로 걸러 trace하지 않는다.
-- access log는 JSON 한 줄이다. `request_time`, `upstream_response_time`, `trace_id`를 담는다.
+- access log는 Grafana NGINX 연동의 `json_analytics` 포맷이다. 커뮤니티 대시보드가 이 필드 이름을 전제하므로
+  원본을 유지하고 `level`(HTTP 상태 기준), `trace_id`, `span_id`만 덧붙인다.
 - `vps_proxy`에서 공개 이름(`health`, `portal`, `jenkins`, `grafana`)을 alias로 갖는다. 컨테이너가 공개 IP로
   hairpin하지 못하므로 내부 probe가 이 alias로 nginx를 거친다.
 
