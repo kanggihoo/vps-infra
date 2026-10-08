@@ -14,6 +14,8 @@ services:
       - /bin/sh
       - -c
       - |
+        # 이미지 기본 default.conf(server_name localhost)가 로컬 루트 도메인 블록을 가린다.
+        rm -f /etc/nginx/conf.d/default.conf
         [ "$$#" -gt 0 ] && exec /docker-entrypoint.sh "$$@"
         while :; do sleep 86400 & wait $$!; nginx -s reload; done &
         exec /docker-entrypoint.sh nginx -g 'daemon off;'
@@ -40,6 +42,8 @@ services:
       - quartz-site:/var/www/notes:ro
       # Liam ERD 산출물. 각 프로젝트의 Jenkins job이 /<프로젝트>/ 폴더에 채운다.
       - erd-site:/var/www/erd:ro
+      # 루트 도메인 소개 페이지. 레포 파일을 그대로 서빙한다.
+      - ./nginx/site:/var/www/site:ro
       # Basic Auth 사용자 파일.
       #
       # 기본값이 공개 fixture(test/test)인 이유: 이 경로에 파일이 없으면

@@ -1,0 +1,31 @@
+# ============================================================
+# ${BASE_DOMAIN} (루트 도메인) -> 회사 소개 정적 페이지
+#
+# 인증 없이 공개한다. 내부 도구(jenkins, grafana 등)로 가는 링크는 두지 않는다.
+# 파일 출처: 레포의 nginx/site/ 를 그대로 마운트한다. 수정 후 배포하면 바로 반영된다.
+# ============================================================
+
+server {
+    listen ${NGINX_LISTEN};
+    server_name ${BASE_DOMAIN};
+
+    include /etc/nginx/tls/${TLS_MODE}.conf;
+
+    root /var/www/site;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+
+# 어느 server_name에도 맞지 않는 Host(IP 직접 접속, 등록 안 된 도메인).
+# 이 블록이 없으면 알파벳 순 첫 블록(erd)이 기본값이 되어 ERD 인증 화면이 뜬다.
+# 444 = 응답 없이 연결을 끊는다.
+server {
+    listen ${NGINX_LISTEN} default_server;
+    server_name _;
+
+    include /etc/nginx/tls/${TLS_MODE}.conf;
+
+    return 444;
+}

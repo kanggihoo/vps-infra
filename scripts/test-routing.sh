@@ -45,7 +45,7 @@ check() {
   local got
   got="$(curl -s -o /dev/null -w '%{http_code}' \
     --connect-timeout 5 --max-time 15 \
-    "$@" "${REQ[@]}" || echo 000)"
+    "$@" "${REQ[@]}" || true)"
   if [ "$got" = "$want" ]; then
     echo "ok   - $desc ($host$path -> $got)"
   else
@@ -78,6 +78,10 @@ echo "--- 서브도메인 라우팅 ---"
 check "health -> whoami" "health.${base_domain}" / 200
 body_contains "whoami 응답 본문 확인" "health.${base_domain}" / "Hostname"
 check "portal -> portal:8080" "portal.${base_domain}" / 200
+# 루트 도메인은 인증 없이 소개 페이지. 401이면 erd 블록으로 빠진 것이다.
+body_contains "루트 도메인 -> 소개 페이지" "${base_domain}" / "Nightshift"
+# 등록 안 된 Host는 444(응답 없이 끊김)라 curl은 000을 본다.
+check "등록 안 된 Host는 연결을 끊는다" "unknown.invalid" / 000
 
 echo "--- Basic Auth ---"
 # 자격증명 없이 401이어야 한다. 200이면 인증이 빠진 것.
