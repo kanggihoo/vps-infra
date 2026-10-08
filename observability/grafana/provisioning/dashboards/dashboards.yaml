@@ -1,15 +1,27 @@
-# 대시보드 JSON은 레포 파일이 원본이다(ADR 0016). git pull로 파일이 바뀌면
-# Grafana가 updateIntervalSeconds마다 다시 읽는다. 재시작이 필요 없다.
-# UI에서 고친 내용은 저장할 수 없다. 고치려면 JSON을 export해 커밋한다.
+# ============================================================
+# Grafana 대시보드 provider (ADR 0016)
+#
+# 대시보드 JSON은 레포 파일(observability/grafana/dashboards/)이 원본이다. compose가 그 폴더를
+# /etc/grafana/dashboards로 마운트하고, Grafana가 아래 주기마다 다시 읽는다.
+# 그래서 JSON을 고쳐 push하면 git pull만으로 반영되고 Grafana 재시작이 필요 없다.
+#
+# 대시보드를 추가하는 법: grafana.com에서 받은 JSON의 데이터소스 자리표시자(${DS_...})를
+# 위 datasources.yaml의 uid(prometheus, loki, tempo)로 바꾸고, __inputs를 지운 뒤 하위 폴더에 넣는다.
+# 파일 provisioning은 import 화면과 달리 __inputs를 풀어 주지 않는다.
+# ============================================================
 apiVersion: 1
 
 providers:
   - name: default
     type: file
+    # 폴더를 다시 읽는 주기(초).
     updateIntervalSeconds: 30
+    # UI에서 고친 내용을 저장하지 못하게 한다. 저장할 수 있으면 레포 파일과 달라지고,
+    # 다음에 파일이 바뀌면 UI 수정이 말없이 덮어써진다. 고치려면 UI에서 JSON을 export해 커밋한다.
     allowUiUpdates: false
+    # 레포에서 JSON 파일을 지우면 Grafana에서도 대시보드를 지운다.
     disableDeletion: false
     options:
       path: /etc/grafana/dashboards
-      # 하위 폴더 이름이 Grafana 폴더가 된다.
+      # 하위 폴더 이름이 Grafana 폴더가 된다(dashboards/Infra/*.json → Infra 폴더).
       foldersFromFilesStructure: true

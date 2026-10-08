@@ -1,37 +1,81 @@
-# 알림 설정. contact point, 정책, 규칙 모두 이 파일이 원본이다(ADR 0016).
-# 바꾸면 deploy.sh가 checksum으로 감지해 Grafana를 재생성한다.
+# ============================================================
+# Grafana 알림 설정 (ADR 0016)
 #
-# Grafana에는 Mattermost 전용 연동이 없다. slack 타입에 Mattermost incoming webhook URL만
-# 주면(token 없이) Slack incoming webhook 형식으로 보내고, Mattermost가 이를 받는다.
-# 환경변수 치환($VAR)은 contact point 설정에만 쓴다. 알림 규칙의 annotation 템플릿은 치환하지 않으므로
-# {{ $labels.x }}를 그대로 쓴다. $$로 쓰면 그대로 남아 템플릿 파싱이 실패한다(2026-10-08 VPS에서 확인).
+# 알림은 세 부분으로 이뤄진다. 셋 다 이 파일이 원본이다.
+#   contactPoints  어디로 보내나 (Mattermost)
+#   policies       어떻게 묶고 얼마나 자주 보내나
+#   groups         무엇을 감시하나 (알림 규칙)
+#
+# Grafana UI에서 고친 내용은 저장되지 않는다(provisioning 항목은 UI에서 잠긴다).
+# 이 파일을 고쳐 push하면 deploy.sh가 checksum으로 감지해 Grafana를 재생성하고, 기동 때 다시 읽는다.
+#
+# $ 표기 주의:
+#   - $VAR(환경변수 치환)는 contact point 설정에서만 쓴다. Grafana가 기동 때 컨테이너 환경변수로 바꾼다.
+#   - 알림 규칙의 annotation 안 {{ $labels.x }}는 알림 템플릿 문법이다. 환경변수로 치환되지 않으므로
+#     그대로 쓴다. $$로 쓰면 $$가 그대로 남아 템플릿 파싱이 실패한다(2026-10-08 VPS에서 확인).
+# ============================================================
 apiVersion: 1
 
+# ------------------------------------------------------------
+# 보낼 곳
+# ------------------------------------------------------------
 contactPoints:
   - orgId: 1
     name: mattermost
     receivers:
       - uid: mattermost
+        # Grafana에는 Mattermost 전용 연동이 없다. slack 타입에 Mattermost incoming webhook URL만
+        # 주면(token 없이) Slack incoming webhook 형식으로 보내고, Mattermost가 이를 받아 표시한다.
         type: slack
         settings:
+          # compose가 루트 .env의 GRAFANA_ALERT_WEBHOOK_URL을 넣어 준다(SOPS, Jenkins 빌드 알림과 같은 채널).
           url: $GRAFANA_ALERT_WEBHOOK_URL
+          # Mattermost에 표시될 보낸 사람 이름.
           username: grafana
 
+# ------------------------------------------------------------
+# 보내는 방식
+# ------------------------------------------------------------
 policies:
   - orgId: 1
+    # 모든 알림을 위 contact point로 보낸다.
     receiver: mattermost
+    # 같은 폴더·같은 규칙의 알림은 메시지 하나로 묶는다(예: probe 실패 3건 → 메시지 1개).
     group_by: [grafana_folder, alertname]
+    # 처음 발생하면 30초 기다렸다가 보낸다. 그 사이 같은 묶음에 들어온 알림을 함께 보낸다.
     group_wait: 30s
+    # 이미 보낸 묶음에 새 알림이 추가되면 5분 간격으로 다시 보낸다.
     group_interval: 5m
+    # 계속 발생 중인 알림은 4시간마다 다시 알린다(해결되면 해결 메시지가 간다).
     repeat_interval: 4h
 
-# 1차 규칙(ADR 0016). VPS 전체 다운은 Grafana도 함께 죽으므로 외부 UptimeRobot이 맡는다.
+# ------------------------------------------------------------
+# 알림 규칙 (1차, ADR 0016)
+#
+# VPS 전체가 죽으면 Grafana도 함께 죽어 알릴 수 없다. 그 경우는 외부 UptimeRobot이
+# health.kkh-hub.tech를 5분마다 확인해 맡는다(레포 밖 설정).
+#
+# 규칙 하나는 같은 모양이다.
+#   data
+#     A  Prometheus 쿼리. 지금 값을 가져온다(instant).
+#     B  reduce: A가 여러 시점 값이면 마지막 값 하나로 줄인다.
+#     C  threshold: B를 기준값과 비교한다. 참이면 "발생".
+#   condition: C       C가 참일 때 알림 상태가 된다
+#   for                그 상태가 이 시간 동안 계속되어야 실제로 알린다(일시적인 튐을 거른다)
+#   noDataState        쿼리 결과가 없을 때의 상태(NoData, Alerting, OK)
+#   execErrState       쿼리 자체가 실패했을 때의 상태
+#   labels.severity    알림 묶음과 메시지에 붙는 표식(warning, critical)
+#   annotations.summary 메시지 본문. {{ $labels.x }}는 시리즈 라벨, {{ $values.B.Value }}는 B의 값이다
+# ------------------------------------------------------------
 groups:
   - orgId: 1
     name: vps
+    # Grafana 알림 화면에서 이 폴더 아래에 보인다.
     folder: Alerts
+    # 규칙을 1분마다 평가한다.
     interval: 1m
     rules:
+      # 루트 파일시스템 사용률. 디스크가 가득 차면 Docker, DB, 로그가 모두 멈춘다.
       - uid: disk-usage-high
         title: 디스크 사용률 85% 초과
         condition: C
@@ -45,10 +89,12 @@ groups:
         data:
           - refId: A
             datasourceUid: prometheus
+            # 최근 10분 안의 데이터를 본다(from 600초 전, to 지금).
             relativeTimeRange: { from: 600, to: 0 }
             model:
               refId: A
               instant: true
+              # node-exporter 메트릭. mountpoint="/"는 config.alloy의 rootfs_path(/host/root)를 뗀 값이다.
               expr: 100 * (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})
           - refId: B
             datasourceUid: __expr__
@@ -60,9 +106,9 @@ groups:
               type: threshold
               expression: B
               conditions:
-                - evaluator: { type: gt, params: [85] }
+                - evaluator: { type: gt, params: [85] } # B > 85
 
-      # swap이 없어 메모리가 바닥나면 OOM으로 프로세스가 바로 죽는다.
+      # 사용 가능 메모리. swap이 없어 메모리가 바닥나면 OOM으로 프로세스가 바로 죽는다.
       - uid: memory-available-low
         title: 메모리 available 500MB 미만
         condition: C
@@ -80,6 +126,7 @@ groups:
             model:
               refId: A
               instant: true
+              # MemAvailable: 캐시를 비워 바로 쓸 수 있는 양까지 포함한 "실제로 남은" 메모리. MB로 바꾼다.
               expr: node_memory_MemAvailable_bytes / 1024 / 1024
           - refId: B
             datasourceUid: __expr__
@@ -91,12 +138,15 @@ groups:
               type: threshold
               expression: B
               conditions:
-                - evaluator: { type: lt, params: [500] }
+                - evaluator: { type: lt, params: [500] } # B < 500
 
+      # 서브도메인 응답. config.alloy의 blackbox probe 대상(health, portal, jenkins, grafana, vps-info)마다
+      # 따로 판정하고, 실패한 대상의 이름(job 라벨)이 메시지에 찍힌다.
       - uid: probe-failed
         title: 서브도메인 응답 실패
         condition: C
         for: 2m
+        # probe 결과 자체가 없으면 Alloy나 수집이 멈춘 것이다. 응답 실패와 같이 알린다.
         noDataState: Alerting
         execErrState: Error
         labels:
@@ -110,6 +160,7 @@ groups:
             model:
               refId: A
               instant: true
+              # 1이면 성공, 0이면 실패(5초 안에 2xx가 오지 않음).
               expr: probe_success
           - refId: B
             datasourceUid: __expr__
@@ -121,15 +172,15 @@ groups:
               type: threshold
               expression: B
               conditions:
-                - evaluator: { type: lt, params: [1] }
+                - evaluator: { type: lt, params: [1] } # B < 1, 즉 실패
 
-      # executor가 전역 1개라 빌드가 겹치면 잠깐 큐에 쌓이는 것은 정상이다.
+      # Jenkins 큐. executor가 전역 1개라 빌드가 겹치면 잠깐 큐에 쌓이는 것은 정상이다.
       # 파이프라인 timeout(15분)보다 길게 대기하면 무언가 멈춘 것이다.
-      # Jenkins가 꺼져 데이터가 없으면 probe-failed가 알리므로 여기서는 OK로 둔다.
       - uid: jenkins-queue-stuck
         title: Jenkins 큐 적체
         condition: C
         for: 20m
+        # Jenkins가 꺼져 데이터가 없으면 probe-failed가 알리므로 여기서는 OK로 둔다(중복 알림 방지).
         noDataState: OK
         execErrState: Error
         labels:
@@ -143,6 +194,7 @@ groups:
             model:
               refId: A
               instant: true
+              # executor를 기다리는(바로 실행 가능한) 빌드 수. Jenkins OTel plugin 메트릭.
               expr: max(jenkins_queue_buildable)
           - refId: B
             datasourceUid: __expr__
@@ -154,4 +206,4 @@ groups:
               type: threshold
               expression: B
               conditions:
-                - evaluator: { type: gt, params: [0] }
+                - evaluator: { type: gt, params: [0] } # B > 0

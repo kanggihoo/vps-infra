@@ -1,17 +1,27 @@
-# Prometheus는 저장소 역할만 한다. 수집은 Alloy가 remote_write로 밀어 넣는다(ADR 0016).
-# 그래서 scrape 대상은 자기 자신뿐이다.
+# ============================================================
+# Prometheus 설정 (ADR 0016)
+#
+# 여기 Prometheus는 "저장소" 역할만 한다. 수집은 Alloy가 하고, 모은 메트릭을 remote write로
+# 밀어 넣는다(compose의 --web.enable-remote-write-receiver). 그래서 scrape 대상은 자기 자신뿐이다.
+# 수집 대상을 늘리거나 바꾸려면 이 파일이 아니라 alloy/config.alloy를 고친다.
+# ============================================================
+
 global:
+  # 아래 scrape_configs(자기 자신)의 주기. Alloy가 보내는 메트릭의 주기는 config.alloy가 정한다.
   scrape_interval: 30s
 
 storage:
   tsdb:
-    # 시간과 크기 중 먼저 닿는 쪽으로 오래된 블록을 지운다.
+    # 오래된 데이터를 지우는 기준. 시간과 크기 중 먼저 닿는 쪽으로 지운다.
+    #   time  15일이 지난 블록을 지운다
+    #   size  저장 데이터가 5GB를 넘으면 가장 오래된 블록부터 지운다(디스크 여유 82GB 기준)
     # 3.x에서 --storage.tsdb.retention.* 플래그는 deprecated이고 이 설정이 우선한다.
     retention:
       time: 15d
       size: 5GB
 
 scrape_configs:
+  # Prometheus 자신의 상태(prometheus_* 메트릭). 저장소가 건강한지 볼 때 쓴다.
   - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]

@@ -1,35 +1,50 @@
-# Tempo 3.x 단일 바이너리(-target=all 기본값), 로컬 디스크 저장(ADR 0016).
-# 3.0에서 ingester와 compactor 블록이 없어졌다. 2.x 예제를 그대로 쓰면 기동에 실패한다.
+# ============================================================
+# Tempo 설정: 단일 바이너리, 로컬 디스크 저장 (ADR 0016)
+#
+# Tempo 3.x는 -target=all(기본값)이면 수신, 저장, 조회, 정리를 프로세스 하나로 돌린다.
+# 3.0에서 ingester와 compactor 설정 블록이 없어졌다. 2.x 예제를 그대로 붙이면 기동에 실패한다.
+# 데이터는 named volume(vps_tempo_data)의 /var/tempo 아래에 쌓인다.
+# ============================================================
+
+# Grafana가 TraceQL 검색 결과를 스트리밍으로 받게 한다(큰 검색도 결과가 먼저 보인다).
 stream_over_http_enabled: true
 
 server:
+  # Grafana가 조회할 때 붙는 포트.
   http_listen_port: 3200
   log_level: warn
 
+# 트레이스 수신. Alloy가 OTLP gRPC로 보낸다(config.alloy의 otelcol.exporter.otlp "tempo").
 distributor:
   receivers:
     otlp:
       protocols:
-        # 기본값은 localhost:4317이라 다른 컨테이너(Alloy)가 붙지 못한다.
+        # 기본값은 localhost:4317이라 다른 컨테이너(Alloy)가 붙지 못한다. 0.0.0.0으로 연다.
+        # 포트는 publish하지 않으므로 vps_observability 네트워크 안에서만 닿는다.
         grpc:
           endpoint: "0.0.0.0:4317"
 
 storage:
   trace:
+    # 로컬 디스크에 저장한다. 3.x에서 local은 단일 바이너리 모드에서만 허용된다.
     backend: local
+    # 받은 직후의 트레이스를 먼저 적는 곳(재시작해도 잃지 않게).
     wal:
       path: /var/tempo/wal
+    # 블록으로 묶여 저장되는 곳.
     local:
       path: /var/tempo/blocks
 
-# 보존 72시간. 3.x에서 compactor.compaction에서 이 위치로 옮겨졌다.
+# 트레이스 보존 72시간. 3.x에서 compactor.compaction에서 이 위치로 옮겨졌다(기본값 336h).
 backend_worker:
   compaction:
     block_retention: 72h
 
-# GOMEMLIMIT를 컨테이너 mem_limit의 0.8로 맞춘다.
+# GOMEMLIMIT을 컨테이너 mem_limit(384m)의 80%로 자동으로 맞춘다. 상한 근처에서 GC가 더 자주 돌아
+# OOM으로 죽는 대신 느려진다.
 memory:
   automemlimit_enabled: true
 
+# Grafana Labs로 사용 통계를 보내지 않는다.
 usage_report:
   reporting_enabled: false

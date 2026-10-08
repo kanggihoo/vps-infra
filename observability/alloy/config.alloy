@@ -1,45 +1,87 @@
-// Alloy 하나가 메트릭·로그·트레이스 수집을 모두 맡는다(ADR 0016).
+// ============================================================
+// Grafana Alloy 수집 설정 (ADR 0016)
 //
-//   메트릭  내장 exporter(unix, cadvisor, blackbox) + Jenkins OTLP 메트릭 -> Prometheus remote_write
+// Alloy 하나가 메트릭·로그·트레이스 수집을 모두 맡는다.
+//
+//   메트릭  내장 exporter(unix, cadvisor, blackbox) + Jenkins OTLP 메트릭 -> Prometheus
 //   로그    모든 컨테이너 stdout(Docker API)                          -> Loki
-//           Jenkins 빌드 로그(OTLP)                                  -> Loki OTLP
+//           Jenkins 빌드 로그(OTLP)                                  -> Loki
 //   트레이스 nginx, Jenkins(OTLP)                                      -> Tempo
 //
-// 설정을 바꾸면 deploy.sh가 checksum으로 감지해 컨테이너를 재생성한다.
+// 읽는 법:
+//   - 블록 하나가 컴포넌트 하나다. `<종류> "<이름>" { ... }` 형태이고, 다른 블록은
+//     `<종류>.<이름>.<내보내는 값>`으로 참조한다(예: prometheus.remote_write.prom.receiver).
+//   - 데이터는 forward_to / output에 적힌 다음 컴포넌트로 흘러간다. 화살표를 따라 읽으면 된다.
+//   - 블록 순서는 실행 순서와 상관없다. Alloy가 참조 관계로 그래프를 만든다.
+//
+// 바꾸는 법: 이 파일을 고치고 push하면 deploy.sh가 checksum으로 감지해 Alloy를 재생성한다.
+// 로컬 검증은 okf/services/observability.md의 "수집 규칙 바꾸기"를 따른다.
+// ============================================================
 
 // ---------------------------------------------------------------------------
 // 메트릭
+//
+//   exporter(unix, cadvisor, blackbox) ─┐
+//                                       ├─ prometheus.scrape ─(relabel)─ prometheus.remote_write ─▶ Prometheus
+//   Jenkins OTLP 메트릭(아래 OTLP 절) ──────────────────────────────────┘
+//
+// exporter는 Alloy 안에 들어 있는 node-exporter·cAdvisor·blackbox다. 별도 컨테이너를 띄우지 않는다.
+// exporter는 메트릭을 "보여 주기"만 하고, prometheus.scrape가 주기적으로 읽어 간다.
 // ---------------------------------------------------------------------------
 
-// 호스트 CPU·메모리·디스크·로드. 호스트 경로는 compose가 /host/* 로 마운트한다.
+// 호스트 CPU·메모리·디스크·로드 (node-exporter와 같은 메트릭, node_* 이름).
+// Alloy는 컨테이너 안에서 돌기 때문에 /proc 등을 그대로 보면 컨테이너 자신의 값이 나온다.
+// compose가 호스트 경로를 /host/* 로 마운트하고, 여기서 그 경로를 읽게 한다.
 prometheus.exporter.unix "host" {
-  procfs_path    = "/host/proc"
-  sysfs_path     = "/host/sys"
-  rootfs_path    = "/host/root"
+  procfs_path    = "/host/proc" // CPU, 메모리, 로드, 네트워크
+  sysfs_path     = "/host/sys"  // 디스크 장치, 하드웨어 정보
+  rootfs_path    = "/host/root" // 파일시스템 사용량. 마운트포인트는 이 접두사를 뗀 "/"로 보고된다
+  // 디스크 장치 이름표(udev). 없으면 diskstats가 "Failed to open directory" 에러를 남기지만 메트릭은 나온다.
   udev_data_path = "/host/root/run/udev/data"
 }
 
-// 컨테이너별 자원. 기본값은 컨테이너당 200~400 시리즈라 소스에서 먼저 줄인다.
-//   store_container_labels=false  compose 라벨이 시리즈 라벨이 되면 값이 바뀔 때마다 새 시리즈가 생긴다.
-//   disabled_metrics              목록을 주면 기본 비활성 목록을 대체하므로 기본값(앞 11개)을 반복한다.
-//                                 disk, diskIO가 절감 폭이 가장 크다.
+// 컨테이너별 CPU·메모리·네트워크 (cAdvisor, container_* 이름).
+// cAdvisor는 기본 설정으로 컨테이너당 200~400 시리즈를 만든다. 시리즈는 메모리와 디스크를 먹으므로
+// 만들지 않을 것은 여기서 끄고, 남은 것도 아래 prometheus.relabel "cadvisor"에서 허용 목록으로 거른다.
 prometheus.exporter.cadvisor "docker" {
-  docker_host            = "unix:///var/run/docker.sock"
-  docker_only            = true
+  // 컨테이너 이름을 알아내려고 Docker API에 묻는다. compose가 docker.sock을 마운트한다.
+  docker_host = "unix:///var/run/docker.sock"
+
+  // 호스트의 systemd 서비스 cgroup 등은 빼고 Docker 컨테이너만 본다.
+  docker_only = true
+
+  // true면 compose 라벨(com.docker.compose.*)이 전부 메트릭 라벨이 된다.
+  // 라벨 값이 바뀔 때마다(예: 이미지 해시) 새 시리즈가 생겨 시리즈 수가 계속 는다.
   store_container_labels = false
-  disabled_metrics       = [
+
+  // 끌 메트릭 묶음. 이 목록을 주면 기본 비활성 목록을 "대체"하므로 기본값(첫 두 줄 11개)을 그대로 반복하고,
+  // 우리가 추가로 끄는 것(셋째 줄)을 덧붙인다.
+  //   percpu      CPU를 코어별로 쪼갠 시리즈
+  //   disk/diskIO 장치·연산별 디스크 시리즈. 절감 폭이 가장 크다. 대신 Docker monitoring 대시보드의
+  //               디스크 I/O 패널은 비어 있다.
+  //   perf_event  하드웨어 성능 카운터
+  disabled_metrics = [
     "advtcp", "cpu_topology", "cpuset", "hugetlb", "memory_numa", "process",
     "referenced_memory", "resctrl", "sched", "tcp", "udp",
     "percpu", "disk", "diskIO", "perf_event",
   ]
 }
 
-// 서브도메인 생존 확인. 공개 이름은 nginx의 vps_proxy alias라 실제 인증서와 SNI로
-// nginx를 거쳐 백엔드까지 간다(컨테이너는 공개 IP로 hairpin할 수 없다).
-// Basic Auth 뒤의 vps-info는 nginx 앞에서 401이 나므로 백엔드를 직접 본다.
+// 서브도메인 생존 확인. 대상 주소에 HTTP 요청을 보내 probe_success(1/0), probe_duration_seconds 등을 만든다.
+// "서브도메인 응답 실패" 알림이 probe_success를 본다(grafana/provisioning/alerting).
+//
+// 공개 이름(health.<도메인> 등)으로 요청하지만 실제로는 nginx 컨테이너로 간다. 루트 compose.yml에서
+// nginx가 vps_proxy 네트워크에 이 이름들을 alias로 갖기 때문이다. 컨테이너는 VPS 공개 IP로 자기 자신에게
+// 붙지 못하므로(hairpin, 2026-10-08 확인) 이 방법으로 실제 인증서·SNI·nginx·백엔드를 한 번에 확인한다.
+// 대상을 늘리면 nginx alias에도 같은 이름을 추가한다.
 prometheus.exporter.blackbox "probe" {
+  // blackbox_exporter 설정(YAML을 한 줄로). http_2xx 모듈은 2xx 응답이면 성공으로 본다.
+  //   timeout                5초 안에 응답이 없으면 실패
+  //   preferred_ip_protocol  IPv6를 먼저 시도하지 않게 한다(VPS Docker 네트워크는 IPv4만 쓴다)
   config = "{ modules: { http_2xx: { prober: http, timeout: 5s, http: { preferred_ip_protocol: ip4 } } } }"
 
+  // name은 job 라벨이 된다(job="integrations/blackbox/<name>"). 알림 메시지에 이 값이 찍힌다.
+  // PROBE_SCHEME·BASE_DOMAIN은 compose가 루트 .env에서 넣어 준다(로컬 http·localhost, VPS https·kkh-hub.tech).
   target {
     name    = "health"
     address = sys.env("PROBE_SCHEME") + "://health." + sys.env("BASE_DOMAIN") + "/"
@@ -52,6 +94,7 @@ prometheus.exporter.blackbox "probe" {
     module  = "http_2xx"
   }
 
+  // Jenkins 루트(/)는 익명이면 403이라 2xx가 아니다. 로그인 화면은 익명에게도 200을 준다.
   target {
     name    = "jenkins"
     address = sys.env("PROBE_SCHEME") + "://jenkins." + sys.env("BASE_DOMAIN") + "/login"
@@ -64,6 +107,8 @@ prometheus.exporter.blackbox "probe" {
     module  = "http_2xx"
   }
 
+  // vps-info는 nginx에 Basic Auth가 걸려 있어 공개 이름으로는 항상 401이다.
+  // 그래서 nginx를 건너뛰고 백엔드 health를 vps_proxy 안에서 직접 본다.
   target {
     name    = "vps-info"
     address = "http://vps-info-app:8000/api/health"
@@ -71,28 +116,35 @@ prometheus.exporter.blackbox "probe" {
   }
 }
 
+// 위 exporter들을 30초마다 읽어 Prometheus로 보낸다.
+// 주기를 줄이면 시리즈 수는 같지만 저장할 샘플과 CPU가 늘어난다. 2코어 VPS라 30초로 둔다.
 prometheus.scrape "host" {
   targets         = array.concat(prometheus.exporter.unix.host.targets, prometheus.exporter.blackbox.probe.targets)
   scrape_interval = "30s"
   forward_to      = [prometheus.remote_write.prom.receiver]
 }
 
+// cAdvisor는 아래 허용 목록을 거치게 하려고 따로 scrape한다.
 prometheus.scrape "cadvisor" {
   targets         = prometheus.exporter.cadvisor.docker.targets
   scrape_interval = "30s"
   forward_to      = [prometheus.relabel.cadvisor.receiver]
 }
 
-// 허용 목록. 여기 없는 cadvisor 메트릭은 저장하지 않는다.
+// cAdvisor 메트릭 허용 목록. regex에 맞는 메트릭 이름만 남기고(keep) 나머지는 버린다.
+// 남기는 것: CPU 사용 시간, 메모리(working set·usage), 네트워크 송수신, 마지막 관측 시각, OOM 횟수, 시작 시각.
+// 대시보드나 알림에 새 container_* 메트릭이 필요하면 여기에 이름을 추가한다.
 prometheus.relabel "cadvisor" {
   rule {
-    source_labels = ["__name__"]
+    source_labels = ["__name__"] // 메트릭 이름
     regex         = "container_(cpu_usage_seconds_total|memory_working_set_bytes|memory_usage_bytes|network_(receive|transmit)_bytes_total|last_seen|oom_events_total|start_time_seconds)"
     action        = "keep"
   }
   forward_to = [prometheus.remote_write.prom.receiver]
 }
 
+// Prometheus로 밀어 넣는다(remote write). Prometheus는 스스로 scrape하지 않고 받기만 한다.
+// Prometheus가 잠깐 죽어도 Alloy가 WAL(alloy-data 볼륨)에 쌓아 두었다가 다시 보낸다.
 prometheus.remote_write "prom" {
   endpoint {
     url = "http://prometheus:9090/api/v1/write"
@@ -101,41 +153,55 @@ prometheus.remote_write "prom" {
 
 // ---------------------------------------------------------------------------
 // 컨테이너 로그
+//
+//   discovery.docker ─ discovery.relabel ─ loki.source.docker ─ loki.write ─▶ Loki
+//
+// 앱은 stdout에 쓰기만 한다. Alloy가 Docker API로 각 컨테이너의 로그를 스트리밍으로 읽는다.
+// 로그 내용은 여기서 바꾸지 않는다. 레벨 같은 형식은 로그를 만드는 쪽이 정한다(nginx.conf,
+// vps-info docs/conventions/logging.md). 소스를 바꿀 수 없는 서드파티 로그만 loki.source.docker와
+// loki.write 사이에 loki.process를 넣어 다룬다.
 // ---------------------------------------------------------------------------
 
+// 지금 떠 있는 컨테이너 목록을 Docker API로 찾는다. 새 컨테이너가 뜨면 자동으로 잡힌다.
+// 단, 몇 초 만에 끝나는 컨테이너는 목록에 잡히기 전에 사라져 로그가 수집되지 않을 수 있다.
 discovery.docker "all" {
   host = "unix:///var/run/docker.sock"
 }
 
-// Loki 라벨은 적게 둔다. 라벨 조합마다 stream이 생긴다.
-// 로그 내용은 여기서 바꾸지 않는다. 레벨 같은 형식은 로그를 만드는 쪽이 정한다(nginx.conf,
-// vps-info docs/conventions/logging.md). 바꿀 수 없는 서드파티 로그만 loki.process로 다룬다.
+// Docker가 준 정보(__meta_docker_*)에서 Loki 라벨로 쓸 것만 고른다.
+// Loki는 라벨 조합마다 stream을 따로 만들므로 라벨은 값 종류가 적은 것만 둔다.
+// 로그 안의 값(상태 코드, 경로 등)은 라벨로 만들지 않고 조회할 때 `| json`으로 꺼낸다.
 discovery.relabel "logs" {
   targets = discovery.docker.all.targets
 
+  // container="vps-nginx". Docker는 이름 앞에 "/"를 붙여 주므로 뗀다.
   rule {
     source_labels = ["__meta_docker_container_name"]
     regex         = "/(.*)"
     target_label  = "container"
   }
 
+  // compose_project="vps-info". 프로젝트 단위로 로그를 모아 볼 때 쓴다.
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
     target_label  = "compose_project"
   }
 
+  // compose_service="nginx". compose 서비스 이름. 컨테이너 이름이 바뀌어도 그대로다.
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "compose_service"
   }
 }
 
+// 위에서 고른 컨테이너의 stdout·stderr를 읽는다.
 loki.source.docker "all" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.relabel.logs.output
   forward_to = [loki.write.loki.receiver]
 }
 
+// Loki로 보낸다. 약 1초 단위로 묶어 보내므로 Grafana에는 몇 초 안에 보인다.
 loki.write "loki" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
@@ -143,9 +209,23 @@ loki.write "loki" {
 }
 
 // ---------------------------------------------------------------------------
-// OTLP (nginx 트레이스, Jenkins 트레이스·메트릭·빌드 로그)
+// OTLP (OpenTelemetry 프로토콜로 들어오는 것)
+//
+//   nginx otel 모듈 ─ 트레이스 ──────────────┐
+//   Jenkins OTel plugin ─ 트레이스·메트릭·빌드 로그 ┤
+//                                            ▼
+//   otelcol.receiver.otlp ─ otelcol.processor.batch ─┬─ 트레이스 ─ otelcol.exporter.otlp ─▶ Tempo
+//                                                    ├─ 로그    ─ otelcol.exporter.otlphttp ─▶ Loki
+//                                                    └─ 메트릭  ─ otelcol.exporter.prometheus ─▶ prometheus.remote_write
+//
+// 위 메트릭·로그 절과 달리 상대가 Alloy로 밀어 넣는다(push). Alloy가 꺼져 있으면 보내는 쪽에서
+// export 실패 로그만 남고 동작은 계속된다.
 // ---------------------------------------------------------------------------
 
+// OTLP 수신. 같은 데이터를 두 방식으로 받을 수 있다.
+//   4317 gRPC  nginx otel 모듈(gRPC만 지원), Jenkins OTel plugin(기본값)
+//   4318 HTTP  지금 쓰는 곳은 없다. HTTP만 지원하는 SDK를 붙일 때 쓴다.
+// 0.0.0.0으로 열어야 다른 컨테이너가 붙는다. 포트는 호스트에 publish하지 않는다(vps_proxy 안에서만).
 otelcol.receiver.otlp "in" {
   grpc {
     endpoint = "0.0.0.0:4317"
@@ -162,6 +242,7 @@ otelcol.receiver.otlp "in" {
   }
 }
 
+// 받은 데이터를 일정량(또는 일정 시간)씩 묶어서 내보낸다. 요청 수를 줄이는 표준 단계다.
 otelcol.processor.batch "out" {
   output {
     metrics = [otelcol.exporter.prometheus.prom.input]
@@ -170,17 +251,24 @@ otelcol.processor.batch "out" {
   }
 }
 
+// OTLP 메트릭을 Prometheus 형식으로 바꿔 위의 remote_write로 넘긴다.
+// 이름은 점이 밑줄이 되고 단위가 붙는다(jenkins.queue.buildable → jenkins_queue_buildable,
+// ci.pipeline.run.duration → ci_pipeline_run_duration_seconds_*). 보낸 쪽의 service.name은 job 라벨이 된다
+// (Jenkins는 job="ci/jenkins"). 대시보드 쿼리가 이 이름과 라벨을 쓴다.
 otelcol.exporter.prometheus "prom" {
   forward_to = [prometheus.remote_write.prom.receiver]
 }
 
-// Loki 3의 OTLP 수신 경로. 속성은 structured metadata로 들어간다.
+// Jenkins 빌드 로그를 Loki의 OTLP 수신 경로로 보낸다.
+// 로그의 속성(ci_pipeline_id, trace_id 등)은 라벨이 아니라 structured metadata로 들어간다.
+// 그래서 조회할 때 {service_name="jenkins"} | ci_pipeline_id="..."처럼 `|` 뒤에 쓴다.
 otelcol.exporter.otlphttp "loki" {
   client {
     endpoint = "http://loki:3100/otlp"
   }
 }
 
+// 트레이스를 Tempo로 보낸다. 같은 Docker 내부 네트워크라 TLS 없이 보낸다.
 otelcol.exporter.otlp "tempo" {
   client {
     endpoint = "tempo:4317"

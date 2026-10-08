@@ -1,45 +1,66 @@
-# Loki 단일 바이너리, 파일시스템 저장(ADR 0016).
+# ============================================================
+# Loki 설정: 단일 바이너리, 파일시스템 저장 (ADR 0016)
+#
+# 컴포넌트(수집, 저장, 조회, 정리)를 프로세스 하나로 돌리는 가장 작은 구성이다.
+# 데이터는 named volume(vps_loki_data)의 /loki 아래에 쌓인다.
+# ============================================================
+
+# 멀티테넌트 끄기. 켜면 모든 요청에 X-Scope-OrgID 헤더가 필요하다.
 auth_enabled: false
 
 server:
+  # Alloy(push)와 Grafana(조회)가 이 포트로 붙는다.
   http_listen_port: 3100
+  # 기본값 info는 요청마다 줄을 남겨 Loki 자기 로그가 다시 Loki로 들어가는 양이 많다.
   log_level: warn
 
 common:
+  # 단일 인스턴스라 자기 자신만 가리킨다.
   instance_addr: 127.0.0.1
   path_prefix: /loki
   storage:
     filesystem:
+      # 압축된 로그 묶음(chunk)
       chunks_directory: /loki/chunks
+      # 로그 기반 알림 규칙(ruler). 지금은 쓰지 않는다(알림은 Grafana가 한다).
       rules_directory: /loki/rules
+  # 복제하지 않는다(인스턴스가 하나다).
   replication_factor: 1
   ring:
+    # 여러 인스턴스가 서로를 찾는 저장소. 하나뿐이라 메모리로 충분하다.
     kvstore:
       store: inmemory
 
+# 저장 형식. from 날짜부터 이 형식으로 쓴다. 형식을 바꿀 때는 기존 항목을 고치지 않고
+# 새 from 날짜로 항목을 추가해야 한다(기존 데이터를 읽으려면 옛 형식 정보가 필요하다).
 schema_config:
   configs:
-    # 보존 삭제는 index period가 24h일 때만 동작한다.
     - from: 2026-10-01
-      store: tsdb
+      store: tsdb             # 인덱스 형식. Loki 3의 표준
       object_store: filesystem
-      schema: v13
+      schema: v13             # 구조화 메타데이터(structured metadata)를 쓰려면 v13이 필요하다
       index:
         prefix: index_
+        # 인덱스를 하루 단위 파일로 나눈다. 보존 삭제는 24h일 때만 동작한다.
         period: 24h
 
-# 보존 7일. compactor가 지난 로그를 실제로 지운다.
+# 보존 기간이 지난 로그를 실제로 지우는 정리 작업.
 compactor:
   working_directory: /loki/compactor
+  # false면 retention_period를 줘도 지우지 않는다.
   retention_enabled: true
+  # 삭제 요청 기록을 둘 저장소.
   delete_request_store: filesystem
 
 limits_config:
+  # 로그 보존 7일.
   retention_period: 168h
-  # Jenkins 빌드 로그(OTLP)의 속성이 structured metadata로 들어간다.
+  # OTLP로 들어오는 Jenkins 빌드 로그의 속성(ci_pipeline_id, trace_id 등)을 structured metadata로 받는다.
+  # 3.x 기본값도 true지만 이 구성이 의존하므로 명시한다.
   allow_structured_metadata: true
 
-# 설정하지 않으면 chunk와 쿼리 결과에 100MB씩 내장 캐시를 잡는다. 작은 VPS라 줄인다.
+# 캐시 크기. 설정하지 않으면 chunk와 쿼리 결과에 각각 100MB 내장 캐시를 잡는다.
+# 컨테이너 상한(384m) 안에 들도록 줄인다.
 chunk_store_config:
   chunk_cache_config:
     embedded_cache:
@@ -53,5 +74,6 @@ query_range:
         enabled: true
         max_size_mb: 32
 
+# Grafana Labs로 사용 통계를 보내지 않는다.
 analytics:
   reporting_enabled: false

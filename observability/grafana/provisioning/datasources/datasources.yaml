@@ -1,32 +1,47 @@
-# 데이터소스 UID는 고정이다. 대시보드, 알림 규칙, Jenkins OTel plugin(tempoDataSourceIdentifier)이
-# 이 UID로 참조하므로 바꾸면 그쪽이 모두 깨진다(ADR 0016).
-# provisioning 파일 안의 문자 그대로 $는 $$로 쓴다($는 환경변수 치환이다).
+# ============================================================
+# Grafana 데이터소스 (ADR 0016)
+#
+# Grafana가 조회할 저장소 세 개. 기동 때 이 파일로 만들고, UI에서는 고칠 수 없다.
+#
+# uid는 고정이다. 대시보드 JSON, 알림 규칙(datasourceUid), Jenkins OTel plugin의
+# tempoDataSourceIdentifier(jenkins/casc/jenkins.yaml)가 이 uid로 참조하므로 바꾸면 그쪽이 모두 깨진다.
+#
+# $ 표기: 이 파일에서 $는 환경변수 치환이다. 문자 그대로의 $가 필요하면 $$로 쓴다
+# (아래 ${__value.raw}는 Grafana 변수라 $$로 썼다).
+# ============================================================
 apiVersion: 1
 
 datasources:
+  # 메트릭. 알림 규칙과 대시보드 대부분이 쓴다.
   - name: Prometheus
     type: prometheus
     uid: prometheus
+    # proxy: 브라우저가 아니라 Grafana 서버가 Prometheus에 요청한다(Prometheus는 외부에 열려 있지 않다).
     access: proxy
+    # vps_observability 네트워크 안의 서비스 이름.
     url: http://prometheus:9090
+    # Explore와 새 패널을 열 때 기본으로 선택된다.
     isDefault: true
 
+  # 로그.
   - name: Loki
     type: loki
     uid: loki
     access: proxy
     url: http://loki:3100
     jsonData:
-      # 로그 줄에서 Tempo 트레이스로 가는 링크(ADR 0017).
+      # 로그 줄에서 trace_id를 찾아 Tempo 트레이스 링크(View trace 버튼)를 만든다(ADR 0017).
       derivedFields:
-        # nginx JSON access log 안의 trace_id
+        # nginx access log: JSON 문자열 안의 "trace_id": "..."를 정규식으로 찾는다.
         - name: TraceID
           datasourceUid: tempo
           matcherType: regex
           matcherRegex: '"trace_id":\s*"(\w+)"'
+          # 찾은 값 그대로 Tempo에 조회한다.
           url: "$${__value.raw}"
           urlDisplayLabel: View trace
-        # Jenkins 빌드 로그(OTLP)는 trace_id를 structured metadata로 갖는다.
+        # Jenkins 빌드 로그(OTLP): trace_id가 로그 본문이 아니라 structured metadata에 있다.
+        # matcherType label은 라벨·structured metadata 이름으로 찾는다.
         - name: trace_id
           datasourceUid: tempo
           matcherType: label
@@ -34,20 +49,25 @@ datasources:
           url: "$${__value.raw}"
           urlDisplayLabel: View trace
 
+  # 트레이스.
   - name: Tempo
     type: tempo
     uid: tempo
     access: proxy
     url: http://tempo:3200
     jsonData:
-      # span에서 같은 trace_id의 로그로 간다.
+      # 트레이스 화면의 span에서 "Logs for this span"으로 같은 trace_id의 Loki 로그를 연다.
       tracesToLogsV2:
         datasourceUid: loki
+        # span 시간 앞뒤 5분까지 로그를 찾는다(시계 차이와 로그 지연을 흡수한다).
         spanStartTimeShift: "-5m"
         spanEndTimeShift: "5m"
+        # 로그를 trace_id로 걸러 그 요청의 로그만 보인다.
         filterByTraceID: true
+        # span의 service.name(nginx, jenkins)을 Loki의 service_name 라벨로 매칭한다.
         tags:
           - key: service.name
             value: service_name
+      # 트레이스 화면에 span 관계를 그래프로 보여 준다.
       nodeGraph:
         enabled: true

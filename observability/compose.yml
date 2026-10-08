@@ -1,32 +1,55 @@
-# 관측 스택. 루트 compose와 분리된 Compose project다(ADR 0016).
-# 인프라 배포가 이 스택을 재생성하지 않아야 배포 중 장애를 관측할 수 있다.
+# ============================================================
+# 관측 스택 Compose project (ADR 0016)
 #
+#   alloy       수집기. 메트릭·로그·트레이스를 모아 아래 셋으로 보낸다
+#   prometheus  메트릭 저장소
+#   loki        로그 저장소
+#   tempo       트레이스 저장소
+#   grafana     조회 화면과 알림. 외부에는 이것만 grafana.<도메인>으로 열린다
+#
+# 루트 compose.yml과 분리된 별도 project다. 인프라 배포(nginx, postgres 등)가 이 스택을
+# 재생성하지 않아야 배포 중 장애를 관측할 수 있다. Jenkins를 분리한 것과 같은 이유다(ADR 0007).
+#
+# 실행은 레포 루트에서 한다. 값은 루트 .env(SOPS 복호화 결과)를 그대로 쓴다.
 #   docker compose -f observability/compose.yml --env-file .env up -d
+# 보통은 scripts/deploy.sh가 실행한다(대상 all 또는 observability).
+# 아래 상대 경로(./alloy 등)는 이 파일이 있는 observability/ 기준이다.
 #
-# 레포 루트에서 실행한다. 값은 루트 .env(SOPS 복호화 결과)를 그대로 쓴다.
-# 상대 경로는 이 파일 기준이다.
+# 포트는 하나도 publish하지 않는다. 외부 접근은 nginx를 거친 Grafana뿐이다.
 #
-# *_CONFIG_SUM은 scripts/deploy.sh가 설정 파일 checksum으로 채운다. bind mount 내용만
-# 바뀌면 compose가 재생성하지 않으므로, 값이 바뀐 서비스만 재생성되게 하는 장치다.
+# *_CONFIG_SUM 환경변수:
+#   설정 파일은 bind mount라 내용만 바뀌면 compose가 "바뀐 것 없음"으로 보고 컨테이너를
+#   재생성하지 않는다. deploy.sh가 서비스별 설정 파일 checksum을 이 변수에 넣어, 설정이 바뀐
+#   서비스만 재생성되게 한다. 컨테이너 안에서는 쓰지 않는 값이다.
+# ============================================================
 name: vps-observability
 
 services:
+  # ----------------------------------------------------------
+  # Alloy: 수집기. 설정은 ./alloy/config.alloy
+  # ----------------------------------------------------------
   alloy:
+    # 버전 고정. 움직이는 태그(latest)는 같은 compose로도 시점에 따라 다른 이미지를 받는다.
     image: grafana/alloy:v1.20.1
     container_name: vps-alloy
+    # 재부팅이나 비정상 종료 후 Docker가 다시 띄운다(ADR 0003).
     restart: unless-stopped
+    # VPS에 swap이 없어 메모리가 바닥나면 OOM으로 아무 프로세스나 죽는다. 서비스마다 상한을 건다.
     # 384m에서 VPS 안정 상태 310MiB(81%)였다(2026-10-08). 컨테이너 메트릭을 더 수집하므로 올린다.
     mem_limit: 512m
     command:
       - run
       - /etc/alloy/config.alloy
+      # 재시작해도 이어 보낼 수 있도록 WAL·위치 정보를 볼륨에 둔다.
       - --storage.path=/var/lib/alloy/data
-      # 기본은 127.0.0.1이라 컨테이너 밖에서 UI·reload에 닿지 않는다. 포트는 publish하지 않는다.
+      # Alloy 자체 UI·API. 기본은 127.0.0.1이라 컨테이너 밖에서 닿지 않는다.
+      # 0.0.0.0으로 열지만 포트를 publish하지 않으므로 Docker 네트워크 안에서만 보인다.
       - --server.http.listen-addr=0.0.0.0:12345
-    # 내장 cAdvisor가 컨테이너 cgroup을 읽으려면 privileged가 필요하다.
+    # 내장 cAdvisor가 다른 컨테이너의 cgroup과 장치 정보를 읽으려면 privileged가 필요하다.
     # docker.sock은 :ro여도 Docker API 전체에 접근하므로 이 컨테이너는 호스트 root에 가깝다.
     # Jenkins와 tools도 같은 권한이라 새 위험 등급은 아니다(ADR 0016).
     privileged: true
+    # 호스트 프로세스를 보이게 한다(node-exporter의 프로세스·로드 정보).
     pid: host
     # cgroup v2에서 컨테이너는 기본으로 자기 cgroup namespace만 본다. cAdvisor가 다른 컨테이너의
     # cgroup(/sys/fs/cgroup/system.slice/docker-*.scope)을 보려면 호스트 namespace가 필요하다.
@@ -34,26 +57,39 @@ services:
     cgroup: host
     environment:
       CONFIG_SUM: ${ALLOY_CONFIG_SUM:-}
+      # config.alloy의 blackbox probe 주소를 만든다(<PROBE_SCHEME>://health.<BASE_DOMAIN>/).
+      # 로컬 http·localhost, VPS https·kkh-hub.tech. 값은 루트 .env에서 온다.
       BASE_DOMAIN: ${BASE_DOMAIN:-localhost}
       PROBE_SCHEME: ${HEALTHCHECK_SCHEME:-http}
     volumes:
+      # 설정 폴더. 파일이 아니라 폴더를 마운트한다. git pull은 파일을 새로 만들어 바꿔치기하므로
+      # 파일 단위 마운트는 옛 파일을 계속 붙잡는다.
       - ./alloy:/etc/alloy:ro
       - alloy-data:/var/lib/alloy/data
+      # 호스트 메트릭(prometheus.exporter.unix)이 읽는 호스트 경로. config.alloy가 /host/*를 본다.
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
+      # rslave: 호스트에서 나중에 생긴 마운트(새 볼륨 등)도 컨테이너 안에 보이게 한다.
       - /:/host/root:ro,rslave
+      # 컨테이너 목록과 로그를 Docker API로 읽는다(loki.source.docker, cAdvisor).
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Docker 29의 cAdvisor docker factory는 containerd 소켓으로 컨테이너를 찾는다.
-      # 없으면 컨테이너 이름 없이 루트 cgroup만 나온다. Docker Desktop VM에는 이 소켓이 없어
+      # 없으면 컨테이너 이름 없이 루트 cgroup만 나온다. 로컬 Docker(OrbStack) VM에는 이 소켓이 없어
       # 로컬에서는 컨테이너별 메트릭이 비는 것이 정상이다.
       - /run/containerd:/run/containerd:ro
+      # cAdvisor가 컨테이너 메타데이터를 읽는 경로.
       - /var/lib/docker:/var/lib/docker:ro
+      # 디스크 장치 이름을 확인하는 경로(cAdvisor).
       - /dev/disk:/dev/disk:ro
     networks:
-      # proxy: nginx·Jenkins가 OTLP를 보내고, Alloy가 nginx를 거쳐 서브도메인을 probe한다.
+      # proxy: nginx·Jenkins가 OTLP(4317)를 보내 오고, Alloy가 nginx를 거쳐 서브도메인을 probe한다.
+      # observability: 저장소 세 개로 보낸다.
       - proxy
       - observability
 
+  # ----------------------------------------------------------
+  # Prometheus: 메트릭 저장소. 설정은 ./prometheus/prometheus.yml
+  # ----------------------------------------------------------
   prometheus:
     image: prom/prometheus:v3.15.0
     container_name: vps-prometheus
@@ -61,17 +97,22 @@ services:
     mem_limit: 512m
     environment:
       CONFIG_SUM: ${PROMETHEUS_CONFIG_SUM:-}
-    # command를 바꾸면 이미지 기본값이 사라지므로 config.file과 storage 경로를 다시 준다.
+    # command를 바꾸면 이미지 기본 command가 통째로 사라지므로 config.file과 저장 경로를 다시 준다.
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
+      # Alloy가 밀어 넣는 데이터(remote write)를 받는다. 이것이 없으면 /api/v1/write가 404다.
       - --web.enable-remote-write-receiver
     volumes:
       - ./prometheus:/etc/prometheus:ro
+      # 시계열 데이터. 보존 기간·크기는 prometheus.yml이 정한다(15일, 5GB).
       - prometheus-data:/prometheus
     networks:
       - observability
 
+  # ----------------------------------------------------------
+  # Loki: 로그 저장소. 설정은 ./loki/config.yaml
+  # ----------------------------------------------------------
   loki:
     image: grafana/loki:3.7.8
     container_name: vps-loki
@@ -83,14 +124,20 @@ services:
       - -config.file=/etc/loki/config.yaml
     volumes:
       - ./loki:/etc/loki:ro
+      # 로그 chunk와 인덱스. 이미지가 uid 10001로 돌고 /loki를 그 소유로 만들어 두므로
+      # 새 named volume은 권한 설정 없이 쓸 수 있다(bind mount로 바꾸면 chown이 필요하다).
       - loki-data:/loki
     networks:
       - observability
 
+  # ----------------------------------------------------------
+  # Tempo: 트레이스 저장소. 설정은 ./tempo/tempo.yaml
+  # ----------------------------------------------------------
   tempo:
     image: grafana/tempo:3.1.0
     container_name: vps-tempo
     restart: unless-stopped
+    # tempo.yaml의 automemlimit이 이 값의 80%를 Go 메모리 상한으로 잡는다.
     mem_limit: 384m
     environment:
       CONFIG_SUM: ${TEMPO_CONFIG_SUM:-}
@@ -98,10 +145,14 @@ services:
       - -config.file=/etc/tempo/tempo.yaml
     volumes:
       - ./tempo:/etc/tempo:ro
+      # WAL과 트레이스 블록. Loki처럼 uid 10001 소유로 만들어진 경로라 named volume을 그대로 쓴다.
       - tempo-data:/var/tempo
     networks:
       - observability
 
+  # ----------------------------------------------------------
+  # Grafana: 조회 화면과 알림. 설정은 환경변수(GF_*)와 ./grafana/provisioning
+  # ----------------------------------------------------------
   grafana:
     image: grafana/grafana:13.2.3
     container_name: vps-grafana
@@ -110,33 +161,45 @@ services:
     mem_limit: 512m
     environment:
       CONFIG_SUM: ${GRAFANA_CONFIG_SUM:-}
+      # GF_<섹션>_<키>는 grafana.ini의 [섹션] 키를 덮어쓴다(예: GF_SECURITY_ADMIN_USER = [security] admin_user).
+      #
+      # Grafana가 만드는 링크(알림 메시지의 "Source:" 등)의 기준 주소.
       GF_SERVER_ROOT_URL: ${HEALTHCHECK_SCHEME:-http}://grafana.${BASE_DOMAIN:-localhost}/
       # Grafana 자체 로그인(ADR 0016). Jenkins 로그인·Basic Auth와 같은 계정을 SOPS에 둔다.
       # 계정은 최초 기동 때만 적용된다(grafana-data 볼륨에 저장). 이후 비밀번호는 Grafana 화면의
       # 프로필에서 바꾼다. 잊었을 때만 `grafana cli admin reset-admin-password`를 쓴다.
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      # 로그인 쿠키를 HTTPS에서만 보낸다. VPS(https)는 true, 로컬(http)은 false여야 로그인된다.
       GF_SECURITY_COOKIE_SECURE: ${GRAFANA_COOKIE_SECURE:-false}
+      # 가입 화면과 익명 접근을 끈다. 계정은 위 admin 하나다.
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # 사용 통계 전송과 업데이트 확인을 끈다(외부로 나가는 요청을 줄인다).
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
       GF_ANALYTICS_FEEDBACK_LINKS_ENABLED: "false"
-      # 알림 contact point(provisioning/alerting)가 읽는다. 로컬은 아무 데도 닿지 않는 주소다.
+      # 알림 contact point(provisioning/alerting)가 $GRAFANA_ALERT_WEBHOOK_URL로 읽는다.
+      # VPS는 Mattermost incoming webhook, 로컬은 아무 데도 닿지 않는 주소다.
       GRAFANA_ALERT_WEBHOOK_URL: ${GRAFANA_ALERT_WEBHOOK_URL:-http://127.0.0.1:9/}
     volumes:
+      # 계정, 세션, 알림 상태 등 Grafana DB(SQLite). 대시보드 원본은 여기가 아니라 레포 파일이다.
       - grafana-data:/var/lib/grafana
+      # 기동 때 읽는 데이터소스·대시보드 provider·알림 설정.
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      # 대시보드 JSON. Grafana가 30초마다 다시 읽으므로 git pull만으로 반영된다.
       # 폴더 단위 마운트. git pull은 파일을 새로 만들어 바꿔치기하므로
       # 파일 단위 마운트는 옛 파일을 계속 붙잡는다.
       - ./grafana/dashboards:/etc/grafana/dashboards:ro
     networks:
-      # proxy: nginx가 grafana.<도메인>으로 라우팅한다.
+      # proxy: nginx가 grafana.<도메인>을 grafana:3000으로 보낸다.
+      # observability: 저장소 세 개를 조회한다.
       - proxy
       - observability
 
 networks:
+  # 루트 compose.yml이 만든 공용 네트워크. nginx, Jenkins, 앱들이 붙어 있다.
   proxy:
     external: true
     name: vps_proxy
@@ -144,6 +207,8 @@ networks:
   observability:
     name: vps_observability
 
+# 데이터는 모두 named volume에 둔다. 컨테이너를 지우고 다시 만들어도 남는다.
+# 이름을 고정해(vps_*) compose project 이름이 바뀌어도 같은 볼륨을 쓰게 한다.
 volumes:
   alloy-data:
     name: vps_alloy_data
