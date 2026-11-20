@@ -3,7 +3,7 @@ type: Runbook
 title: 장애 진단
 description: DNS, firewall, nginx, Compose, container 문제를 순서대로 진단하는 절차.
 tags: [operations, troubleshooting, deployment]
-timestamp: 2026-09-13T00:00:00+09:00
+timestamp: 2026-11-20T00:00:00+09:00
 ---
 
 # 순서
@@ -24,7 +24,7 @@ DNS
 
 | 계층 | 확인 내용 |
 |------|-----------|
-| DNS | `health.kkh-hub.tech`, `portal.kkh-hub.tech`, `jenkins.kkh-hub.tech`가 `187.77.114.68`로 resolve되는지 확인한다. |
+| DNS | `health.kkh-hub.tech`, `portal.kkh-hub.tech`, `grafana.kkh-hub.tech`가 `187.77.114.68`로 resolve되는지 확인한다. |
 | Firewall | Hostinger와 VPS가 inbound `80`, `443`을 허용하는지 확인한다. |
 | nginx | [nginx](/services/nginx.md)가 시작되고 `80/443`을 소유하는지, `certbot-etc`에서 인증서를 읽는지 확인한다. |
 | certbot | `docker logs vps-certbot`로 갱신 결과를, `docker logs vps-nginx`의 `signal process started`로 일일 reload를 확인한다. |
@@ -35,4 +35,4 @@ DNS
 # 관련 개념
 
 - [nginx 리버스 프록시](/services/nginx.md)
-- [GitHub Actions 배포](/services/github-actions-deploy.md)
+- [배포](/services/deploy.md)

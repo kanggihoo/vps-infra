@@ -55,7 +55,7 @@ compactor:
 limits_config:
   # 로그 보존 7일.
   retention_period: 168h
-  # OTLP로 들어오는 Jenkins 빌드 로그의 속성(ci_pipeline_id, trace_id 등)을 structured metadata로 받는다.
+  # OTLP로 들어오는 로그의 속성(trace_id 등)을 structured metadata로 받는다.
   # 3.x 기본값도 true지만 이 구성이 의존하므로 명시한다.
   allow_structured_metadata: true
 

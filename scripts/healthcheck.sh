@@ -22,7 +22,7 @@ public_curl() {
   local port=443
   [ "$health_scheme" = "http" ] && port=80
 
-  # Jenkins 안에서는 공개 DNS를 거치지 않고 nginx 컨테이너로 직접 붙는다.
+  # 배포(ci-deploy.sh)는 공개 DNS를 거치지 않고 호스트의 nginx(127.0.0.1)로 직접 붙는다.
   if [ -n "${HEALTHCHECK_CONNECT_HOST:-}" ]; then
     curl --connect-timeout 5 --max-time 15 \
       --connect-to "${host}:${port}:${HEALTHCHECK_CONNECT_HOST}:${port}" \

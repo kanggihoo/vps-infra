@@ -132,19 +132,19 @@ else
 fi
 
 echo "--- 별도 compose 프로젝트 라우팅 ---"
-# jenkins는 jenkins/compose.yml이 띄우므로 이 스택만으로는 없을 수 있다.
+# grafana는 observability/compose.yml이 띄우므로 이 스택만으로는 없을 수 있다.
 # 어느 쪽이든 "nginx가 기동되어 이 server 블록을 처리한다"가 증명되어야 한다.
-#   502 = Jenkins 미기동 (upstream 해석 실패 -> 변수+resolver가 동작한 것)
-#   403/200 = Jenkins 기동 (인증 요구 또는 응답)
+#   502 = 관측 스택 미기동 (upstream 해석 실패 -> 변수+resolver가 동작한 것)
+#   200/302 = 관측 스택 기동 (루트는 /login으로 302)
 # 여기서 000(연결 실패)이나 404가 나오면 라우팅이 깨진 것이다.
-build_req "jenkins.${base_domain}" "/"
+build_req "grafana.${base_domain}" "/"
 got="$(curl -s -o /dev/null -w '%{http_code}' \
   --connect-timeout 5 --max-time 15 \
   "${REQ[@]}" || echo 000)"
 case "$got" in
-  502) echo "ok   - jenkins 미기동 상태에서 nginx는 정상 기동하고 502를 준다 ($got)" ;;
-  200|403|401) echo "ok   - jenkins 기동 상태로 라우팅된다 ($got)" ;;
-  *) echo "FAIL - jenkins 라우팅 실패: got $got (502 또는 200/403 기대)" >&2; fail=1 ;;
+  502) echo "ok   - 관측 스택 미기동 상태에서 nginx는 정상 기동하고 502를 준다 ($got)" ;;
+  200|302) echo "ok   - grafana로 라우팅된다 ($got)" ;;
+  *) echo "FAIL - grafana 라우팅 실패: got $got (502 또는 200/302 기대)" >&2; fail=1 ;;
 esac
 
 if [ "$fail" -ne 0 ]; then

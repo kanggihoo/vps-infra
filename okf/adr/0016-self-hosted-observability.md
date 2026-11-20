@@ -6,6 +6,11 @@ tags: [observability, grafana, prometheus, loki, tempo, alloy, monitoring]
 timestamp: 2026-10-08T00:00:00+09:00
 ---
 
+# 상태
+
+**Jenkins 수집 폐기.** [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어내 Jenkins OTel 메트릭·trace·빌드 로그, Jenkins probe,
+"Jenkins 큐 적체" 알림, Jenkins 대시보드가 없어졌다. Alloy OTLP receiver는 nginx trace용으로 남는다. 나머지 결정은 유효하다.
+
 # 결정
 
 VPS 안에 Grafana 기반 관측 스택을 셀프호스팅한다. 상주 컨테이너는 5개다.

@@ -1,7 +1,7 @@
 # ============================================================
 # erd.${BASE_DOMAIN}/<프로젝트>/ -> Liam ERD 정적 산출물
 #
-# proxy_pass가 없다. 각 프로젝트의 Jenkins job이 `liam erd build` 결과(dist)를
+# proxy_pass가 없다. 각 프로젝트의 배포 스크립트가 `liam erd build` 결과(dist)를
 # erd-site 볼륨의 /<프로젝트>/ 에 넣고, nginx가 파일을 직접 읽어 응답한다.
 # 파일은 요청마다 디스크에서 읽으므로 산출물이 바뀌어도 nginx reload가 필요 없다.
 #

@@ -6,6 +6,10 @@ tags: [jenkins, jcasc, job-dsl, configuration-as-code]
 timestamp: 2026-09-29T00:00:00+09:00
 ---
 
+# 상태
+
+**폐기.** Jenkins를 [ADR 0021](/adr/0021-remove-jenkins.md)로 걷어내면서 `jenkins/`(JCasC, job-dsl, `plugins.txt`)를 모두 지웠다. 아래는 기록으로 남긴다.
+
 # 결정
 
 Jenkins 시스템 설정과 Job 정의를 `jenkins/casc/jenkins.yaml`(Configuration as Code)과
@@ -88,6 +92,6 @@ token reload endpoint(`CASC_RELOAD_TOKEN`)로 JCasC를 다시 읽힌다. reload�
 
 # 관련 개념
 
-- [Jenkins 배포](/services/jenkins-deploy.md)
+- [배포](/services/deploy.md)
 - [Jenkins가 VPS에서 이미지를 빌드한다](/adr/0006-jenkins-builds-on-vps.md)
 - [SOPS 기반 secret 관리](/adr/0010-sops-secrets.md)

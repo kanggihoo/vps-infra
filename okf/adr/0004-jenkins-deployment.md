@@ -8,8 +8,10 @@ timestamp: 2026-07-20T00:00:00+09:00
 
 # 상태
 
-Jenkins를 별도 Compose project로 두고 webhook으로 배포하는 골격은 유효하다.
-다음 항목은 이후 결정으로 대체되었다.
+**폐기.** 배포는 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)·[ADR 0020](/adr/0020-infra-cd-on-github-actions.md)으로 각 레포의 GitHub Actions에 옮겼고,
+Jenkins는 [ADR 0021](/adr/0021-remove-jenkins.md)로 걷어냈다. 아래는 기록으로 남긴다.
+
+폐기 전에 다음 항목은 이미 이후 결정으로 대체되어 있었다.
 
 - 배포 경로가 `/opt/vps-infra`에서 홈 디렉터리 아래 `app/`으로 바뀐다. root 소유
   경로가 권한 문제를 일으켰기 때문이다.
@@ -42,5 +44,5 @@ webhook을 받아 repository를 checkout하고, VPS Docker daemon에서 배포 s
 
 # 관련 개념
 
-- [Jenkins 배포](/services/jenkins-deploy.md)
+- [배포](/services/deploy.md)
 - [시스템 아키텍처 개요](/architecture/system-overview.md)

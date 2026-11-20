@@ -57,5 +57,5 @@ BuildKit 작업은 Jenkins container 메모리 제한 밖에 있으므로, 실�
 # 관련 개념
 
 - [Jenkins·nginx 보안 및 운영 리뷰](/architecture/infra-review-2026-09-11.md)
-- [Jenkins 배포](/services/jenkins-deploy.md)
+- [배포](/services/deploy.md)
 - [nginx 리버스 프록시](/services/nginx.md)

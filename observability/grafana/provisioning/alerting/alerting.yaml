@@ -28,7 +28,7 @@ contactPoints:
         # 주면(token 없이) Slack incoming webhook 형식으로 보내고, Mattermost가 이를 받아 표시한다.
         type: slack
         settings:
-          # compose가 루트 .env의 GRAFANA_ALERT_WEBHOOK_URL을 넣어 준다(SOPS, Jenkins 빌드 알림과 같은 채널).
+          # compose가 루트 .env의 GRAFANA_ALERT_WEBHOOK_URL을 넣어 준다(SOPS, 배포 알림과 같은 채널).
           url: $GRAFANA_ALERT_WEBHOOK_URL
           # Mattermost에 표시될 보낸 사람 이름.
           username: grafana
@@ -140,7 +140,7 @@ groups:
               conditions:
                 - evaluator: { type: lt, params: [500] } # B < 500
 
-      # 서브도메인 응답. config.alloy의 blackbox probe 대상(health, portal, jenkins, grafana, vps-info)마다
+      # 서브도메인 응답. config.alloy의 blackbox probe 대상(health, portal, grafana, vps-info)마다
       # 따로 판정하고, 실패한 대상의 이름(job 라벨)이 메시지에 찍힌다.
       - uid: probe-failed
         title: 서브도메인 응답 실패
@@ -173,37 +173,3 @@ groups:
               expression: B
               conditions:
                 - evaluator: { type: lt, params: [1] } # B < 1, 즉 실패
-
-      # Jenkins 큐. executor가 전역 1개라 빌드가 겹치면 잠깐 큐에 쌓이는 것은 정상이다.
-      # 파이프라인 timeout(15분)보다 길게 대기하면 무언가 멈춘 것이다.
-      - uid: jenkins-queue-stuck
-        title: Jenkins 큐 적체
-        condition: C
-        for: 20m
-        # Jenkins가 꺼져 데이터가 없으면 probe-failed가 알리므로 여기서는 OK로 둔다(중복 알림 방지).
-        noDataState: OK
-        execErrState: Error
-        labels:
-          severity: warning
-        annotations:
-          summary: "실행 대기 빌드 {{ printf \"%.0f\" $values.B.Value }}개가 20분 넘게 남아 있다"
-        data:
-          - refId: A
-            datasourceUid: prometheus
-            relativeTimeRange: { from: 600, to: 0 }
-            model:
-              refId: A
-              instant: true
-              # executor를 기다리는(바로 실행 가능한) 빌드 수. Jenkins OTel plugin 메트릭.
-              expr: max(jenkins_queue_buildable)
-          - refId: B
-            datasourceUid: __expr__
-            model: { refId: B, type: reduce, expression: A, reducer: last }
-          - refId: C
-            datasourceUid: __expr__
-            model:
-              refId: C
-              type: threshold
-              expression: B
-              conditions:
-                - evaluator: { type: gt, params: [0] } # B > 0

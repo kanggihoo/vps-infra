@@ -8,7 +8,7 @@ timestamp: 2026-10-03T00:00:00+09:00
 
 > [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md) 이후 vps-info PR 검증은 GitHub Actions가 하므로 `pull_request` webhook을 쓰지 않는다.
 > [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md) 이후 vps-info는 배포도 Actions가 하므로 이 webhook을 전혀 쓰지 않는다.
-> 아래 진단 순서는 vps-infra 파이프라인의 push webhook이 유실됐을 때(배포가 시작되지 않을 때) 같은 방식으로 쓴다.
+> [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어내 이제 어떤 레포도 Jenkins webhook을 쓰지 않는다. 아래는 기록으로만 남긴다.
 
 # 증상
 

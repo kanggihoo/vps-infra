@@ -1,22 +1,22 @@
 ---
 type: Deployment Service
-title: GitHub Actions 검증
-description: 과거 SSH 배포 경로와 현재 push/PR 설정 검증 workflow를 기록한다.
+title: 과거 GitHub Actions SSH 배포
+description: 폐기된 과거 SSH 배포 경로를 기록한다. 현재 배포는 services/deploy.md에 있다.
 tags: [deployment, github-actions, ssh, docker-compose]
 timestamp: 2026-08-25T00:00:00+09:00
 ---
 
 # 상태
 
-**자동 배포 경로로 폐기.** 현재 `.github/workflows/validate.yml`만 유지하며,
-Compose·nginx·배포 대상 판정·SOPS 파일 무결성을 검증한다. 이 문서의 SSH 배포 흐름은
-역사 기록이며 현재 운영 절차가 아니다.
+**이 SSH 배포 경로는 폐기.** 이 문서의 SSH 배포 흐름(`/opt/vps-infra`, 제한 없는 `VPS_SSH_KEY`)은
+역사 기록이며 현재 운영 절차가 아니다. 2026-11-20부터 `.github/workflows/validate.yml`이 검증 뒤 다시 배포하지만,
+forced command로 묶인 key로 `scripts/ci-deploy.sh`만 부르는 다른 방식이다. 현재 흐름은 [배포](/services/deploy.md)에 있다.
 
 # 개요
 
-Jenkins migration 전 GitHub Actions가 `main` 변경을 자동 배포했다. 현재 자동 배포는
-Jenkins가 담당하며, repository에는 `.github/workflows/validate.yml`만 남아 설정 검증을
-수행한다. 아래 SSH 흐름은 과거 구현 기록이다.
+Jenkins migration 전 GitHub Actions가 `main` 변경을 자동 배포했다. 이후 Jenkins가 배포를 맡았다가
+[ADR 0020](/adr/0020-infra-cd-on-github-actions.md)·[ADR 0021](/adr/0021-remove-jenkins.md)로 다시 Actions로 돌아왔다.
+아래 SSH 흐름은 과거 구현 기록이다.
 
 이 서비스는 [SSH git-pull 배포 결정](/adr/0001-ssh-git-pull-deployment.md)을 구현한다.
 
@@ -28,8 +28,7 @@ on:
     branches: [main]
 ```
 
-현재 workflow는 배포가 아니라 설정 검증을 수행한다. Jenkins 장애 시 수동 배포가
-필요하면 관리자 SSH로 Docker 명령을 직접 실행한다.
+현재 workflow의 트리거와 수동 재배포는 [배포](/services/deploy.md)를 본다.
 
 # 흐름
 
@@ -72,7 +71,7 @@ redis ping
 | `VPS_HOST` | VPS public IP. 현재 `187.77.114.68`. |
 | `VPS_USER` | SSH 사용자. 현재 `kkh`. |
 | `VPS_PORT` | SSH 포트. 보통 `22`. |
-| `VPS_SSH_KEY` | GitHub Actions 전용 배포 private key. |
+| `VPS_SSH_KEY` | GitHub Actions 전용 배포 private key. 다시 쓰지 않는다(현재는 `VPS_DEPLOY_KEY`). |
 
 # 관계
 

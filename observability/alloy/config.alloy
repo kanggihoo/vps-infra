@@ -3,10 +3,13 @@
 //
 // Alloy 하나가 메트릭·로그·트레이스 수집을 모두 맡는다.
 //
-//   메트릭  내장 exporter(unix, cadvisor, blackbox) + Jenkins OTLP 메트릭 -> Prometheus
+//   메트릭  내장 exporter(unix, cadvisor, blackbox) + OTLP 메트릭         -> Prometheus
 //   로그    모든 컨테이너 stdout(Docker API)                          -> Loki
-//           Jenkins 빌드 로그(OTLP)                                  -> Loki
-//   트레이스 nginx, Jenkins(OTLP)                                      -> Tempo
+//           OTLP 로그                                                 -> Loki
+//   트레이스 nginx(OTLP)                                               -> Tempo
+//
+// OTLP 메트릭·로그 경로는 Jenkins OTel plugin이 쓰던 것이다. Jenkins를 걷어낸 뒤(ADR 0021) 지금 보내는 곳은 없지만,
+// OTLP SDK를 붙이는 앱이 그대로 쓰도록 남겨 둔다.
 //
 // 읽는 법:
 //   - 블록 하나가 컴포넌트 하나다. `<종류> "<이름>" { ... }` 형태이고, 다른 블록은
@@ -23,7 +26,7 @@
 //
 //   exporter(unix, cadvisor, blackbox) ─┐
 //                                       ├─ prometheus.scrape ─(relabel)─ prometheus.remote_write ─▶ Prometheus
-//   Jenkins OTLP 메트릭(아래 OTLP 절) ──────────────────────────────────┘
+//   OTLP 메트릭(아래 OTLP 절) ─────────────────────────────────────────┘
 //
 // exporter는 Alloy 안에 들어 있는 node-exporter·cAdvisor·blackbox다. 별도 컨테이너를 띄우지 않는다.
 // exporter는 메트릭을 "보여 주기"만 하고, prometheus.scrape가 주기적으로 읽어 간다.
@@ -91,13 +94,6 @@ prometheus.exporter.blackbox "probe" {
   target {
     name    = "portal"
     address = sys.env("PROBE_SCHEME") + "://portal." + sys.env("BASE_DOMAIN") + "/"
-    module  = "http_2xx"
-  }
-
-  // Jenkins 루트(/)는 익명이면 403이라 2xx가 아니다. 로그인 화면은 익명에게도 200을 준다.
-  target {
-    name    = "jenkins"
-    address = sys.env("PROBE_SCHEME") + "://jenkins." + sys.env("BASE_DOMAIN") + "/login"
     module  = "http_2xx"
   }
 
@@ -212,7 +208,7 @@ loki.write "loki" {
 // OTLP (OpenTelemetry 프로토콜로 들어오는 것)
 //
 //   nginx otel 모듈 ─ 트레이스 ──────────────┐
-//   Jenkins OTel plugin ─ 트레이스·메트릭·빌드 로그 ┤
+//   (OTLP SDK를 쓰는 앱) ─ 트레이스·메트릭·로그 ┤
 //                                            ▼
 //   otelcol.receiver.otlp ─ otelcol.processor.batch ─┬─ 트레이스 ─ otelcol.exporter.otlp ─▶ Tempo
 //                                                    ├─ 로그    ─ otelcol.exporter.otlphttp ─▶ Loki
@@ -223,7 +219,7 @@ loki.write "loki" {
 // ---------------------------------------------------------------------------
 
 // OTLP 수신. 같은 데이터를 두 방식으로 받을 수 있다.
-//   4317 gRPC  nginx otel 모듈(gRPC만 지원), Jenkins OTel plugin(기본값)
+//   4317 gRPC  nginx otel 모듈(gRPC만 지원)
 //   4318 HTTP  지금 쓰는 곳은 없다. HTTP만 지원하는 SDK를 붙일 때 쓴다.
 // 0.0.0.0으로 열어야 다른 컨테이너가 붙는다. 포트는 호스트에 publish하지 않는다(vps_proxy 안에서만).
 otelcol.receiver.otlp "in" {
@@ -252,16 +248,15 @@ otelcol.processor.batch "out" {
 }
 
 // OTLP 메트릭을 Prometheus 형식으로 바꿔 위의 remote_write로 넘긴다.
-// 이름은 점이 밑줄이 되고 단위가 붙는다(jenkins.queue.buildable → jenkins_queue_buildable,
-// ci.pipeline.run.duration → ci_pipeline_run_duration_seconds_*). 보낸 쪽의 service.name은 job 라벨이 된다
-// (Jenkins는 job="ci/jenkins"). 대시보드 쿼리가 이 이름과 라벨을 쓴다.
+// 이름은 점이 밑줄이 되고 단위가 붙는다(예: http.server.duration → http_server_duration_seconds_*).
+// 보낸 쪽의 service.name은 job 라벨이 된다.
 otelcol.exporter.prometheus "prom" {
   forward_to = [prometheus.remote_write.prom.receiver]
 }
 
-// Jenkins 빌드 로그를 Loki의 OTLP 수신 경로로 보낸다.
-// 로그의 속성(ci_pipeline_id, trace_id 등)은 라벨이 아니라 structured metadata로 들어간다.
-// 그래서 조회할 때 {service_name="jenkins"} | ci_pipeline_id="..."처럼 `|` 뒤에 쓴다.
+// OTLP 로그를 Loki의 OTLP 수신 경로로 보낸다.
+// 로그의 속성(trace_id 등)은 라벨이 아니라 structured metadata로 들어간다.
+// 그래서 조회할 때 {service_name="<이름>"} | trace_id="..."처럼 `|` 뒤에 쓴다.
 otelcol.exporter.otlphttp "loki" {
   client {
     endpoint = "http://loki:3100/otlp"

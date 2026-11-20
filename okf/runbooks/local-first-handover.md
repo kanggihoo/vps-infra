@@ -6,6 +6,8 @@ tags: [runbook, local-development, sops, jenkins, handover]
 timestamp: 2026-09-28T00:00:00+09:00
 ---
 
+> [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어냈다. 아래 Jenkins 관련 절차(`jenkins/.env`, 로컬 Jenkins, JCasC)는 기록이며 현재 절차가 아니다. 현재 배포는 [배포](/services/deploy.md)를 본다.
+
 # 이 문서의 범위
 
 [spec 0001](/spec/0001-local-first-infra.md)의 **단계 0~5**가 구현된 상태에서,

@@ -6,7 +6,7 @@
 # Authorization 헤더를 자기 basic auth로 해석해 로그인이 꼬인다.
 #
 # grafana는 observability/compose.yml이 띄우는 별도 compose 프로젝트다.
-# jenkins와 같이 변수 upstream으로 두어, 관측 스택이 없어도 nginx는 기동하고
+# 변수 upstream으로 두어, 관측 스택이 없어도 nginx는 기동하고
 # 이 서브도메인만 502를 준다.
 # ============================================================
 
