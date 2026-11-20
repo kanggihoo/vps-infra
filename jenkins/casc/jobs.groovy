@@ -47,41 +47,4 @@ pipelineJob('vps-infra-pipeline') {
     }
 }
 
-// vps-info는 자기 레포가 Dockerfile, compose.yml, Jenkinsfile을 소유한다(ADR 0007).
-// multibranch로 main만 빌드해 배포한다. PR 검증은 vps-info의 GitHub Actions가 한다(ADR 0018).
-// PR을 발견하지 않으므로 외부 코드가 이 Jenkins(docker.sock)에서 돌 일도 없다.
-// single pipelineJob으로 되돌리지 않는 이유: BRANCH_NAME이 비어 Jenkinsfile의 when { branch 'main' }이
-// 항상 거짓이 되고, 배포 stage를 건너뛴 채 빌드가 성공으로 표시된다(ADR 0014).
-multibranchPipelineJob('vps-info') {
-    description('vps-info main 배포. 정의는 vps-infra/jenkins/casc/jobs.groovy에 있다.')
-
-    branchSources {
-        github {
-            id('vps-info-github')
-            repoOwner('kanggihoo')
-            repository('vps-info')
-            scanCredentialsId('github-pat')
-            // main만 발견한다. 기본값('*')이면 PR이 없는 작업 브랜치마다 Test 빌드가 생긴다.
-            includes('main')
-            // 이 Job DSL 버전의 github 소스는 traits 대신 아래 옵션을 직접 받는다. PR은 빌드하지 않는다.
-            buildOriginBranch(true)
-            buildOriginBranchWithPR(false)
-            buildOriginPRMerge(false)
-            buildOriginPRHead(false)
-            buildForkPRMerge(false)
-            buildForkPRHead(false)
-        }
-    }
-
-    // Jenkinsfile 경로는 기본값(레포 루트)이다.
-
-    // GitHub webhook은 자동 재시도가 없어 연결이 한 번 실패하면 push 이벤트가 유실된다.
-    // 15분마다 스캔해 놓친 main push를 보완한다(ADR 0015). webhook은 즉시 반응용으로 그대로 둔다.
-    triggers {
-        periodicFolderTrigger { interval('15m') }
-    }
-
-    orphanedItemStrategy {
-        discardOldItems { numToKeep(20) }
-    }
-}
+// vps-info는 Jenkins job이 없다. PR 검증과 배포를 자기 레포의 GitHub Actions가 한다(ADR 0018, ADR 0019).

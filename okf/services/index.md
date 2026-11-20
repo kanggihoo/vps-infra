@@ -4,7 +4,7 @@
 * [GitHub Actions 검증](github-actions-deploy.md) - 현재 push/PR 설정 검증과 과거 SSH 배포 기록.
 * [nginx 리버스 프록시](nginx.md) - VPS의 public HTTP/HTTPS 진입점.
 * [공용 인프라 포털](portal.md) - 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털.
-* [vps-info (Signal Archive)](vps-info.md) - 자기 레포에서 compose와 Jenkinsfile을 소유하고 공용 PostgreSQL과 nginx를 쓰는 첫 외부 프로젝트.
+* [vps-info (Signal Archive)](vps-info.md) - 자기 레포에서 compose와 GitHub Actions CI/CD를 소유하고 공용 PostgreSQL과 nginx를 쓰는 첫 외부 프로젝트.
 * [ERD 서빙 (Liam ERD)](erd.md) - 프로젝트 DB 스키마의 ER 다이어그램을 erd 서브도메인에서 정적 파일로 제공한다.
 * [관측 스택](observability.md) - 메트릭·로그·트레이스를 Alloy 하나로 모아 Grafana에서 조회하고 Mattermost로 알린다.
 * [whoami Health Target](whoami.md) - DNS, TLS, nginx 라우팅, Docker 네트워크를 검증하는 가벼운 HTTP 컨테이너.

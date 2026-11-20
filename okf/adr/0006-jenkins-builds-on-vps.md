@@ -6,6 +6,11 @@ tags: [deployment, jenkins, ci, build]
 timestamp: 2026-09-13T00:00:00+09:00
 ---
 
+# 상태
+
+**일부 대체.** vps-info 이미지는 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 GitHub Actions가 빌드해 GHCR에 올린다.
+학습 목적은 충분히 달성했다고 보고 Jenkins 자체를 걷어내는 중이다. vps-infra(portal, tools)는 아직 VPS Jenkins가 빌드한다.
+
 # 결정
 
 각 프로젝트의 Docker 이미지 빌드는 VPS 내부 Jenkins가 수행한다. GitHub Actions로

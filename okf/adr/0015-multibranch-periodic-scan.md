@@ -8,8 +8,8 @@ timestamp: 2026-10-03T00:00:00+09:00
 
 # 상태
 
-**범위 축소.** [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md) 이후 Jenkins는 PR을 발견하지 않는다.
-스캔은 놓친 main push를 보완하는 용도로만 남는다.
+**폐기.** [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 `vps-info` multibranch job을 지웠다. Actions는 GitHub 내부 이벤트로
+돌기 때문에 webhook 유실을 보완할 스캔이 필요 없다. 아래는 기록으로 남긴다.
 
 # 결정
 

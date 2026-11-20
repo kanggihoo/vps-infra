@@ -17,7 +17,7 @@ timestamp: 2026-09-30T00:00:00+09:00
 | 위치 | 소유 |
 |------|------|
 | vps-infra 레포 | `nginx/templates/erd.conf.template`, `compose.yml`의 `erd-site` volume, `CHALLENGE_DOMAINS`의 `erd` |
-| 각 프로젝트 레포 | Jenkinsfile의 ERD stage (빌드하고 volume의 `/<프로젝트>/`를 채운다) |
+| 각 프로젝트 레포 | 배포 때 ERD를 빌드해 volume의 `/<프로젝트>/`를 채우는 스크립트 (vps-info: `scripts/erd.sh`) |
 | VPS 1회 작업 | `erd` DNS A 레코드 |
 
 # 접근
@@ -26,7 +26,7 @@ timestamp: 2026-09-30T00:00:00+09:00
 
 # 프로젝트 추가
 
-1. 프로젝트 Jenkinsfile에 ERD stage를 넣는다. 입력은 스키마 파일이다(Drizzle은 `schema.ts`, 그 밖은 `pg_dump -s`).
+1. 프로젝트 배포 스크립트에 ERD 단계를 넣는다(vps-info `scripts/erd.sh` 참고). 입력은 스키마 파일이다(Drizzle은 `schema.ts`, 그 밖은 `pg_dump -s`).
 2. `docker run -v vps_erd_site:/out`으로 `/out/<프로젝트>/`에 복사한다.
 3. nginx 설정은 바꾸지 않는다. 폴더가 생기면 바로 서빙된다.
 
