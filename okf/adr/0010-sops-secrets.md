@@ -8,7 +8,8 @@ timestamp: 2026-08-23T00:00:00+09:00
 
 # 상태
 
-**key 위치만 바뀜.** [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins가 없어져 `jenkins/.env`의 `SOPS_AGE_KEY_CONTENT` 사본은 더 이상 쓰지 않는다.
+**key 위치와 대상이 바뀜.** [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins가 없어져 `jenkins/.env`의 `SOPS_AGE_KEY_CONTENT` 사본을 지웠다.
+Jenkins checkout용 `github-pat`도 대상에서 빼고 `secrets/github-pat.sops.txt`를 지웠다. 복호화 대상은 `.env`와 Basic Auth 파일이다.
 배포가 쓰는 복호화 key는 `~/.config/sops/age/keys.txt` 하나이고,
 배포 스크립트가 `tools` 컨테이너로 읽는다([ADR 0020](/adr/0020-infra-cd-on-github-actions.md)). 나머지 결정은 유효하다.
 

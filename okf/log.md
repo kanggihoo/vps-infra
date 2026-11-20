@@ -1,6 +1,7 @@
 # 변경 기록
 
 ## 2026-11-20
+* **정리**: Jenkins 잔여물을 지웠다. VPS의 `jenkins/.env`, Jenkins volume 2개와 이미지, 옛 vps-info 이미지, 제한 없는 `github-actions-vps-infra` key와 vps-infra secret 4개, `secrets/github-pat.sops.txt`(와 `secrets.sh`·`check-sops.sh`·`.gitignore` 참조). `CHALLENGE_DOMAINS`에서 jenkins를 빼고 인증서를 jenkins 없이 재발급했다(2027-02-18 만료). 두 SOPS 파일의 Jenkins 주석을 고쳤다. DNS A 레코드만 남았다.
 * **결정**: [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어냈다. `jenkins/` 전체, `jenkins.conf.template`과 `jenkins` nginx alias, Alloy의 Jenkins probe, Grafana "Jenkins 큐 적체" 알림과 Jenkins 대시보드를 지웠다. `vps-jenkins`는 병합 뒤 멈추고 `vps_jenkins_data` volume, `jenkins` DNS·인증서 SAN은 후속 정리로 남긴다. 갱신: `services/jenkins-deploy.md`를 [배포](/services/deploy.md)로 바꿔 Actions 흐름을 적었고, ADR 0001·0004·0006·0009·0010·0012·0016 상태, [관측 스택](/services/observability.md), [nginx](/services/nginx.md), [시스템 개요](/architecture/system-overview.md), [Hostinger VPS](/environments/hostinger-vps.md), 런북, `README.md`, `INFRA.md`를 고쳤다.
 * **결정**: [ADR 0020](/adr/0020-infra-cd-on-github-actions.md)으로 vps-infra 배포를 GitHub Actions(`validate.yml`의 deploy job → SSH forced command `scripts/ci-deploy.sh`)로 옮기고 `Jenkinsfile`을 지웠다. VPS에 `vps-infra-deploy` forced command 줄을 추가했다.
 * **결정**: [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 vps-info 배포를 GitHub Actions(이미지 GHCR push → SSH forced command로 `scripts/deploy.sh <sha>`)로 옮겼다. vps-info PR #30 병합으로 전환했고 첫 Actions 배포가 성공했다. `jobs.groovy`에서 `vps-info` multibranch job을, `plugins.txt`에서 `github-branch-source`를 지웠다(plugin 제거는 Jenkins 재빌드 때 반영).

@@ -29,7 +29,7 @@ Docker label 기반 동적 라우팅은 없다. 전체 배포는 후보 템플�
 Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 (`ssafy.kkh-hub.tech`)은 nginx 전환과 함께 제거했다. SSAFY Workspace Webhook POC 서비스
 자체도 폐기되었다. `jenkins.kkh-hub.tech`는 [ADR 0021](/adr/0021-remove-jenkins.md)로 템플릿을 지워
-default server(444)로 떨어진다. DNS 레코드와 인증서 SAN은 아직 남아 있다(`CHALLENGE_DOMAINS` 정리는 후속 작업).
+default server(444)로 떨어진다. `CHALLENGE_DOMAINS`와 인증서 SAN에서도 뺐다(2026-11-20 재발급). DNS A 레코드만 남아 있다.
 
 # 인증서 발급 (certbot)
 

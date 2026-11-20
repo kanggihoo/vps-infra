@@ -121,7 +121,6 @@ docker compose exec nginx nginx -t
 secrets/env.local.sops.env
 secrets/env.prod.sops.env
 secrets/basic-auth.htpasswd.sops.txt
-secrets/github-pat.sops.txt
 ```
 
 - SOPS: 암호화·복호화 관리 도구
