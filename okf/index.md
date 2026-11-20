@@ -20,6 +20,7 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 # 핵심 개념
 
 * [Jenkins·nginx 보안 및 운영 리뷰](/architecture/infra-review-2026-09-11.md) - 2026-09-11 저장소 정적 리뷰와 운영 확인 항목, 개선 우선순위.
+* [A302 인프라 도입 후보 검토](/architecture/a302-adoption-candidates.md) - 종료된 A302의 운영 결과를 반영한 미확정 후보 26개와 우선순위(인증서·컨테이너 알림, 보안 헤더, 디스크, R2 백업, 재구축 표, 검증 후 배포·롤백 등 CI/CD).
 
 * [로컬 우선 인프라 재구성](spec/0001-local-first-infra.md) - 단계 0~5 구현과 단계 6~8 후속 작업의 범위와 순서.
 * [Jenkins가 VPS에서 이미지를 빌드한다](adr/0006-jenkins-builds-on-vps.md) - 빌드를 외부 CI로 넘기지 않는 근거와 리소스 실측. ADR 0021로 폐기되었다.

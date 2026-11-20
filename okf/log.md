@@ -10,6 +10,15 @@
 * **결정**: [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)로 `vps-info` PR 검증을 Jenkins multibranch PR 빌드에서 vps-info의 GitHub Actions(`ci.yml`, job `check:task`)로 옮긴다. main 배포는 Jenkins에 남긴다. [ADR 0014](/adr/0014-multibranch-pr-ci.md)는 일부 대체, [ADR 0015](/adr/0015-multibranch-periodic-scan.md)는 main push 보완으로 범위를 줄였다.
 * **변경**: `jobs.groovy`의 `vps-info` multibranch가 `includes('main')`, `buildOriginPRMerge(false)`로 main만 발견한다. `notifyMattermost()`에서 PR 빌드 전용 경로(`CHANGE_*`, `kind == 'CI'`)를 지웠다. main 빌드 payload가 이전과 같은지 Jenkins 밖에서 수정 전후 출력을 비교해 확인했다.
 * **갱신**: [ADR 0012](/adr/0012-mattermost-build-notification.md) 메시지 형식, [vps-info](/services/vps-info.md) 소유 경계·배포 흐름, [배포](/services/deploy.md), [webhook 유실 트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)에 PR CI 이전을 반영했다.
+## 2026-11-17
+* **갱신**: S15P31A302 종료에 맞춰 [A302 인프라 도입 후보 검토](/architecture/a302-adoption-candidates.md)를 종료 시점(`41a8214`) 기준으로 다시 정리했다. 우선순위 표를 더하고, 복원 리허설 3회·런북 형식·읽기 전용 role 등 운영 결과로 기존 후보를 보강하고, 후보 6개(nginx 보안 헤더와 HSTS, 메타데이터 차단, 컨테이너 사라짐 알림, 재구축 표, secret 교체 표, nginx 조건부 재생성)를 더했다.
+* **갱신**: 같은 문서에 A302 GitLab CI/CD와 이 레포·vps-info Jenkins 파이프라인을 비교한 CI/CD 후보 8개(검증 통과 커밋만 배포, 마이그레이션 전 덤프, SHA 태그 롤백, 배포 SHA 확인, PR 빌드 취소, Jenkinsfile 구조 시험, 베이스 이미지 고정, 배포 잠금·이력)를 더했다.
+
+## 2026-10-24
+* **갱신**: [A302 인프라 도입 후보 검토](/architecture/a302-adoption-candidates.md)에 A302의 관측·외부 감시 추가분을 보고 후보 4개(인증서 만료 알림, VPS 밖 감시, 바깥 포트 검사, 알림 런북 링크)와 검사 원칙(대상 0개는 실패)을 더했다.
+
+## 2026-10-22
+* **검토**: [A302 인프라 도입 후보 검토](/architecture/a302-adoption-candidates.md)를 추가했다. S15P31A302 인프라에서 가져올 후보 8개(로그·prune, 디스크 검사, R2 암호화 백업, DB·role 멱등 생성, CI 검사 3종, 호스트 스크립트)와 적용 방법을 미확정으로 기록한다.
 
 ## 2026-10-08
 * **결정**: [ADR 0016](/adr/0016-self-hosted-observability.md)으로 Grafana·Prometheus·Loki·Tempo를 VPS에 셀프호스팅하고 Alloy 하나로 수집한다. Grafana Cloud를 전제로 한 루트 `OBSERVABILITY.md`를 삭제하고 유효한 내용(cAdvisor 필터, DB 트레이스는 앱이 만든다)을 ADR로 옮겼다.
