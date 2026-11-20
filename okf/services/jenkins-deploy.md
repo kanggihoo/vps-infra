@@ -19,7 +19,7 @@ repository를 checkout하고, VPS Docker daemon에서 portal 이미지를 build�
 # 흐름
 
 ```txt
-GitHub push (vps-info PR 검증은 GitHub Actions, ADR 0018)
+GitHub push (vps-infra만. vps-info는 GitHub Actions가 검증·배포한다, ADR 0019)
 -> GitHub webhook
 -> Jenkins container
 -> ~/app/vps-infra checkout

@@ -22,7 +22,8 @@ post always
 
 # 메시지 형식
 
-- 제목: `<종류> 성공|실패|불안정|중단 · <job> #<번호>`. 종류는 `kind` 인자이고 기본값은 `배포`다. vps-info는 main 빌드를 `CD`로 넘긴다. 누르면 빌드 페이지로 간다. 결과별 색 막대.
+- 제목: `<종류> 성공|실패|불안정|중단 · <job> #<번호>`. 종류는 `kind` 인자이고 기본값은 `배포`다. 누르면 빌드 페이지로 간다.
+  vps-info는 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md) 이후 Jenkins job이 없고, CI·CD 알림을 모두 자기 workflow의 `notify` job이 보낸다. 결과별 색 막대.
 - 본문 첫 줄: `PR #3 「제목」` 또는 커밋 제목이다.
 - PR 빌드(CI) 알림은 [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md) 이후 Jenkins가 아니라 vps-info의 GitHub Actions
   workflow(`notify` job)가 보낸다. 제목 `CI 성공|실패 · vps-info PR #<번호>`, 본문 `PR #3 「제목」 검증을 통과했습니다. 리뷰 가능합니다.`,

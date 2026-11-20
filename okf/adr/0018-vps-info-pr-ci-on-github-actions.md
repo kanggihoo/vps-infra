@@ -6,6 +6,10 @@ tags: [ci, github-actions, jenkins, multibranch, branch-protection, github]
 timestamp: 2026-11-20T00:00:00+09:00
 ---
 
+# 상태
+
+**확장.** 같은 날 main 배포도 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 Actions에 옮겼다. 아래의 "main 배포는 Jenkins" 부분은 그 ADR이 대체한다.
+
 # 결정
 
 `vps-info`의 PR 검증을 Jenkins multibranch PR 빌드에서 vps-info 레포의 `.github/workflows/ci.yml`로 옮긴다.

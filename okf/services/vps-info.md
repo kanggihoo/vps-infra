@@ -1,8 +1,8 @@
 ---
 type: Service
 title: vps-info (Signal Archive)
-description: 자기 레포에서 compose, Jenkinsfile, GitHub Actions CI를 소유하고 공용 PostgreSQL과 nginx를 쓰는 첫 외부 프로젝트.
-tags: [project, jenkins, github-actions, sops, postgres, nginx]
+description: 자기 레포에서 compose와 GitHub Actions CI/CD를 소유하고 공용 PostgreSQL과 nginx를 쓰는 첫 외부 프로젝트.
+tags: [project, github-actions, ghcr, sops, postgres, nginx]
 timestamp: 2026-11-20T00:00:00+09:00
 ---
 
@@ -15,44 +15,43 @@ timestamp: 2026-11-20T00:00:00+09:00
 
 | 위치 | 소유 |
 |------|------|
-| vps-info 레포 | `Dockerfile`, `compose.yml`(프로젝트 이름 `vps-info`), `Jenkinsfile`, `.github/workflows/ci.yml`, `secrets/env.prod.sops.env` |
-| GitHub 설정 | main branch protection의 필수 check `check:task`, 레포 secret `MATTERMOST_WEBHOOK_URL`, webhook(`push`) |
-| vps-infra 레포 | `jenkins/casc/jobs.groovy`의 `vps-info` multibranch Job(main만), `nginx/templates/vps-info.conf.template`, `CHALLENGE_DOMAINS` |
-| VPS 1회 작업 | 공용 postgres의 `vps_info` 사용자·DB (superuser를 공유하지 않는다) |
+| vps-info 레포 | `Dockerfile`, `compose.yml`(프로젝트 이름 `vps-info`), `.github/workflows/ci.yml`, `scripts/deploy.sh`, `scripts/erd.sh`, `secrets/env.prod.sops.env` |
+| GitHub 설정 | main branch protection의 필수 check `check:task`, 레포 secret `VPS_DEPLOY_KEY`·`MATTERMOST_WEBHOOK_URL`, GHCR 패키지 `ghcr.io/kanggihoo/vps-info`(public) |
+| vps-infra 레포 | `nginx/templates/vps-info.conf.template`, `CHALLENGE_DOMAINS` |
+| VPS 1회 작업 | 공용 postgres의 `vps_info` 사용자·DB (superuser를 공유하지 않는다), `~/app/vps-info` clone, `authorized_keys`의 `vps-info-deploy` forced command 줄 |
 
 # 배포 흐름
 
 ```txt
 PR -> GitHub Actions CI (check:task) -> 병합 필수 check, Mattermost CI 알림 (ADR 0018)
-vps-info main push -> GitHub webhook -> Jenkins vps-info/main (ADR 0014)
--> docker build --target test (배포 직전 재검증)
--> sops-age-key credential로 secrets/env.prod.sops.env 복호화 -> .env
--> docker compose up -d --build --wait (migrate 성공 후 app, collector)
--> post: .env 삭제
+vps-info main push -> GitHub Actions (ADR 0019)
+-> check:task -> image: ghcr.io/kanggihoo/vps-info:<sha>-<서비스> push
+-> deploy: ssh kkh@VPS "<sha>" -> forced command ~/app/vps-info/scripts/deploy.sh
+   -> flock /tmp/vps-deploy.lock -> git checkout <sha>(main 이력만)
+   -> sops 이미지 + ~/.config/sops/age/keys.txt로 .env 복호화(+ IMAGE_TAG)
+   -> docker compose pull -> up -d --no-build --wait (migrate 성공 후 app, collector, llm)
+   -> 마이그레이션이 바뀌었으면 scripts/erd.sh
+-> notify: Mattermost CD 알림
 ```
 
 - nginx는 서비스 이름 `app` 대신 `vps_proxy` alias `vps-info-app`으로 찾는다. 공유 네트워크에서
   서비스 이름이 겹치면 Docker DNS가 요청을 나눠 보낸다.
 - DB 접속 호스트는 `vps-postgres`(container_name)다. 같은 이유로 서비스 이름 `postgres`를 쓰지 않는다.
-- 암호화는 vps-infra와 같은 age 공개키를 쓴다. 새 프로젝트도 같은 key로 복호화되므로
-  Jenkins credential을 추가하지 않는다.
+- 암호화는 vps-infra와 같은 age 공개키를 쓴다. VPS의 `~/.config/sops/age/keys.txt` 하나로 복호화된다.
 
 # 주의
 
-- Job은 `jenkins/casc/jobs.groovy`에 추가하고 push하면 vps-infra 파이프라인의 JCasC reload로
-  생긴다. 재빌드는 필요 없다([ADR 0009](/adr/0009-jenkins-config-as-code.md)). 이미지에 복사하던
-  2026-09-28에는 재빌드 후 Job의 `config.xml`만 생기고 목록에 나타나지 않아 한 번 더 재시작해야
-  했다. reload 경로에서도 같은 증상이 나는지는 아직 확인하지 않았다.
-- 테스트는 `JUNIT_OUTPUT_DIR`을 준 컨테이너에서 돌고, 결과 XML은 `docker cp`로 꺼내 `junit`에 넘긴다.
-  Jenkins workspace가 named volume 안에 있어 `-v` bind mount로는 가리킬 수 없기 때문이다.
-  main 빌드 결과는 `notifyMattermost(kind: 'CD')`로 알린다([ADR 0012](/adr/0012-mattermost-build-notification.md)).
-  PR CI는 Actions가 같은 test image 방식으로 돌리고, 알림도 workflow가 보낸다([ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)).
+- 배포 key는 `command="/home/kkh/app/vps-info/scripts/deploy.sh",restrict`로 묶여 셸·다른 명령·포트 포워딩이 안 된다(2026-11-20 확인).
+  key를 바꿀 때는 `authorized_keys`의 `vps-info-deploy` 줄과 레포 secret `VPS_DEPLOY_KEY`를 함께 바꾼다.
+- workflow는 VPS host key를 고정한다(`ci.yml`의 `VPS_HOST_KEY`). VPS를 다시 만들면 그 값도 바꿔야 배포된다.
+- 롤백은 VPS에서 `~/app/vps-info/scripts/deploy.sh <이전 main SHA>`다. 수동 재배포·ERD 재생성은 Actions `CI` workflow를 main으로 실행한다(`erd` 옵션).
+- 운영 compose 명령(`scripts/llm-login.sh` 등)은 `~/app/vps-info`에서 실행한다. `.env`의 `IMAGE_TAG`가 배포된 이미지를 가리킨다.
 - macOS의 sops는 age key를 `~/Library/Application Support/sops/age/keys.txt`에서 찾는다.
   key가 `~/.config/sops/age/keys.txt`에 있으면 `SOPS_AGE_KEY_FILE`로 지정한다.
 
 # 관련 개념
 
-- [Jenkins 배포](/services/jenkins-deploy.md)
+- [vps-info 배포를 GitHub Actions로 옮긴다](/adr/0019-vps-info-cd-on-github-actions.md)
 - [nginx 리버스 프록시](/services/nginx.md)
 - [PostgreSQL](/services/postgresql.md)
 - [SOPS 기반 secret 관리](/adr/0010-sops-secrets.md)

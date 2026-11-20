@@ -1,6 +1,9 @@
 # 변경 기록
 
 ## 2026-11-20
+* **결정**: [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 vps-info 배포를 GitHub Actions(이미지 GHCR push → SSH forced command로 `scripts/deploy.sh <sha>`)로 옮겼다. vps-info PR #30 병합으로 전환했고 첫 Actions 배포가 성공했다. `jobs.groovy`에서 `vps-info` multibranch job을, `plugins.txt`에서 `github-branch-source`를 지웠다(plugin 제거는 Jenkins 재빌드 때 반영).
+* **변경**: VPS에 `~/app/vps-info` clone과 `authorized_keys`의 `vps-info-deploy` forced command 줄을 추가했다. 배포 key로 셸·다른 명령·포트 포워딩이 막히는 것을 확인했다.
+* **갱신**: ADR 0006·0012·0013·0014·0015·0018 상태, [vps-info](/services/vps-info.md), [ERD](/services/erd.md), [Jenkins 배포](/services/jenkins-deploy.md), 트러블슈팅, compose 주석.
 * **결정**: [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)로 `vps-info` PR 검증을 Jenkins multibranch PR 빌드에서 vps-info의 GitHub Actions(`ci.yml`, job `check:task`)로 옮긴다. main 배포는 Jenkins에 남긴다. [ADR 0014](/adr/0014-multibranch-pr-ci.md)는 일부 대체, [ADR 0015](/adr/0015-multibranch-periodic-scan.md)는 main push 보완으로 범위를 줄였다.
 * **변경**: `jobs.groovy`의 `vps-info` multibranch가 `includes('main')`, `buildOriginPRMerge(false)`로 main만 발견한다. `notifyMattermost()`에서 PR 빌드 전용 경로(`CHANGE_*`, `kind == 'CI'`)를 지웠다. main 빌드 payload가 이전과 같은지 Jenkins 밖에서 수정 전후 출력을 비교해 확인했다.
 * **갱신**: [ADR 0012](/adr/0012-mattermost-build-notification.md) 메시지 형식, [vps-info](/services/vps-info.md) 소유 경계·배포 흐름, [Jenkins 배포](/services/jenkins-deploy.md), [webhook 유실 트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)에 PR CI 이전을 반영했다.

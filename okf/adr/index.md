@@ -15,8 +15,9 @@
 * [인증서 갱신을 컨테이너 안에서 끝낸다](0011-certbot-container-renewal.md) - 상주 certbot이 갱신하고 nginx가 하루 한 번 스스로 reload한다.
 * [빌드 결과를 Shared Library로 Mattermost에 알린다](0012-mattermost-build-notification.md) - implicit 라이브러리의 `notifyMattermost()`가 모든 job의 성공·실패를 한 채널에 보낸다.
 * [DB 스키마 ERD를 Liam으로 빌드해 nginx에서 정적으로 서빙한다](0013-liam-erd-static-hosting.md) - 프로젝트 Jenkins job이 ERD를 빌드해 erd-site 볼륨에 넣고 nginx가 Basic Auth 뒤에서 서빙한다.
-* [vps-info는 multibranch job으로 PR을 검증하고 main에서만 배포한다](0014-multibranch-pr-ci.md) - PR마다 Test를 돌려 필수 check로 보고하고, 배포 stage는 main 빌드에서만 실행한다. PR 검증 부분은 ADR 0018로 대체되었다.
-* [vps-info multibranch가 15분마다 스캔해 유실된 webhook을 보완한다](0015-multibranch-periodic-scan.md) - webhook은 자동 재시도가 없어, 놓친 PR을 주기 스캔으로 잡는다.
+* [vps-info는 multibranch job으로 PR을 검증하고 main에서만 배포한다](0014-multibranch-pr-ci.md) - PR마다 Test를 돌려 필수 check로 보고하고, 배포 stage는 main 빌드에서만 실행한다. ADR 0018·0019로 대체되었다.
+* [vps-info multibranch가 15분마다 스캔해 유실된 webhook을 보완한다](0015-multibranch-periodic-scan.md) - webhook은 자동 재시도가 없어, 놓친 PR을 주기 스캔으로 잡는다. ADR 0019로 job과 함께 폐기되었다.
 * [관측 스택을 VPS에 셀프호스팅하고 Alloy 하나로 수집한다](0016-self-hosted-observability.md) - Grafana·Prometheus·Loki·Tempo를 별도 Compose project로 띄우고 Alloy 하나가 수집한다. Grafana Cloud 방안을 대체한다.
 * [외부 요청의 trace는 nginx가 시작한다](0017-nginx-starts-traces.md) - nginx otel 모듈이 trace를 시작해 traceparent로 전파하고, 앱은 이어받기만 한다.
-* [vps-info PR 검증을 GitHub Actions로 옮기고 Jenkins는 main 배포만 한다](0018-vps-info-pr-ci-on-github-actions.md) - PR 실패 로그를 GitHub 안에서 보고, Jenkins multibranch는 main만 발견한다.
+* [vps-info PR 검증을 GitHub Actions로 옮기고 Jenkins는 main 배포만 한다](0018-vps-info-pr-ci-on-github-actions.md) - PR 실패 로그를 GitHub 안에서 보고, Jenkins multibranch는 main만 발견한다. main 배포는 ADR 0019가 대체한다.
+* [vps-info 배포를 GitHub Actions + GHCR + SSH forced command로 옮기고 Jenkins job을 없앤다](0019-vps-info-cd-on-github-actions.md) - Actions가 이미지를 GHCR에 올리고, forced command로 묶인 key로 VPS의 deploy.sh에 SHA만 넘긴다.
