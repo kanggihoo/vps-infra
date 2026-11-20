@@ -3,8 +3,8 @@
 # Hostinger VPS 및 로컬 인프라 배포 스크립트 (scripts/deploy.sh)
 #
 # [실행 시점]
-# 1. Jenkins CI/CD: main 브랜치 push 시 GitHub Webhook에 의해 자동 실행
-#    (Jenkinsfile -> ./scripts/deploy.sh "$RESOLVED_TARGET")
+# 1. GitHub Actions CD: main 브랜치 push 시 SSH로 scripts/ci-deploy.sh가 실행되고, 그 스크립트가 부른다(ADR 0020)
+#    (ci-deploy.sh -> ./scripts/deploy.sh "$target")
 # 2. 로컬 / 운영 수동 배포: 터미널에서 전체 스택 또는 특정 대상을 배포할 때 직접 실행
 #
 # [사용법]

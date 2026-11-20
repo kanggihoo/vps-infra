@@ -21,3 +21,4 @@
 * [외부 요청의 trace는 nginx가 시작한다](0017-nginx-starts-traces.md) - nginx otel 모듈이 trace를 시작해 traceparent로 전파하고, 앱은 이어받기만 한다.
 * [vps-info PR 검증을 GitHub Actions로 옮기고 Jenkins는 main 배포만 한다](0018-vps-info-pr-ci-on-github-actions.md) - PR 실패 로그를 GitHub 안에서 보고, Jenkins multibranch는 main만 발견한다. main 배포는 ADR 0019가 대체한다.
 * [vps-info 배포를 GitHub Actions + GHCR + SSH forced command로 옮기고 Jenkins job을 없앤다](0019-vps-info-cd-on-github-actions.md) - Actions가 이미지를 GHCR에 올리고, forced command로 묶인 key로 VPS의 deploy.sh에 SHA만 넘긴다.
+* [vps-infra 배포를 GitHub Actions + SSH forced command로 옮긴다](0020-infra-cd-on-github-actions.md) - validate 뒤 forced command로 VPS의 ci-deploy.sh에 SHA와 대상만 넘긴다. Jenkinsfile의 순서를 그 스크립트가 실행한다.

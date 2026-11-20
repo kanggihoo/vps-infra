@@ -1,11 +1,33 @@
 name: Validate infra config
 
-# 배포는 하지 않는다. 배포는 VPS 내부 Jenkins가 담당한다(ADR 0006).
-# 이 workflow는 push 시점에 설정 문법 오류만 잡는다.
+# PR과 main에서 설정 문법·로직을 검증하고, main은 통과하면 VPS에 배포한다(ADR 0020).
+# 배포는 SSH로 VPS의 scripts/ci-deploy.sh에 "<sha> [target]"만 보낸다. 배포 내용은 그 스크립트에 있다.
 on:
   push:
     branches: [main]
   pull_request:
+  # 수동 재배포·롤백. main을 골라 실행한다. auto는 마지막 성공 배포부터의 변경으로 대상을 고른다.
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 배포 대상
+        type: choice
+        options: [auto, all, portal, observability]
+        default: auto
+
+permissions:
+  contents: read
+
+# PR은 새 push가 오면 이전 실행을 취소한다. main은 취소하지 않고 순서대로 돈다(배포 도중에 끊지 않는다).
+concurrency:
+  group: validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # 배포 대상. host key를 고정해 다른 서버에 접속하지 않는다(키가 바뀌면 배포가 실패한다).
+  VPS_HOST: 187.77.114.68
+  VPS_USER: kkh
+  VPS_HOST_KEY: 187.77.114.68 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAkuL3u1JaTmO9cAZIcgiYyLJLIdDENedbywa+/YOsfo
 
 jobs:
   validate:
@@ -96,3 +118,64 @@ jobs:
 
       - name: Verify SOPS files are encrypted
         run: ./scripts/check-sops.sh
+
+  # 이 key는 VPS authorized_keys의 forced command로 묶여 있어 "<sha> [target]" 말고는 아무것도 실행할 수 없다.
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Deploy over SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
+          TARGET: ${{ inputs.target || 'auto' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_HOST_KEY" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o ServerAliveInterval=30 \
+            "$VPS_USER@$VPS_HOST" "$GITHUB_SHA $TARGET"
+
+  # 배포 결과를 Mattermost로 알린다(ADR 0012). secret이 없으면 건너뛴다. 취소된 실행은 알리지 않는다.
+  notify:
+    needs: [validate, deploy]
+    if: >-
+      always() &&
+      github.event_name != 'pull_request' &&
+      !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # 커밋 메시지 같은 사용자 입력은 env로만 넘긴다. run에 ${{ }}로 넣으면 셸 코드로 해석될 수 있다.
+      - name: Send to Mattermost
+        env:
+          HOOK: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
+          VALIDATE: ${{ needs.validate.result }}
+          DEPLOY: ${{ needs.deploy.result }}
+          TARGET: ${{ inputs.target || 'auto' }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "[notify] MATTERMOST_WEBHOOK_URL이 없어 알림을 건너뛴다"
+            exit 0
+          fi
+          ok=$([ "$DEPLOY" = success ] && echo 1 || echo 0)
+          stage=$([ "$VALIDATE" = success ] && echo deploy || echo validate)
+          subject="${COMMIT_MESSAGE%%$'\n'*}"
+          title="배포 $([ "$ok" = 1 ] && echo 성공 || echo 실패) · vps-infra main"
+          text="${subject:-수동 재배포}$([ "$ok" = 1 ] || echo " · 실패 단계: ${stage}. 로그: ${RUN_URL}")"
+          color=$([ "$ok" = 1 ] && echo '#2eb886' || echo '#d33f3f')
+          jq -n --arg title "$title" --arg link "$RUN_URL" --arg color "$color" --arg text "$text" \
+            --arg commit "[\`${GITHUB_SHA::7}\`](${COMMIT_URL})" --arg actor "$ACTOR" --arg target "$TARGET" \
+            '{username: "GitHub Actions", attachments: [{color: $color, title: $title, title_link: $link, text: $text,
+              fields: [{short: true, title: "커밋", value: $commit}, {short: true, title: "실행자", value: $actor},
+                       {short: true, title: "요청 대상", value: $target}]}]}' |
+            curl -fsS --max-time 10 -H 'Content-Type: application/json' -d @- "$HOOK" >/dev/null ||
+            echo "[notify] 알림 전송 실패(결과에는 영향 없음)"

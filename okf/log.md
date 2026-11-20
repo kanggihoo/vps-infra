@@ -1,6 +1,7 @@
 # 변경 기록
 
 ## 2026-11-20
+* **결정**: [ADR 0020](/adr/0020-infra-cd-on-github-actions.md)으로 vps-infra 배포를 GitHub Actions(`validate.yml`의 deploy job → SSH forced command `scripts/ci-deploy.sh`)로 옮기고 `Jenkinsfile`을 지웠다. VPS에 `vps-infra-deploy` forced command 줄을 추가했다.
 * **결정**: [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 vps-info 배포를 GitHub Actions(이미지 GHCR push → SSH forced command로 `scripts/deploy.sh <sha>`)로 옮겼다. vps-info PR #30 병합으로 전환했고 첫 Actions 배포가 성공했다. `jobs.groovy`에서 `vps-info` multibranch job을, `plugins.txt`에서 `github-branch-source`를 지웠다(plugin 제거는 Jenkins 재빌드 때 반영).
 * **변경**: VPS에 `~/app/vps-info` clone과 `authorized_keys`의 `vps-info-deploy` forced command 줄을 추가했다. 배포 key로 셸·다른 명령·포트 포워딩이 막히는 것을 확인했다.
 * **갱신**: ADR 0006·0012·0013·0014·0015·0018 상태, [vps-info](/services/vps-info.md), [ERD](/services/erd.md), [Jenkins 배포](/services/jenkins-deploy.md), 트러블슈팅, compose 주석.
