@@ -16,7 +16,7 @@ Jenkins를 VPS 인프라에서 완전히 없앤다.
   `jenkins.kkh-hub.tech` 요청은 이제 nginx default server(444)로 떨어진다.
 - 관측 스택에서 Alloy의 Jenkins blackbox probe, Grafana 알림 규칙 "Jenkins 큐 적체", `Jenkins overview` 대시보드를 지운다.
   Alloy OTLP receiver는 nginx trace용으로 남기고, Jenkins가 보내던 데이터만 끊긴다.
-- 병합 뒤 `vps-jenkins` 컨테이너를 멈춘다. volume `vps_jenkins_data`는 당분간 남긴다.
+- 병합 뒤 `vps-jenkins` 컨테이너를 멈추고 지웠다. volume(`vps_jenkins_data`, `vps_jenkins_data_pre_jcasc`)과 이미지도 지웠다.
 
 배포 경로는 프로젝트마다 자기 레포의 GitHub Actions가 맡는다.
 
@@ -37,8 +37,11 @@ vps-infra main push -> validate -> ssh forced command ~/app/vps-infra/scripts/ci
 - Grafana에서 Jenkins OTel trace·메트릭·빌드 로그가 사라진다. 배포 로그는 각 레포의 Actions run에서 본다.
 - Jenkins UI와 JUnit 결과 화면이 없어진다. 테스트 결과는 Actions 로그로 본다.
 - 빌드 알림은 각 레포 workflow의 `notify` job이 보낸다([ADR 0012](/adr/0012-mattermost-build-notification.md)의 shared library는 지웠다).
-- `vps_jenkins_data` volume은 남아 있다. 삭제 여부는 소유자가 정한다.
-- `jenkins.kkh-hub.tech` DNS 레코드와 인증서 SAN은 남아 있다. `secrets/env.prod.sops.env`의 `CHALLENGE_DOMAINS`에서 빼는 일은 후속 작업이다.
+- 빌드 기록은 volume과 함께 지웠다. 되돌릴 수 없다.
+- 같은 날 정리를 마쳤다: VPS `jenkins/.env`(age key·PAT·관리자 비밀번호 평문 사본), 제한 없는 옛 배포 key(`github-actions-vps-infra`)와
+  vps-infra secret `VPS_HOST`·`VPS_PORT`·`VPS_SSH_KEY`·`VPS_USER`, Jenkins checkout용 `secrets/github-pat.sops.txt`,
+  `CHALLENGE_DOMAINS`와 인증서 SAN의 `jenkins.kkh-hub.tech`(인증서 재발급), 두 SOPS 파일의 Jenkins 주석.
+- `jenkins.kkh-hub.tech` DNS A 레코드는 DNS 관리 화면에서 직접 지워야 한다. 지금은 nginx default server가 444로 끊는다.
 - **배포 스크립트 자기 갱신 주의.** `scripts/ci-deploy.sh`와 vps-info `scripts/deploy.sh`는 VPS에 이미 있는 버전이 먼저 실행돼 새 커밋을 checkout한다.
   그래서 이 스크립트의 변경은 **다음 배포부터** 적용된다. 첫 전환 때도 같은 이유로 VPS에서 `git pull`을 한 번 손으로 했다.
 
