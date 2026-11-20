@@ -22,16 +22,15 @@ post always
 
 # 메시지 형식
 
-- 제목: `<종류> 성공|실패|불안정|중단 · <job> #<번호>`. 종류는 `kind` 인자이고 기본값은 `배포`다. vps-info는 PR 빌드를 `CI`, main 빌드를 `CD`로 넘긴다([ADR 0014](/adr/0014-multibranch-pr-ci.md))., 누르면 빌드 페이지로 간다. 결과별 색 막대.
-- 본문 첫 줄: PR 번호와 제목. PR 빌드(CI)는 `PR #3 「제목」 검증을 통과했습니다. 리뷰 가능합니다.`, main 빌드(CD)와
-  그 밖의 빌드는 `PR #3 「제목」` 또는 커밋 제목이다.
-- 필드(PR 빌드): PR(링크), 작성자, `브랜치 → 대상`, 커밋, 소요 시간. PR 정보는 multibranch의
-  `CHANGE_ID`·`CHANGE_TITLE`·`CHANGE_AUTHOR`·`CHANGE_BRANCH`·`CHANGE_TARGET`·`CHANGE_URL`에서 읽는다.
+- 제목: `<종류> 성공|실패|불안정|중단 · <job> #<번호>`. 종류는 `kind` 인자이고 기본값은 `배포`다. vps-info는 main 빌드를 `CD`로 넘긴다. 누르면 빌드 페이지로 간다. 결과별 색 막대.
+- 본문 첫 줄: `PR #3 「제목」` 또는 커밋 제목이다.
+- PR 빌드(CI) 알림은 [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md) 이후 Jenkins가 아니라 vps-info의 GitHub Actions
+  workflow(`notify` job)가 보낸다. 제목 `CI 성공|실패 · vps-info PR #<번호>`, 본문 `PR #3 「제목」 검증을 통과했습니다. 리뷰 가능합니다.`,
+  필드는 PR(링크), 작성자, `브랜치 → 대상`이다. 실패 시 본문은 Actions run 링크다. 이 라이브러리의 `CHANGE_*` 경로는 지웠다.
 - 필드(main 빌드): PR(링크), 병합자, 커밋, 소요 시간. main 빌드에는 PR 환경변수가 없으므로
   배포한 커밋의 메시지에서 PR을 찾는다. 병합 커밋 `Merge pull request #N from ...`(제목은 본문 첫 줄)과
   squash 병합 `제목 (#N)`을 알아본다. 찾지 못하면(직접 push 등) PR 필드 없이 커밋 제목과 브랜치만 보인다.
-- 필드(그 밖): 브랜치, 커밋, 소요 시간, job이 넘긴 추가 필드(vps-infra는 배포 대상). job이 `PR` 필드를 넘겨도
-  라이브러리가 만든 PR 필드와 겹치면 뺀다.
+- 필드(그 밖): 브랜치, 커밋, 소요 시간, job이 넘긴 추가 필드(vps-infra는 배포 대상).
 - 커밋 메시지는 `git log`로 읽는다. 배포 디렉터리가 workspace와 다른 job(vps-infra)은 `gitDir: env.APP_DIR`를 넘긴다.
 - 제목의 `#번호`는 PR 번호가 아니라 **Jenkins 빌드 번호**다. PR은 본문 첫 줄과 PR 필드로 구분한다.
 - 실패 시 본문 순서: ① 실패 단계 ② 오류 메시지 ③ 실패한 테스트 최대 5개(JUnit) ④ 로그 마지막 30줄.

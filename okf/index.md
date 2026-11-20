@@ -30,10 +30,11 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 * [인증서 갱신을 컨테이너 안에서 끝낸다](adr/0011-certbot-container-renewal.md) - systemd timer 대신 상주 certbot과 nginx 일일 reload를 쓴다.
 * [빌드 결과를 Shared Library로 Mattermost에 알린다](adr/0012-mattermost-build-notification.md) - 모든 Jenkins job이 `notifyMattermost()`로 성공·실패를 알린다.
 * [DB 스키마 ERD를 Liam으로 빌드해 nginx에서 정적으로 서빙한다](adr/0013-liam-erd-static-hosting.md) - 프로젝트 Jenkins job이 ERD를 빌드해 erd-site 볼륨에 넣고 nginx가 Basic Auth 뒤에서 서빙한다.
-* [vps-info는 multibranch job으로 PR을 검증하고 main에서만 배포한다](adr/0014-multibranch-pr-ci.md) - PR마다 Test를 돌려 필수 check로 보고하고, 배포 stage는 main 빌드에서만 실행한다.
-* [vps-info multibranch가 15분마다 스캔해 유실된 webhook을 보완한다](adr/0015-multibranch-periodic-scan.md) - webhook은 자동 재시도가 없어, 놓친 PR을 주기 스캔으로 잡는다.
+* [vps-info는 multibranch job으로 PR을 검증하고 main에서만 배포한다](adr/0014-multibranch-pr-ci.md) - PR마다 Test를 돌려 필수 check로 보고하고, 배포 stage는 main 빌드에서만 실행한다. PR 검증 부분은 ADR 0018로 대체되었다.
+* [vps-info multibranch가 15분마다 스캔해 유실된 webhook을 보완한다](adr/0015-multibranch-periodic-scan.md) - webhook은 자동 재시도가 없어, 놓친 이벤트를 주기 스캔으로 잡는다. ADR 0018 이후 main push만 대상이다.
 * [관측 스택을 VPS에 셀프호스팅하고 Alloy 하나로 수집한다](adr/0016-self-hosted-observability.md) - Grafana·Prometheus·Loki·Tempo를 별도 Compose project로 띄우고 Alloy 하나가 수집한다.
 * [외부 요청의 trace는 nginx가 시작한다](adr/0017-nginx-starts-traces.md) - nginx가 trace를 시작해 traceparent로 전파하고, 앱은 이어받기만 한다.
+* [vps-info PR 검증을 GitHub Actions로 옮기고 Jenkins는 main 배포만 한다](adr/0018-vps-info-pr-ci-on-github-actions.md) - PR 실패 로그를 GitHub 안에서 보고, Jenkins multibranch는 main만 발견한다.
 * [PR 생성 webhook이 유실되어 PR이 Jenkins에 나타나지 않는다](troubleshooting/webhook-pr-event-lost.md) - 연결 단계 실패로 PR #3만 누락된 사례의 조사 과정과 진단 순서.
 * [관측 스택](services/observability.md) - Grafana·Prometheus·Loki·Tempo·Alloy로 메트릭·로그·트레이스를 모은다.
 * [ERD 서빙 (Liam ERD)](services/erd.md) - 프로젝트 DB 스키마의 ER 다이어그램을 erd 서브도메인에서 정적 파일로 제공한다.

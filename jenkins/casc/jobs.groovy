@@ -48,12 +48,12 @@ pipelineJob('vps-infra-pipeline') {
 }
 
 // vps-info는 자기 레포가 Dockerfile, compose.yml, Jenkinsfile을 소유한다(ADR 0007).
-// multibranch로 main과 같은 레포 PR을 빌드한다. PR은 Jenkinsfile의 when 조건 때문에 Test만 돌고,
-// 결과는 GitHub commit status로 보고되어 브랜치 보호의 필수 check가 된다.
-// fork PR은 발견하지 않는다. 이 Jenkins는 docker.sock을 쓰므로 외부 코드를 실행하면 안 된다.
-// GitHub를 직접 조회하므로 로컬 Jenkins에서는 push하지 않은 커밋을 시험할 수 없다(이전 단일 job과 다른 점).
+// multibranch로 main만 빌드해 배포한다. PR 검증은 vps-info의 GitHub Actions가 한다(ADR 0018).
+// PR을 발견하지 않으므로 외부 코드가 이 Jenkins(docker.sock)에서 돌 일도 없다.
+// single pipelineJob으로 되돌리지 않는 이유: BRANCH_NAME이 비어 Jenkinsfile의 when { branch 'main' }이
+// 항상 거짓이 되고, 배포 stage를 건너뛴 채 빌드가 성공으로 표시된다(ADR 0014).
 multibranchPipelineJob('vps-info') {
-    description('vps-info PR 검증과 main 배포. 정의는 vps-infra/jenkins/casc/jobs.groovy에 있다.')
+    description('vps-info main 배포. 정의는 vps-infra/jenkins/casc/jobs.groovy에 있다.')
 
     branchSources {
         github {
@@ -61,22 +61,22 @@ multibranchPipelineJob('vps-info') {
             repoOwner('kanggihoo')
             repository('vps-info')
             scanCredentialsId('github-pat')
-            // 이 Job DSL 버전의 github 소스는 traits 대신 아래 옵션을 직접 받는다.
-            // 같은 레포의 main(PR이 없는 브랜치)과 PR을 빌드한다. PR은 대상 브랜치와 병합한 결과로 빌드한다.
+            // main만 발견한다. 기본값('*')이면 PR이 없는 작업 브랜치마다 Test 빌드가 생긴다.
+            includes('main')
+            // 이 Job DSL 버전의 github 소스는 traits 대신 아래 옵션을 직접 받는다. PR은 빌드하지 않는다.
             buildOriginBranch(true)
             buildOriginBranchWithPR(false)
-            buildOriginPRMerge(true)
+            buildOriginPRMerge(false)
             buildOriginPRHead(false)
-            // fork PR은 빌드하지 않는다.
             buildForkPRMerge(false)
             buildForkPRHead(false)
         }
     }
 
-    // Jenkinsfile 경로는 기본값(레포 루트)이다. 다른 브랜치는 PR이 생기기 전까지 Jenkinsfile의 when으로 배포가 막힌다.
+    // Jenkinsfile 경로는 기본값(레포 루트)이다.
 
-    // GitHub webhook은 자동 재시도가 없어 연결이 한 번 실패하면 PR 생성 이벤트가 유실된다.
-    // 15분마다 스캔해 놓친 PR·브랜치를 보완한다. webhook은 즉시 반응용으로 그대로 둔다.
+    // GitHub webhook은 자동 재시도가 없어 연결이 한 번 실패하면 push 이벤트가 유실된다.
+    // 15분마다 스캔해 놓친 main push를 보완한다(ADR 0015). webhook은 즉시 반응용으로 그대로 둔다.
     triggers {
         periodicFolderTrigger { interval('15m') }
     }

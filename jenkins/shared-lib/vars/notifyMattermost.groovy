@@ -3,11 +3,11 @@
 //
 //   post { always { notifyMattermost() } }
 //   notifyMattermost(commit: env.DEPLOY_SHA, repoUrl: env.INFRA_SCM_URL, fields: ['배포 대상': 'all'])
-//   notifyMattermost(kind: 'CI')   // 제목 앞말. 생략하면 '배포'
+//   notifyMattermost(kind: 'CD')   // 제목 앞말. 생략하면 '배포'
 //   notifyMattermost(gitDir: env.APP_DIR)   // 커밋을 읽을 git 디렉터리. 생략하면 현재 workspace
 //
-// PR 번호·제목은 multibranch PR 빌드의 CHANGE_* 환경변수에서, main 빌드는 커밋 메시지
-// (`Merge pull request #N` 또는 squash의 `제목 (#N)`)에서 읽는다.
+// PR 번호·제목은 배포한 커밋 메시지(`Merge pull request #N` 또는 squash의 `제목 (#N)`)에서 읽는다.
+// PR 빌드(CI) 알림은 Jenkins가 아니라 vps-info의 GitHub Actions workflow가 보낸다(ADR 0018).
 //
 // 신뢰된 global library라 sandbox 밖에서 돈다. 그래서 빌드 로그, flow graph, JUnit 결과를
 // 직접 읽을 수 있다. 알림 실패는 빌드 결과를 바꾸지 않는다.
@@ -32,18 +32,11 @@ def call(Map args = [:]) {
                 commit  : sha,
                 repoUrl : args.repoUrl ?: env.GIT_URL,
                 kind    : args.kind ?: '배포',
-                // multibranch의 PR 빌드는 BRANCH_NAME이 PR-7이다. 단일 job은 GIT_BRANCH를 쓴다.
+                // multibranch job은 BRANCH_NAME을, 단일 job은 GIT_BRANCH를 쓴다.
                 branch  : env.BRANCH_NAME ?: (env.GIT_BRANCH ?: 'main').replaceFirst(/^origin\//, ''),
                 fields  : args.fields ?: [:],
-                // PR 빌드에만 있다. main 빌드는 아래 git 정보에서 PR 번호를 찾는다.
-                changeId    : env.CHANGE_ID,
-                changeTitle : env.CHANGE_TITLE,
-                changeAuthor: env.CHANGE_AUTHOR,
-                changeBranch: env.CHANGE_BRANCH,
-                changeTarget: env.CHANGE_TARGET,
-                changeUrl   : env.CHANGE_URL,
-                git         : git,
-                pr          : parsePr(git.subject ?: '', git.body ?: ''),
+                git     : git,
+                pr      : parsePr(git.subject ?: '', git.body ?: ''),
             ])
             int status = sendWebhook(env.MATTERMOST_HOOK, payload)
             echo "[notify] mattermost ${status}"
@@ -63,40 +56,31 @@ String buildPayload(run, Map b) {
     ]
     def (label, color) = styles[b.result] ?: [b.result, '#8b8b8b']
 
-    def prNumber = b.changeId ?: b.pr.number
-    def prTitle = b.changeTitle ?: b.pr.title
+    def prNumber = b.pr.number
+    def prTitle = b.pr.title
     def rm = b.repoUrl =~ /^https:\/\/github\.com\/(.+?)(\.git)?\/?$/
     def repo = rm.find() ? rm.group(1) : null
-    def prUrl = b.changeUrl ?: (prNumber && repo ? "https://github.com/${repo}/pull/${prNumber}" : null)
+    def prUrl = prNumber && repo ? "https://github.com/${repo}/pull/${prNumber}" : null
     def prLink = prNumber ? (prUrl ? "[#${prNumber}](${prUrl})" : "#${prNumber}") : null
 
     def fields = []
     if (prLink) {
         fields << ['short': true, title: 'PR', value: prLink]
     }
-    if (b.changeId) {
-        fields << ['short': true, title: '작성자', value: b.changeAuthor ?: '-']
-        fields << ['short': true, title: '브랜치 → 대상', value: "${b.changeBranch} → ${b.changeTarget}".toString()]
-    } else if (prNumber) {
+    if (prNumber) {
         fields << ['short': true, title: '병합자', value: b.git.author ?: '-']
     } else {
         fields << ['short': true, title: '브랜치', value: b.branch]
     }
     fields << ['short': true, title: '커밋', value: commitLink(b.commit, b.repoUrl)]
     fields << ['short': true, title: '소요 시간', value: b.duration]
-    // Jenkinsfile이 넘기던 PR 필드는 위에서 이미 만들었으므로 중복을 뺀다.
     b.fields.each { k, v ->
-        if (!(prLink && k == 'PR')) {
-            fields << ['short': true, title: k as String, value: (v ?: '-') as String]
-        }
+        fields << ['short': true, title: k as String, value: (v ?: '-') as String]
     }
 
     // 요약 한 줄: PR 번호와 제목. PR이 아니면 커밋 제목이다.
     def subject = prTitle ?: b.git.subject
     def summary = [prNumber ? "PR #${prNumber}" : null, subject ? "「${subject}」" : null].findAll { it }.join(' ')
-    if (b.kind == 'CI' && summary) {
-        summary += b.result == 'SUCCESS' ? ' 검증을 통과했습니다. 리뷰 가능합니다.' : " 검증 결과: ${label}"
-    }
     def text = [summary, b.result == 'SUCCESS' ? '' : failureText(run)].findAll { it }.join('\n\n')
 
     JsonOutput.toJson([

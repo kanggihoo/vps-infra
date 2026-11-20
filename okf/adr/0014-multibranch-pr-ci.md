@@ -6,6 +6,11 @@ tags: [jenkins, multibranch, ci, branch-protection, github]
 timestamp: 2026-10-01T00:00:00+09:00
 ---
 
+# 상태
+
+**일부 대체.** PR 검증(PR 빌드, commit status 필수 check, PR CI 알림)은 [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)로
+GitHub Actions에 옮겼다. multibranch job으로 main을 빌드하고 `when { branch 'main' }`으로 배포 stage를 막는 부분은 유효하다.
+
 # 결정
 
 `vps-info` job을 단일 `pipelineJob`(`*/main`만 빌드)에서 `multibranchPipelineJob`(github-branch-source)으로 바꾼다.

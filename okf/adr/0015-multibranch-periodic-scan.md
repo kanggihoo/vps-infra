@@ -6,6 +6,11 @@ tags: [jenkins, multibranch, webhook, github, reliability]
 timestamp: 2026-10-03T00:00:00+09:00
 ---
 
+# 상태
+
+**범위 축소.** [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md) 이후 Jenkins는 PR을 발견하지 않는다.
+스캔은 놓친 main push를 보완하는 용도로만 남는다.
+
 # 결정
 
 `vps-info` multibranch job에 `periodicFolderTrigger`를 15분 간격으로 둔다([ADR 0014](/adr/0014-multibranch-pr-ci.md)).

@@ -1,5 +1,10 @@
 # 변경 기록
 
+## 2026-11-20
+* **결정**: [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)로 `vps-info` PR 검증을 Jenkins multibranch PR 빌드에서 vps-info의 GitHub Actions(`ci.yml`, job `check:task`)로 옮긴다. main 배포는 Jenkins에 남긴다. [ADR 0014](/adr/0014-multibranch-pr-ci.md)는 일부 대체, [ADR 0015](/adr/0015-multibranch-periodic-scan.md)는 main push 보완으로 범위를 줄였다.
+* **변경**: `jobs.groovy`의 `vps-info` multibranch가 `includes('main')`, `buildOriginPRMerge(false)`로 main만 발견한다. `notifyMattermost()`에서 PR 빌드 전용 경로(`CHANGE_*`, `kind == 'CI'`)를 지웠다. main 빌드 payload가 이전과 같은지 Jenkins 밖에서 수정 전후 출력을 비교해 확인했다.
+* **갱신**: [ADR 0012](/adr/0012-mattermost-build-notification.md) 메시지 형식, [vps-info](/services/vps-info.md) 소유 경계·배포 흐름, [Jenkins 배포](/services/jenkins-deploy.md), [webhook 유실 트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)에 PR CI 이전을 반영했다.
+
 ## 2026-10-08
 * **결정**: [ADR 0016](/adr/0016-self-hosted-observability.md)으로 Grafana·Prometheus·Loki·Tempo를 VPS에 셀프호스팅하고 Alloy 하나로 수집한다. Grafana Cloud를 전제로 한 루트 `OBSERVABILITY.md`를 삭제하고 유효한 내용(cAdvisor 필터, DB 트레이스는 앱이 만든다)을 ADR로 옮겼다.
 * **결정**: [ADR 0017](/adr/0017-nginx-starts-traces.md)로 외부 요청의 trace는 nginx otel 모듈이 시작하고 W3C `traceparent`로 전파한다. 앱은 이어받기만 한다.
