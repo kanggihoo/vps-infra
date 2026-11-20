@@ -50,7 +50,7 @@ mixed="$(git rev-parse HEAD)"
 git commit -q --allow-empty -m empty
 empty="$(git rev-parse HEAD)"
 
-# Jenkins가 마지막 커밋만 보면 놓치는 실제 push 순서.
+# 배포가 마지막 커밋만 보면 놓치는 실제 push 순서.
 # nginx 변경 뒤 portal 변경이 따로 들어오면 누적 범위는 all이어야 한다.
 mkdir -p nginx
 echo nginx-change > nginx/site.conf

@@ -181,7 +181,7 @@ ADR 0004의 Actions 중지 설명도 ADR 0001의 검증 전용 전환과 구분�
 # 관련 개념
 
 - [시스템 아키텍처](/architecture/system-overview.md)
-- [Jenkins 배포](/services/jenkins-deploy.md)
+- [배포](/services/deploy.md)
 - [nginx](/services/nginx.md)
 - [인수 절차](/runbooks/local-first-handover.md)
 

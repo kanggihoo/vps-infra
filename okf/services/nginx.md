@@ -3,7 +3,7 @@ type: Service
 title: nginx 리버스 프록시
 description: VPS의 public HTTP/HTTPS 진입점.
 tags: [nginx, reverse-proxy, tls, certbot, docker]
-timestamp: 2026-10-08T00:00:00+09:00
+timestamp: 2026-11-20T00:00:00+09:00
 ---
 
 # 개요
@@ -23,13 +23,13 @@ Docker label 기반 동적 라우팅은 없다. 전체 배포는 후보 템플�
 |----------|------|-----------|
 | `health.kkh-hub.tech` | [whoami](/services/whoami.md) | `nginx/templates/health.conf.template` |
 | `portal.kkh-hub.tech` | [공용 인프라 포털](/services/portal.md) | `nginx/templates/portal.conf.template` |
-| `jenkins.kkh-hub.tech` | [Jenkins](/services/jenkins-deploy.md) | `nginx/templates/jenkins.conf.template` |
 | `erd.kkh-hub.tech` | [ERD 서빙](/services/erd.md) (정적 파일, Basic Auth) | `nginx/templates/erd.conf.template` |
 | `grafana.kkh-hub.tech` | [관측 스택](/services/observability.md) (Grafana 자체 로그인) | `nginx/templates/grafana.conf.template` |
 
 Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 (`ssafy.kkh-hub.tech`)은 nginx 전환과 함께 제거했다. SSAFY Workspace Webhook POC 서비스
-자체도 폐기되었다.
+자체도 폐기되었다. `jenkins.kkh-hub.tech`는 [ADR 0021](/adr/0021-remove-jenkins.md)로 템플릿을 지워
+default server(444)로 떨어진다. DNS 레코드와 인증서 SAN은 아직 남아 있다(`CHALLENGE_DOMAINS` 정리는 후속 작업).
 
 # 인증서 발급 (certbot)
 
@@ -39,7 +39,7 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 
 - 최초 발급은 수동 1회 실행한다. `docker compose run --rm --entrypoint certbot certbot certonly
   --webroot -w /var/www/certbot -d kkh-hub.tech -d portal.kkh-hub.tech
-  -d health.kkh-hub.tech -d jenkins.kkh-hub.tech`처럼 SAN 인증서 1장으로 발급해
+  -d health.kkh-hub.tech`처럼 SAN 인증서 1장으로 발급해
   모든 conf가 같은 `ssl_certificate` 경로(`/etc/letsencrypt/live/kkh-hub.tech/`)를
   참조하게 한다.
 - 갱신은 상주 `vps-certbot` 컨테이너가 12시간마다 확인하고, nginx가 하루 한 번 스스로
@@ -58,7 +58,7 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 - UptimeRobot과 Alloy blackbox probe 요청은 user agent로 걸러 trace하지 않는다.
 - access log는 Grafana NGINX 연동의 `json_analytics` 포맷이다. 커뮤니티 대시보드가 이 필드 이름을 전제하므로
   원본을 유지하고 `level`(HTTP 상태 기준), `trace_id`, `span_id`만 덧붙인다.
-- `vps_proxy`에서 공개 이름(`health`, `portal`, `jenkins`, `grafana`)을 alias로 갖는다. 컨테이너가 공개 IP로
+- `vps_proxy`에서 공개 이름(`health`, `portal`, `grafana`)을 alias로 갖는다. 컨테이너가 공개 IP로
   hairpin하지 못하므로 내부 probe가 이 alias로 nginx를 거친다.
 
 # 책임
@@ -66,8 +66,7 @@ Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 - `80`, `443` 포트 publish.
 - HTTP -> HTTPS redirect.
 - hostname 기반 라우팅 (`server_name` + 생성된 `conf.d/*.conf`).
-- Jenkins WebSocket/장시간 연결을 위한 `proxy_http_version 1.1`, `Upgrade`/`Connection`
-  헤더 전달.
+- Grafana WebSocket 연결을 위한 `Upgrade`/`Connection` 헤더 전달(`grafana.conf.template`).
 
 # 제약
 

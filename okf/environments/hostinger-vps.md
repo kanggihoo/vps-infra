@@ -3,7 +3,7 @@ type: Environment
 title: Hostinger VPS
 description: 현재 인프라가 배포될 VPS와 public 운영 메타데이터.
 tags: [hostinger, vps, environment, deployment]
-timestamp: 2026-08-25T00:00:00+09:00
+timestamp: 2026-11-20T00:00:00+09:00
 ---
 
 # 개요
@@ -31,7 +31,7 @@ A      @          187.77.114.68
 CNAME  www        kkh-hub.tech
 A      health     187.77.114.68
 A      portal     187.77.114.68
-A      jenkins    187.77.114.68
+A      jenkins    187.77.114.68   (ADR 0021로 미사용. 정리는 후속 작업)
 A      grafana    187.77.114.68
 ```
 
@@ -43,8 +43,8 @@ A      grafana    187.77.114.68
 groups: kkh sudo users docker
 ```
 
-Jenkins는 GitHub checkout credential을 Jenkins credential store에 저장한다.
-Jenkins administrator credential과 private key는 repository에 저장하지 않는다.
+GitHub Actions 배포 key는 `authorized_keys`에 forced command로 묶여 있다(`vps-infra-deploy`, `vps-info-deploy`).
+private key는 각 레포 secret `VPS_DEPLOY_KEY`에만 두고 repository에 저장하지 않는다([배포](/services/deploy.md)).
 
 # Secret 제외 규칙
 
@@ -58,7 +58,7 @@ Jenkins administrator credential과 private key는 repository에 저장하지 �
 
 # 관련 개념
 
-- [Jenkins 배포](/services/jenkins-deploy.md)
+- [배포](/services/deploy.md)
 - [nginx 리버스 프록시](/services/nginx.md)
 - [서브도메인 라우팅](/adr/0005-subdomain-routing.md)
 - [초기 배포 검증](/runbooks/initial-deployment-validation.md)

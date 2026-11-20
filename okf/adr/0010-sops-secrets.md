@@ -6,6 +6,12 @@ tags: [secrets, sops, age, security]
 timestamp: 2026-08-23T00:00:00+09:00
 ---
 
+# 상태
+
+**key 위치만 바뀜.** [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins가 없어져 `jenkins/.env`의 `SOPS_AGE_KEY_CONTENT` 사본은 더 이상 쓰지 않는다.
+배포가 쓰는 복호화 key는 `~/.config/sops/age/keys.txt` 하나이고,
+배포 스크립트가 `tools` 컨테이너로 읽는다([ADR 0020](/adr/0020-infra-cd-on-github-actions.md)). 나머지 결정은 유효하다.
+
 # 결정
 
 secret을 SOPS + age로 암호화해 레포에 커밋한다. 복호화 key는 로컬과 VPS에만 두고,

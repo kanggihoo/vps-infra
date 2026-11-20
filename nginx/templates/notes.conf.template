@@ -5,8 +5,8 @@
 # Quartz 빌드 결과물은 HTML 파일 더미라서 서버 프로세스가 필요 없고,
 # nginx가 파일을 직접 읽어 응답한다.
 #
-# 파일 출처: Jenkins가 quartz-site-private를 빌드해 quartz-site 볼륨에 배치.
-#            단계 7에서 이미지화하면 proxy_pass 방식으로 바뀐다.
+# 파일 출처: 예전에는 Jenkins가 quartz-site-private를 빌드해 quartz-site 볼륨에 배치했다.
+#            Jenkins를 걷어낸 뒤(ADR 0021) 자동 빌드 경로는 없다. 볼륨에 남은 결과물을 서빙한다.
 # ============================================================
 
 server {

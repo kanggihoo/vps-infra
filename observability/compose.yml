@@ -8,7 +8,7 @@
 #   grafana     조회 화면과 알림. 외부에는 이것만 grafana.<도메인>으로 열린다
 #
 # 루트 compose.yml과 분리된 별도 project다. 인프라 배포(nginx, postgres 등)가 이 스택을
-# 재생성하지 않아야 배포 중 장애를 관측할 수 있다. Jenkins를 분리한 것과 같은 이유다(ADR 0007).
+# 재생성하지 않아야 배포 중 장애를 관측할 수 있다. ADR 0007과 같은 이유다.
 #
 # 실행은 레포 루트에서 한다. 값은 루트 .env(SOPS 복호화 결과)를 그대로 쓴다.
 #   docker compose -f observability/compose.yml --env-file .env up -d
@@ -47,7 +47,7 @@ services:
       - --server.http.listen-addr=0.0.0.0:12345
     # 내장 cAdvisor가 다른 컨테이너의 cgroup과 장치 정보를 읽으려면 privileged가 필요하다.
     # docker.sock은 :ro여도 Docker API 전체에 접근하므로 이 컨테이너는 호스트 root에 가깝다.
-    # Jenkins와 tools도 같은 권한이라 새 위험 등급은 아니다(ADR 0016).
+    # tools도 같은 권한이라 새 위험 등급은 아니다(ADR 0016).
     privileged: true
     # 호스트 프로세스를 보이게 한다(node-exporter의 프로세스·로드 정보).
     pid: host
@@ -82,7 +82,7 @@ services:
       # 디스크 장치 이름을 확인하는 경로(cAdvisor).
       - /dev/disk:/dev/disk:ro
     networks:
-      # proxy: nginx·Jenkins가 OTLP(4317)를 보내 오고, Alloy가 nginx를 거쳐 서브도메인을 probe한다.
+      # proxy: nginx가 OTLP(4317)를 보내 오고, Alloy가 nginx를 거쳐 서브도메인을 probe한다.
       # observability: 저장소 세 개로 보낸다.
       - proxy
       - observability
@@ -165,7 +165,7 @@ services:
       #
       # Grafana가 만드는 링크(알림 메시지의 "Source:" 등)의 기준 주소.
       GF_SERVER_ROOT_URL: ${HEALTHCHECK_SCHEME:-http}://grafana.${BASE_DOMAIN:-localhost}/
-      # Grafana 자체 로그인(ADR 0016). Jenkins 로그인·Basic Auth와 같은 계정을 SOPS에 둔다.
+      # Grafana 자체 로그인(ADR 0016). Basic Auth와 같은 계정을 SOPS에 둔다.
       # 계정은 최초 기동 때만 적용된다(grafana-data 볼륨에 저장). 이후 비밀번호는 Grafana 화면의
       # 프로필에서 바꾼다. 잊었을 때만 `grafana cli admin reset-admin-password`를 쓴다.
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
@@ -199,7 +199,7 @@ services:
       - observability
 
 networks:
-  # 루트 compose.yml이 만든 공용 네트워크. nginx, Jenkins, 앱들이 붙어 있다.
+  # 루트 compose.yml이 만든 공용 네트워크. nginx와 앱들이 붙어 있다.
   proxy:
     external: true
     name: vps_proxy

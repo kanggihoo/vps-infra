@@ -57,7 +57,6 @@ services:
         aliases:
           - health.${BASE_DOMAIN:-localhost}
           - portal.${BASE_DOMAIN:-localhost}
-          - jenkins.${BASE_DOMAIN:-localhost}
           - grafana.${BASE_DOMAIN:-localhost}
     depends_on:
       - whoami

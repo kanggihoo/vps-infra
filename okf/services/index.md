@@ -1,7 +1,7 @@
 # 서비스
 
-* [Jenkins 배포](jenkins-deploy.md) - VPS 내부 Jenkins가 GitHub webhook으로 Docker Compose를 실행한다.
-* [GitHub Actions 검증](github-actions-deploy.md) - 현재 push/PR 설정 검증과 과거 SSH 배포 기록.
+* [배포](deploy.md) - 각 레포의 GitHub Actions가 SSH forced command로 VPS의 배포 스크립트에 SHA만 넘긴다.
+* [과거 GitHub Actions SSH 배포](github-actions-deploy.md) - 폐기된 SSH 배포 경로 기록. 현재 배포는 [배포](deploy.md)에 있다.
 * [nginx 리버스 프록시](nginx.md) - VPS의 public HTTP/HTTPS 진입점.
 * [공용 인프라 포털](portal.md) - 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털.
 * [vps-info (Signal Archive)](vps-info.md) - 자기 레포에서 compose와 GitHub Actions CI/CD를 소유하고 공용 PostgreSQL과 nginx를 쓰는 첫 외부 프로젝트.

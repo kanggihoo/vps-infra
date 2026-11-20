@@ -6,6 +6,12 @@ tags: [jenkins, mattermost, notification, shared-library]
 timestamp: 2026-09-29T00:00:00+09:00
 ---
 
+# 상태
+
+**대체됨.** 빌드·배포 알림은 각 레포 workflow의 `notify` job이 보낸다. vps-info는 `ci.yml`([ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)·[ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)),
+vps-infra는 `validate.yml`([ADR 0020](/adr/0020-infra-cd-on-github-actions.md))이다. Shared Library `vps-shared`(`notifyMattermost()`)는
+[ADR 0021](/adr/0021-remove-jenkins.md)로 `jenkins/`와 함께 지웠다. 아래는 기록으로 남긴다.
+
 # 결정
 
 모든 Jenkins job은 성공과 실패를 SSAFY Mattermost의 한 채널로 알린다. 알림 코드는 vps-infra 레포의
@@ -68,5 +74,5 @@ post always
 # 관련 개념
 
 - [Jenkins 설정을 코드로 관리](/adr/0009-jenkins-config-as-code.md)
-- [Jenkins 배포](/services/jenkins-deploy.md)
+- [배포](/services/deploy.md)
 - [vps-info (Signal Archive)](/services/vps-info.md)

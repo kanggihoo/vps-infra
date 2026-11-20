@@ -3,8 +3,7 @@
 #
 # Grafana가 조회할 저장소 세 개. 기동 때 이 파일로 만들고, UI에서는 고칠 수 없다.
 #
-# uid는 고정이다. 대시보드 JSON, 알림 규칙(datasourceUid), Jenkins OTel plugin의
-# tempoDataSourceIdentifier(jenkins/casc/jenkins.yaml)가 이 uid로 참조하므로 바꾸면 그쪽이 모두 깨진다.
+# uid는 고정이다. 대시보드 JSON과 알림 규칙(datasourceUid)이 이 uid로 참조하므로 바꾸면 그쪽이 모두 깨진다.
 #
 # $ 표기: 이 파일에서 $는 환경변수 치환이다. 문자 그대로의 $가 필요하면 $$로 쓴다
 # (아래 ${__value.raw}는 Grafana 변수라 $$로 썼다).
@@ -40,7 +39,7 @@ datasources:
           # 찾은 값 그대로 Tempo에 조회한다.
           url: "$${__value.raw}"
           urlDisplayLabel: View trace
-        # Jenkins 빌드 로그(OTLP): trace_id가 로그 본문이 아니라 structured metadata에 있다.
+        # OTLP 로그: trace_id가 로그 본문이 아니라 structured metadata에 있다.
         # matcherType label은 라벨·structured metadata 이름으로 찾는다.
         - name: trace_id
           datasourceUid: tempo
@@ -64,7 +63,7 @@ datasources:
         spanEndTimeShift: "5m"
         # 로그를 trace_id로 걸러 그 요청의 로그만 보인다.
         filterByTraceID: true
-        # span의 service.name(nginx, jenkins)을 Loki의 service_name 라벨로 매칭한다.
+        # span의 service.name(nginx 등)을 Loki의 service_name 라벨로 매칭한다.
         tags:
           - key: service.name
             value: service_name

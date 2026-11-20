@@ -10,7 +10,7 @@ VPS 공통 인프라는 앱 코드와 분리된 별도 디렉토리 또는 GitHu
 - **앱 관리 위치:** 각 앱별 별도 repository
 - **공통 진입점:** reverse proxy가 `80/443` 포트를 단독으로 노출
 - **앱 접근 방식:** 앱 컨테이너는 public port를 열지 않고 Docker internal network로만 접근
-- **배포 방식:** VPS 내부 Jenkins webhook 기반 `docker compose up -d`
+- **배포 방식:** GitHub Actions가 SSH forced command로 VPS의 `scripts/ci-deploy.sh`를 실행
 
 ### 권장 디렉토리 구조
 
@@ -91,21 +91,29 @@ app1.example.com             -> app1 public
 app2.example.com             -> app2 public
 ```
 
-### Jenkins 배포 전략
+### GitHub Actions 배포 전략
 
-인프라 repository는 VPS 내부 Jenkins로 배포한다. Jenkins는 GitHub webhook으로
-실행되고, `~/app/vps-infra` checkout에서 Docker Compose를 적용한다.
+인프라 repository는 `.github/workflows/validate.yml`로 배포한다. main push마다 검증한 뒤,
+`authorized_keys`의 forced command로 묶인 key(secret `VPS_DEPLOY_KEY`)로 VPS에 SSH해
+`scripts/ci-deploy.sh`에 SHA와 배포 대상만 넘긴다. VPS에 배포용 상주 프로세스는 없다.
 
 기본 흐름:
 
 ```txt
-push to infra repo
--> GitHub webhook
--> Jenkins container
--> ~/app/vps-infra checkout
--> docker compose config
--> docker compose up -d --build
+push to main
+-> GitHub Actions validate job
+-> deploy job: ssh kkh@187.77.114.68 "<sha> <target>"
+-> forced command: ~/app/vps-infra/scripts/ci-deploy.sh
+   -> flock /tmp/vps-deploy.lock -> git checkout <sha>(main 이력만)
+   -> 대상 판정(auto면 .deploy-state + select-target.sh, 아니면 all|portal|observability)
+   -> tools 컨테이너로 secrets.sh decrypt(ENV_NAME=prod)
+   -> scripts/deploy.sh <target> -> scripts/healthcheck.sh -> 성공 SHA 기록
+-> notify job: Mattermost
 ```
+
+수동 재배포·롤백은 Actions `workflow_dispatch`(`target` 입력)나 VPS의
+`~/app/vps-infra/scripts/ci-deploy.sh <sha> all`로 한다. `ci-deploy.sh` 자체의 변경은 VPS에 있던
+버전이 먼저 실행되므로 다음 배포부터 적용된다. 상세는 `okf/services/deploy.md`에 있다.
 
 `docker compose up -d`는 보통 변경된 서비스만 재생성한다. 이미 실행 중인 앱이 있어도 compose project와 network 구성이 안정적이면 전체 앱이 매번 중단되지는 않는다.
 
@@ -147,4 +155,4 @@ docker image prune -f
 
 ## 최종 요약
 
-하나의 VPS에서 여러 앱을 운영할 때는 공통 인프라를 앱 코드와 분리해 `vps-infra` 같은 별도 repository로 관리하는 것이 좋다. Reverse proxy는 공통 진입점을 담당하고, 각 앱은 자기 DB에서 도메인 권한을 처리한다. 배포는 Jenkins로 자동화하지만, network, volume, secret, port 변경은 실행 중인 앱 전체에 영향을 줄 수 있으므로 별도 검토가 필요하다.
+하나의 VPS에서 여러 앱을 운영할 때는 공통 인프라를 앱 코드와 분리해 `vps-infra` 같은 별도 repository로 관리하는 것이 좋다. Reverse proxy는 공통 진입점을 담당하고, 각 앱은 자기 DB에서 도메인 권한을 처리한다. 배포는 GitHub Actions로 자동화하지만, network, volume, secret, port 변경은 실행 중인 앱 전체에 영향을 줄 수 있으므로 별도 검토가 필요하다.

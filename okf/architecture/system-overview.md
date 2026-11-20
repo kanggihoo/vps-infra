@@ -1,9 +1,9 @@
 ---
 type: Architecture
 title: 시스템 아키텍처 개요
-description: Hostinger VPS 1대에서 Jenkins, nginx, Docker Compose, PostgreSQL, Redis가 연결되는 현재 구조.
+description: Hostinger VPS 1대에서 nginx, Docker Compose, PostgreSQL, Redis가 연결되고 GitHub Actions가 배포하는 현재 구조.
 tags: [architecture, vps, docker-compose, nginx, deployment]
-timestamp: 2026-10-08T00:00:00+09:00
+timestamp: 2026-11-20T00:00:00+09:00
 ---
 
 # 개요
@@ -15,16 +15,16 @@ Redis는 Docker internal network 안에서만 접근한다.
 # 배포 구조
 
 ```txt
-GitHub main
-  -> GitHub webhook
-    -> Jenkins container
-      -> ~/app/vps-infra checkout
-        -> docker compose up -d
+GitHub main push
+  -> GitHub Actions (validate.yml: validate -> deploy -> notify)
+    -> ssh kkh@VPS "<sha> <target>" (forced command)
+      -> ~/app/vps-infra/scripts/ci-deploy.sh
+        -> git checkout <sha> -> SOPS 복호화 -> scripts/deploy.sh -> healthcheck
 ```
 
-[Jenkins 배포](/services/jenkins-deploy.md)는 `main` 변경을 트리거로 Pipeline을
-실행한다. Jenkins는 VPS의 사용자 홈 아래 `app/vps-infra` checkout을 갱신하고 Docker Compose를
-적용한다. GitHub Actions workflow는 자동 배포에 사용하지 않는다.
+[배포](/services/deploy.md)는 `main` push마다 GitHub Actions가 검증 뒤 실행한다. VPS에는 배포용 상주 프로세스가 없다.
+vps-info도 자기 레포의 Actions가 같은 방식으로 배포한다([ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)).
+Jenkins는 [ADR 0021](/adr/0021-remove-jenkins.md)로 걷어냈다.
 
 # 런타임 구조
 
@@ -34,7 +34,6 @@ Internet
     -> VPS 187.77.114.68
       -> nginx :80/:443
         -> Docker internal network
-          -> Jenkins
           -> whoami
           -> portal
           -> PostgreSQL
@@ -61,9 +60,6 @@ health.kkh-hub.tech
 portal.kkh-hub.tech
   -> portal
 
-jenkins.kkh-hub.tech
-  -> jenkins
-
 grafana.kkh-hub.tech
   -> grafana
 ```
@@ -82,7 +78,6 @@ nginx 전환과 함께 제거했다.
 | 서비스 | 경계 | 외부 노출 |
 |--------|------|-----------|
 | [nginx](/services/nginx.md) | public HTTP/HTTPS entrypoint | `80`, `443` |
-| [Jenkins](/services/jenkins-deploy.md) | GitHub webhook와 배포 Pipeline | nginx 뒤 HTTPS만 |
 | [whoami](/services/whoami.md) | nginx 뒤 검증용 HTTP backend | 직접 노출 없음 |
 | [PostgreSQL](/services/postgresql.md) | 공통 DB container | `5432` 미노출 |
 | [Redis](/services/redis.md) | 공통 cache/session container | `6379` 미노출 |
@@ -117,7 +112,7 @@ Git에 포함한다.
 compose.yml
 nginx templates (`nginx/templates/*.template`)
 scripts
-jenkins/ (Dockerfile, plugins.txt, casc/jenkins.yaml, casc/jobs.groovy)
+.github/workflows/validate.yml
 .env.example
 SOPS 암호화 secret (`secrets/*.sops.env`, `secrets/*.sops.txt`)
 docs
@@ -152,12 +147,12 @@ Docker daemon이 boot 시 자동 시작되고, 이미 생성된 container는 res
 
 - VPS 외부 공개는 nginx만 담당한다.
 - 내부 서비스는 Docker network 안에서만 접근한다.
-- 배포는 VPS 내부 Jenkins가 GitHub webhook을 받아 Compose를 갱신한다.
+- 배포는 GitHub Actions가 forced command로 묶인 SSH key로 VPS의 배포 스크립트를 부른다.
 - 평문 secret과 runtime state는 Git에 커밋하지 않는다. SOPS 암호화 파일은 Git에 커밋한다.
 
 # 관련 개념
 
 - [Hostinger VPS](/environments/hostinger-vps.md)
-- [GitHub Actions 배포](/services/github-actions-deploy.md)
+- [배포](/services/deploy.md)
 - [nginx 리버스 프록시](/services/nginx.md)
 - [초기 배포 검증](/runbooks/initial-deployment-validation.md)

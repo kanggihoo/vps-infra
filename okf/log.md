@@ -1,13 +1,14 @@
 # 변경 기록
 
 ## 2026-11-20
+* **결정**: [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어냈다. `jenkins/` 전체, `jenkins.conf.template`과 `jenkins` nginx alias, Alloy의 Jenkins probe, Grafana "Jenkins 큐 적체" 알림과 Jenkins 대시보드를 지웠다. `vps-jenkins`는 병합 뒤 멈추고 `vps_jenkins_data` volume, `jenkins` DNS·인증서 SAN은 후속 정리로 남긴다. 갱신: `services/jenkins-deploy.md`를 [배포](/services/deploy.md)로 바꿔 Actions 흐름을 적었고, ADR 0001·0004·0006·0009·0010·0012·0016 상태, [관측 스택](/services/observability.md), [nginx](/services/nginx.md), [시스템 개요](/architecture/system-overview.md), [Hostinger VPS](/environments/hostinger-vps.md), 런북, `README.md`, `INFRA.md`를 고쳤다.
 * **결정**: [ADR 0020](/adr/0020-infra-cd-on-github-actions.md)으로 vps-infra 배포를 GitHub Actions(`validate.yml`의 deploy job → SSH forced command `scripts/ci-deploy.sh`)로 옮기고 `Jenkinsfile`을 지웠다. VPS에 `vps-infra-deploy` forced command 줄을 추가했다.
 * **결정**: [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 vps-info 배포를 GitHub Actions(이미지 GHCR push → SSH forced command로 `scripts/deploy.sh <sha>`)로 옮겼다. vps-info PR #30 병합으로 전환했고 첫 Actions 배포가 성공했다. `jobs.groovy`에서 `vps-info` multibranch job을, `plugins.txt`에서 `github-branch-source`를 지웠다(plugin 제거는 Jenkins 재빌드 때 반영).
 * **변경**: VPS에 `~/app/vps-info` clone과 `authorized_keys`의 `vps-info-deploy` forced command 줄을 추가했다. 배포 key로 셸·다른 명령·포트 포워딩이 막히는 것을 확인했다.
-* **갱신**: ADR 0006·0012·0013·0014·0015·0018 상태, [vps-info](/services/vps-info.md), [ERD](/services/erd.md), [Jenkins 배포](/services/jenkins-deploy.md), 트러블슈팅, compose 주석.
+* **갱신**: ADR 0006·0012·0013·0014·0015·0018 상태, [vps-info](/services/vps-info.md), [ERD](/services/erd.md), [배포](/services/deploy.md), 트러블슈팅, compose 주석.
 * **결정**: [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)로 `vps-info` PR 검증을 Jenkins multibranch PR 빌드에서 vps-info의 GitHub Actions(`ci.yml`, job `check:task`)로 옮긴다. main 배포는 Jenkins에 남긴다. [ADR 0014](/adr/0014-multibranch-pr-ci.md)는 일부 대체, [ADR 0015](/adr/0015-multibranch-periodic-scan.md)는 main push 보완으로 범위를 줄였다.
 * **변경**: `jobs.groovy`의 `vps-info` multibranch가 `includes('main')`, `buildOriginPRMerge(false)`로 main만 발견한다. `notifyMattermost()`에서 PR 빌드 전용 경로(`CHANGE_*`, `kind == 'CI'`)를 지웠다. main 빌드 payload가 이전과 같은지 Jenkins 밖에서 수정 전후 출력을 비교해 확인했다.
-* **갱신**: [ADR 0012](/adr/0012-mattermost-build-notification.md) 메시지 형식, [vps-info](/services/vps-info.md) 소유 경계·배포 흐름, [Jenkins 배포](/services/jenkins-deploy.md), [webhook 유실 트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)에 PR CI 이전을 반영했다.
+* **갱신**: [ADR 0012](/adr/0012-mattermost-build-notification.md) 메시지 형식, [vps-info](/services/vps-info.md) 소유 경계·배포 흐름, [배포](/services/deploy.md), [webhook 유실 트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)에 PR CI 이전을 반영했다.
 
 ## 2026-10-08
 * **결정**: [ADR 0016](/adr/0016-self-hosted-observability.md)으로 Grafana·Prometheus·Loki·Tempo를 VPS에 셀프호스팅하고 Alloy 하나로 수집한다. Grafana Cloud를 전제로 한 루트 `OBSERVABILITY.md`를 삭제하고 유효한 내용(cAdvisor 필터, DB 트레이스는 앱이 만든다)을 ADR로 옮겼다.
@@ -34,7 +35,7 @@
 * **정리**: [ADR 0009](/adr/0009-jenkins-config-as-code.md)에 plugin 정리를 기록했다. `ws-cleanup`, `build-timeout`, `docker-workflow`를 빼고 `pipeline-graph-view`, `ansicolor`, `junit`을 넣었다. `jenkins/start.sh`가 기동마다 volume의 `plugins/`를 비워 `plugins.txt`를 실제 설치 목록으로 만든다.
 * **결정 변경**: [ADR 0009](/adr/0009-jenkins-config-as-code.md)에 따라 `jenkins.yaml`과 `jobs.groovy`를 `jenkins/casc/`로 옮기고 이미지 `COPY` 대신 폴더 마운트로 바꿨다. vps-infra 파이프라인이 마지막 단계에서 JCasC를 token reload하므로 Job 추가와 설정 변경에 Jenkins 재빌드가 필요 없다. `jenkins/.env`에 `CASC_RELOAD_TOKEN`이 필요하다.
 * **정리**: VPS의 옛 `/opt/jenkins`, `/opt/nginx-auth`, `/opt/vps-infra`, `/opt/quartz-build`, `/opt/quartz-site`가 어디에서도 참조되지 않음을 확인하고 삭제 대상으로 정했다. [인수 절차](/runbooks/local-first-handover.md)의 `/opt` 롤백 경로를 폐기했다.
-* **갱신**: [Jenkins 배포](/services/jenkins-deploy.md) 초기화를 `~/app/vps-infra/jenkins/.env` 기준으로 고치고, age key 위치와 Jenkins 자신은 수동 재기동이라는 자동화 범위를 기록했다.
+* **갱신**: [배포](/services/deploy.md) 초기화를 `~/app/vps-infra/jenkins/.env` 기준으로 고치고, age key 위치와 Jenkins 자신은 수동 재기동이라는 자동화 범위를 기록했다.
 * **삭제**: 폐기된 SSAFY Workspace Webhook POC 서비스 문서(`services/ssafy-workspace-webhook.md`)를 제거했다.
 * **수정**: [ADR 0010](/adr/0010-sops-secrets.md)의 "호스트에 key를 노출하지 않는다"를 실제 구성(`keys.txt`와 `jenkins/.env` 두 곳)에 맞게 고쳤다.
 
