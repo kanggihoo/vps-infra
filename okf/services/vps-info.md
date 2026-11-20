@@ -1,9 +1,9 @@
 ---
 type: Service
 title: vps-info (Signal Archive)
-description: 자기 레포에서 compose와 Jenkinsfile을 소유하고 공용 PostgreSQL과 nginx를 쓰는 첫 외부 프로젝트.
-tags: [project, jenkins, sops, postgres, nginx]
-timestamp: 2026-09-28T00:00:00+09:00
+description: 자기 레포에서 compose, Jenkinsfile, GitHub Actions CI를 소유하고 공용 PostgreSQL과 nginx를 쓰는 첫 외부 프로젝트.
+tags: [project, jenkins, github-actions, sops, postgres, nginx]
+timestamp: 2026-11-20T00:00:00+09:00
 ---
 
 # 개요
@@ -15,16 +15,17 @@ timestamp: 2026-09-28T00:00:00+09:00
 
 | 위치 | 소유 |
 |------|------|
-| vps-info 레포 | `Dockerfile`, `compose.yml`(프로젝트 이름 `vps-info`), `Jenkinsfile`, `secrets/env.prod.sops.env` |
-| vps-infra 레포 | `jenkins/casc/jobs.groovy`의 `vps-info` multibranch Job, `nginx/templates/vps-info.conf.template`, `CHALLENGE_DOMAINS` |
+| vps-info 레포 | `Dockerfile`, `compose.yml`(프로젝트 이름 `vps-info`), `Jenkinsfile`, `.github/workflows/ci.yml`, `secrets/env.prod.sops.env` |
+| GitHub 설정 | main branch protection의 필수 check `check:task`, 레포 secret `MATTERMOST_WEBHOOK_URL`, webhook(`push`) |
+| vps-infra 레포 | `jenkins/casc/jobs.groovy`의 `vps-info` multibranch Job(main만), `nginx/templates/vps-info.conf.template`, `CHALLENGE_DOMAINS` |
 | VPS 1회 작업 | 공용 postgres의 `vps_info` 사용자·DB (superuser를 공유하지 않는다) |
 
 # 배포 흐름
 
 ```txt
-PR -> GitHub webhook -> vps-info/PR-<n> -> Test만 -> GitHub commit status(병합 필수 check)
+PR -> GitHub Actions CI (check:task) -> 병합 필수 check, Mattermost CI 알림 (ADR 0018)
 vps-info main push -> GitHub webhook -> Jenkins vps-info/main (ADR 0014)
--> docker build --target test (단위 테스트)
+-> docker build --target test (배포 직전 재검증)
 -> sops-age-key credential로 secrets/env.prod.sops.env 복호화 -> .env
 -> docker compose up -d --build --wait (migrate 성공 후 app, collector)
 -> post: .env 삭제
@@ -44,7 +45,8 @@ vps-info main push -> GitHub webhook -> Jenkins vps-info/main (ADR 0014)
   했다. reload 경로에서도 같은 증상이 나는지는 아직 확인하지 않았다.
 - 테스트는 `JUNIT_OUTPUT_DIR`을 준 컨테이너에서 돌고, 결과 XML은 `docker cp`로 꺼내 `junit`에 넘긴다.
   Jenkins workspace가 named volume 안에 있어 `-v` bind mount로는 가리킬 수 없기 때문이다.
-  빌드 결과는 `notifyMattermost()`로 알린다. PR 빌드는 CI, main 빌드는 CD다([ADR 0012](/adr/0012-mattermost-build-notification.md), [ADR 0014](/adr/0014-multibranch-pr-ci.md)).
+  main 빌드 결과는 `notifyMattermost(kind: 'CD')`로 알린다([ADR 0012](/adr/0012-mattermost-build-notification.md)).
+  PR CI는 Actions가 같은 test image 방식으로 돌리고, 알림도 workflow가 보낸다([ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)).
 - macOS의 sops는 age key를 `~/Library/Application Support/sops/age/keys.txt`에서 찾는다.
   key가 `~/.config/sops/age/keys.txt`에 있으면 `SOPS_AGE_KEY_FILE`로 지정한다.
 
