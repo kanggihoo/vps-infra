@@ -1,0 +1,100 @@
+name: Infra pipeline
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 배포 대상
+        type: choice
+        options: [auto, all, portal, observability]
+        default: auto
+      digest:
+        description: GHCR 재배포 digest (비어 있으면 같은 SHA의 적용 기록 사용)
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infra-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish.yml
+
+  deploy:
+    needs: [ci, publish]
+    if: >-
+      !cancelled() &&
+      github.ref == 'refs/heads/main' &&
+      needs.ci.result == 'success' &&
+      ((github.event_name == 'push' && needs.publish.result == 'success') ||
+       (github.event_name == 'workflow_dispatch' && needs.publish.result == 'skipped'))
+    uses: ./.github/workflows/cd.yml
+    permissions: {}
+    with:
+      target: ${{ inputs.target || 'auto' }}
+      digest: ${{ needs.publish.outputs.digest || inputs.digest || '' }}
+      use-ghcr: ${{ vars.PORTAL_GHCR_DEPLOY == 'true' }}
+    secrets:
+      VPS_DEPLOY_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
+
+  # 배포 결과를 Mattermost로 알린다(ADR 0012). secret이 없으면 건너뛴다. 취소된 실행은 알리지 않는다.
+  notify:
+    needs: [ci, publish, deploy]
+    if: >-
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name != 'pull_request' &&
+      !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # 커밋 메시지 같은 사용자 입력은 env로만 넘긴다. run에 ${{ }}로 넣으면 셸 코드로 해석될 수 있다.
+      - name: Send to Mattermost
+        env:
+          HOOK: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
+          CI: ${{ needs.ci.result }}
+          PUBLISH: ${{ needs.publish.result }}
+          DEPLOY: ${{ needs.deploy.result }}
+          TARGET: ${{ inputs.target || 'auto' }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "[notify] MATTERMOST_WEBHOOK_URL이 없어 알림을 건너뛴다"
+            exit 0
+          fi
+          ok=$([ "$DEPLOY" = success ] && echo 1 || echo 0)
+          stage=deploy
+          if [[ "$CI" != success ]]; then
+            stage=ci
+          elif [[ "$PUBLISH" == failure ]]; then
+            stage=publish
+          fi
+          subject="${COMMIT_MESSAGE%%$'\n'*}"
+          title="배포 $([ "$ok" = 1 ] && echo 성공 || echo 실패) · vps-infra main"
+          text="${subject:-수동 재배포}$([ "$ok" = 1 ] || echo " · 실패 단계: ${stage}. 로그: ${RUN_URL}")"
+          color=$([ "$ok" = 1 ] && echo '#2eb886' || echo '#d33f3f')
+          jq -n --arg title "$title" --arg link "$RUN_URL" --arg color "$color" --arg text "$text" \
+            --arg commit "[\`${GITHUB_SHA::7}\`](${COMMIT_URL})" --arg actor "$ACTOR" --arg target "$TARGET" \
+            '{username: "GitHub Actions", attachments: [{color: $color, title: $title, title_link: $link, text: $text,
+              fields: [{short: true, title: "커밋", value: $commit}, {short: true, title: "실행자", value: $actor},
+                       {short: true, title: "요청 대상", value: $target}]}]}' |
+            curl -fsS --max-time 10 -H 'Content-Type: application/json' -d @- "$HOOK" >/dev/null ||
+            echo "[notify] 알림 전송 실패(결과에는 영향 없음)"

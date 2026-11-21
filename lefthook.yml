@@ -1,0 +1,4 @@
+pre-commit:
+  commands:
+    gitleaks:
+      run: ./scripts/scan-secrets.sh staged

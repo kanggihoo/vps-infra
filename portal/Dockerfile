@@ -11,9 +11,12 @@ FROM golang:1.22-alpine AS backend
 WORKDIR /src
 COPY go.mod ./
 COPY main.go ./
-RUN CGO_ENABLED=0 go build -o /portal .
+ARG PORTAL_REVISION=local
+RUN CGO_ENABLED=0 go build -ldflags "-X main.revision=${PORTAL_REVISION}" -o /portal .
 
 FROM alpine:3.20
+ARG PORTAL_REVISION=local
+LABEL org.opencontainers.image.revision=${PORTAL_REVISION}
 WORKDIR /app
 COPY --from=backend /portal /app/portal
 COPY --from=frontend /src/dist /app/dist

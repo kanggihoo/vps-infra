@@ -93,27 +93,12 @@ app2.example.com             -> app2 public
 
 ### GitHub Actions 배포 전략
 
-인프라 repository는 `.github/workflows/validate.yml`로 배포한다. main push마다 검증한 뒤,
-`authorized_keys`의 forced command로 묶인 key(secret `VPS_DEPLOY_KEY`)로 VPS에 SSH해
-`scripts/ci-deploy.sh`에 SHA와 배포 대상만 넘긴다. VPS에 배포용 상주 프로세스는 없다.
+[Infra pipeline](.github/workflows/pipeline.yml)이 CI, GHCR 게시, VPS 배포를 순서대로 실행한다.
+PR은 Compose·nginx·SOPS 검사, Gitleaks, Portal 빌드가 모두 성공해야 CI gate를 통과한다.
+main push는 gate 뒤 Portal 이미지를 GHCR에 게시하고 SSH forced command로 VPS에 배포한다.
 
-기본 흐름:
-
-```txt
-push to main
--> GitHub Actions validate job
--> deploy job: ssh kkh@187.77.114.68 "<sha> <target>"
--> forced command: ~/app/vps-infra/scripts/ci-deploy.sh
-   -> flock /tmp/vps-deploy.lock -> git checkout <sha>(main 이력만)
-   -> 대상 판정(auto면 .deploy-state + select-target.sh, 아니면 all|portal|observability)
-   -> tools 컨테이너로 secrets.sh decrypt(ENV_NAME=prod)
-   -> scripts/deploy.sh <target> -> scripts/healthcheck.sh -> 성공 SHA 기록
--> notify job: Mattermost
-```
-
-수동 재배포·롤백은 Actions `workflow_dispatch`(`target` 입력)나 VPS의
-`~/app/vps-infra/scripts/ci-deploy.sh <sha> all`로 한다. `ci-deploy.sh` 자체의 변경은 VPS에 있던
-버전이 먼저 실행되므로 다음 배포부터 적용된다. 상세는 `okf/services/deploy.md`에 있다.
+로컬에서 Gitleaks 8.30.1과 Lefthook을 설치한 뒤 레포 루트에서 `lefthook install`을 실행한다.
+커밋 전 staged 변경만 검사한다. 전환, 재배포, 롤백 절차는 [배포 문서](okf/services/deploy.md)에 있다.
 
 `docker compose up -d`는 보통 변경된 서비스만 재생성한다. 이미 실행 중인 앱이 있어도 compose project와 network 구성이 안정적이면 전체 앱이 매번 중단되지는 않는다.
 

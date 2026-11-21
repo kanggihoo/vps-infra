@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var revision = "local"
+
 func main() {
 	root := getenv("PORTAL_STATIC_DIR", "dist")
 	addr := getenv("PORTAL_ADDR", ":8080")
@@ -32,6 +34,13 @@ func newPortalHandler(root string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if r.URL.Path == "/api/version" {
+			w.Header().Set("Cache-Control", "no-store")
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			_, _ = w.Write([]byte(revision + "\n"))
 			return
 		}
 

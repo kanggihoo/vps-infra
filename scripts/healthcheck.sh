@@ -17,8 +17,8 @@ health_scheme="${HEALTHCHECK_SCHEME:-http}"
 portal_host="${PORTAL_HEALTHCHECK_HOST:-portal.${BASE_DOMAIN:-localhost}}"
 
 public_curl() {
-  local host="$1"
-  shift
+  local host="$1" path="$2"
+  shift 2
   local port=443
   [ "$health_scheme" = "http" ] && port=80
 
@@ -26,9 +26,9 @@ public_curl() {
   if [ -n "${HEALTHCHECK_CONNECT_HOST:-}" ]; then
     curl --connect-timeout 5 --max-time 15 \
       --connect-to "${host}:${port}:${HEALTHCHECK_CONNECT_HOST}:${port}" \
-      "${health_scheme}://${host}" "$@"
+      "${health_scheme}://${host}${path}" "$@"
   else
-    curl --connect-timeout 5 --max-time 15 "${health_scheme}://${host}" "$@"
+    curl --connect-timeout 5 --max-time 15 "${health_scheme}://${host}${path}" "$@"
   fi
 }
 
@@ -45,11 +45,16 @@ echo "[healthcheck] redis"
 docker compose exec -T redis redis-cli -a "${REDIS_PASSWORD:?REDIS_PASSWORD is required}" ping | grep -q PONG
 
 check_public_route() {
-  local name="$1" host="$2"
+  local name="$1" host="$2" expected="${3:-}"
+  local path=/ response
+  if [[ -n "$expected" ]]; then
+    path=/api/version
+  fi
 
   echo "[healthcheck] ${name} route (${health_scheme}://${host})"
   for attempt in $(seq 1 12); do
-    if public_curl "$host" -fsS >/dev/null; then
+    if response="$(public_curl "$host" "$path" -fsS)" &&
+       [[ -z "$expected" || "$response" == "$expected" ]]; then
       return 0
     fi
     if [ "$attempt" = 12 ]; then
@@ -62,7 +67,7 @@ check_public_route() {
 
 # whoami는 DNS, TLS, nginx 경로를 확인하고 portal은 실제 배포 대상을 확인한다.
 check_public_route "health" "$health_host"
-check_public_route "portal" "$portal_host"
+check_public_route "portal" "$portal_host" "${EXPECTED_PORTAL_SHA:-}"
 # 관측 스택(ADR 0016). 별도 compose 프로젝트라 nginx 라우팅과 함께 확인한다.
 # 루트는 /login으로 302를 주며, -f는 3xx를 실패로 보지 않는다.
 check_public_route "grafana" "grafana.${BASE_DOMAIN:-localhost}"

@@ -19,6 +19,10 @@ set -euo pipefail
 
 # 배포 대상 지정 (인자가 없으면 기본값은 'all')
 target="${1:-all}"
+build_mode=--build
+if [[ -n "${PORTAL_IMAGE:-}" ]]; then
+  build_mode=--no-build
+fi
 
 # 스크립트 위치와 상관없이 저장소 루트 디렉터리로 이동
 cd "$(dirname "$0")/.."
@@ -146,7 +150,7 @@ if [ "$target" = "portal" ]; then
   echo "[deploy] applying portal only"
   # Portal-only 배포는 React/Go 코드만 바뀌었을 때 Nginx/DB 등 인프라 서비스를
   # 불필요하게 재기동하지 않고 빠르게 단독 빌드 및 교체한다.
-  docker compose up -d --build --no-deps portal
+  docker compose up -d "$build_mode" --no-deps portal
 
   echo "[deploy] portal status"
   docker compose ps portal
@@ -167,7 +171,7 @@ validate_nginx_template
 
 # 전체 서비스 백그라운드 빌드 및 실행 (모든 헬스체크가 통과할 때까지 최대 120초 대기)
 echo "[deploy] applying stack"
-docker compose up -d --build --wait --wait-timeout 120
+docker compose up -d "$build_mode" --wait --wait-timeout 120
 
 # bind mount의 template만 바뀌면 일반 up은 nginx를 재생성하지 않는다.
 # 후보 설정 검증을 통과한 뒤 nginx만 강제로 재생성해 envsubst 결과를 갱신한다.

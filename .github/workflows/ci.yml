@@ -1,0 +1,121 @@
+name: CI
+on: workflow_call
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # compose는 변수가 없으면 config 단계에서 경고/실패하므로 예시 값을 넣는다.
+      # 검증 대상은 문법이지 값이 아니다.
+      - name: Validate compose syntax
+        run: |
+          cp .env.example .env
+          docker compose config >/dev/null
+          docker compose -f observability/compose.yml --env-file .env config >/dev/null
+
+      # nginx 템플릿은 envsubst 치환 전에는 유효한 conf가 아니다.
+      # 이미지 entrypoint와 같은 방식으로 렌더한 뒤 `nginx -t`로 문법을 본다.
+      #
+      # `nginx -t`는 upstream 이름을 DNS로 해석하므로, 대상 컨테이너가 없는
+      # CI에서는 "host not found in upstream"으로 실패한다. 문법만 보려면
+      # 이름이 해석되어야 하므로 더미 컨테이너를 같은 네트워크에 띄운다.
+      # (grafana는 변수+resolver를 쓰므로 기동 시 해석되지 않아도 된다)
+      #
+      # 로컬과 VPS 두 모드를 모두 검증한다. 한쪽만 보면 다른 쪽 오타를 놓친다.
+      - name: Validate nginx templates
+        run: |
+          set -eu
+          docker network create ci_validate
+          for svc in whoami portal; do
+            docker run -d --rm --name "$svc" --network ci_validate \
+              traefik/whoami:v1.10 >/dev/null
+          done
+          trap 'docker rm -f whoami portal >/dev/null 2>&1 || true; \
+                docker network rm ci_validate >/dev/null 2>&1 || true' EXIT
+
+          # VPS 모드는 인증서 파일이 있어야 `nginx -t`를 통과한다.
+          # 더미 인증서를 만들어두면 인증서 경로 오타까지 이 단계에서 드러난다.
+          # 로컬 모드는 이 마운트를 무시하므로 두 모드가 같은 호출을 쓴다.
+          mkdir -p /tmp/le/live/kkh-hub.tech
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj '/CN=kkh-hub.tech' \
+            -keyout /tmp/le/live/kkh-hub.tech/privkey.pem \
+            -out /tmp/le/live/kkh-hub.tech/fullchain.pem >/dev/null 2>&1
+
+          validate() {
+            echo "--- BASE_DOMAIN=$1 NGINX_LISTEN=$2 TLS_MODE=$3 ---"
+            docker run --rm --network ci_validate \
+              -e BASE_DOMAIN="$1" \
+              -e NGINX_LISTEN="$2" \
+              -e TLS_MODE="$3" \
+              -e CHALLENGE_DOMAINS="$4" \
+              -v "$PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+              -v "$PWD/nginx/templates:/etc/nginx/templates:ro" \
+              -v "$PWD/nginx/tls:/etc/nginx/tls:ro" \
+              -v "$PWD/nginx/test-fixtures/basic-auth.htpasswd:/etc/nginx/basic-auth.htpasswd:ro" \
+              -v /tmp/le:/etc/letsencrypt:ro \
+              nginx:1.31.4-alpine-otel \
+              sh -c '/docker-entrypoint.sh nginx -t'
+          }
+
+          # 두 모드를 모두 검증한다. 한쪽만 보면 다른 쪽 오타를 놓친다.
+          validate localhost 80 none acme-challenge.invalid
+          validate kkh-hub.tech "443 ssl" live \
+            "kkh-hub.tech health.kkh-hub.tech portal.kkh-hub.tech notes.kkh-hub.tech"
+
+      # 빠른 루프(수초). 로직 버그를 push 시점에 잡는다.
+      # seam 2는 스택 기동이 필요해 CI에 두지 않는다(로컬에서 실행).
+      - name: Run seam 1 (deploy target selection)
+        run: ./scripts/test-select-target.sh
+
+      - name: Run seam 3 (SOPS roundtrip)
+        run: |
+          docker compose --env-file .env.example \
+            run --rm --no-deps tools ./scripts/test-sops.sh
+
+      - name: Verify SOPS files are encrypted
+        run: ./scripts/check-sops.sh
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan introduced commits
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: ./scripts/scan-secrets.sh ci "$BASE" "$GITHUB_SHA"
+
+  portal-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build Portal without publishing
+        run: docker build --build-arg "PORTAL_REVISION=$GITHUB_SHA" ./portal
+
+  gate:
+    if: always()
+    needs: [validate, gitleaks, portal-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require all CI jobs to pass
+        env:
+          VALIDATE: ${{ needs.validate.result }}
+          GITLEAKS: ${{ needs.gitleaks.result }}
+          PORTAL_BUILD: ${{ needs.portal-build.result }}
+        run: |
+          printf 'validate=%s gitleaks=%s portal-build=%s\n' "$VALIDATE" "$GITLEAKS" "$PORTAL_BUILD"
+          [[ "$VALIDATE" == success && "$GITLEAKS" == success && "$PORTAL_BUILD" == success ]]

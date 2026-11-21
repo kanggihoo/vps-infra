@@ -43,7 +43,7 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 * [관측 스택](services/observability.md) - Grafana·Prometheus·Loki·Tempo·Alloy로 메트릭·로그·트레이스를 모은다.
 * [ERD 서빙 (Liam ERD)](services/erd.md) - 프로젝트 DB 스키마의 ER 다이어그램을 erd 서브도메인에서 정적 파일로 제공한다.
 * [과거 GitHub Actions SSH 배포](services/github-actions-deploy.md) - 폐기된 SSH 배포 경로 기록. 현재 배포는 services/deploy.md에 있다.
-* [배포](services/deploy.md) - 각 레포의 GitHub Actions가 SSH forced command로 VPS의 배포 스크립트에 SHA만 넘긴다.
+* [배포](services/deploy.md) - 각 레포의 GitHub Actions가 SSH forced command로 배포한다. vps-infra는 CI gate 뒤 Portal 이미지를 게시하고 VPS에서 digest로 적용할 수 있다.
 * [vps-info (Signal Archive)](services/vps-info.md) - 자기 레포에서 compose와 GitHub Actions CI/CD를 소유하는 첫 외부 프로젝트.
 * [nginx 리버스 프록시](services/nginx.md) - VPS의 public HTTP/HTTPS 진입점.
 * [공용 인프라 포털](services/portal.md) - 현재 구현된 public service 링크와 curated skill markdown library를 제공하는 React+Go 기반 포털.

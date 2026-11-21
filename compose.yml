@@ -88,6 +88,7 @@ services:
       - proxy
 
   portal:
+    image: ${PORTAL_IMAGE:-vps-portal:local}
     build: ./portal
     container_name: vps-portal
     restart: unless-stopped

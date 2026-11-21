@@ -1,0 +1,51 @@
+name: CD
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+      digest:
+        type: string
+      use-ghcr:
+        type: boolean
+    secrets:
+      VPS_DEPLOY_KEY:
+        required: true
+permissions: {}
+
+env:
+  # 배포 대상. host key를 고정해 다른 서버에 접속하지 않는다(키가 바뀌면 배포가 실패한다).
+  VPS_HOST: 187.77.114.68
+  VPS_USER: kkh
+  VPS_HOST_KEY: 187.77.114.68 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAkuL3u1JaTmO9cAZIcgiYyLJLIdDENedbywa+/YOsfo
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Deploy over SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
+          TARGET: ${{ inputs.target }}
+          DIGEST: ${{ inputs.digest }}
+          USE_GHCR: ${{ inputs.use-ghcr }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_HOST_KEY" > ~/.ssh/known_hosts
+          request="$GITHUB_SHA $TARGET"
+          if [[ "$USE_GHCR" == true ]]; then
+            [[ -z "$DIGEST" || "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+            if [[ "$GITHUB_EVENT_NAME" == push && -z "$DIGEST" ]]; then
+              echo "::error::Published Portal digest is missing."
+              exit 1
+            fi
+            request+=" ${DIGEST:-reuse}"
+          fi
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o ServerAliveInterval=30 \
+            "$VPS_USER@$VPS_HOST" "$request"

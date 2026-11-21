@@ -3,7 +3,7 @@
 #
 #   SSH  authorized_keys: command="/home/kkh/app/vps-infra/scripts/ci-deploy.sh",restrict ssh-ed25519 ... vps-infra-deploy
 #        Actions는 `ssh kkh@<VPS> "<sha> [target]"`를 보내고, 그 문자열은 SSH_ORIGINAL_COMMAND로 들어온다.
-#   수동 ~/app/vps-infra/scripts/ci-deploy.sh <sha> [auto|all|portal|observability]
+#   수동 ~/app/vps-infra/scripts/ci-deploy.sh <sha> [auto|all|portal|observability] [digest|reuse]
 #
 # <sha>     배포할 main 커밋(40자). checkout을 이 커밋으로 맞춘다. 롤백은 이전 main SHA를 넘긴다.
 # target    auto(기본) = 마지막 성공 배포부터의 누적 변경으로 판정(select-target.sh). 판정할 수 없으면 실패한다.
@@ -15,10 +15,13 @@
 set -euo pipefail
 
 # SSH로 온 문자열은 외부 입력이다. 셸로 해석하지 않고 형식만 허용한다.
-read -r sha target extra <<<"${SSH_ORIGINAL_COMMAND-$*}" || true
+DEPLOY_PROTOCOL=2
+request="${SSH_ORIGINAL_COMMAND-$*}"
+read -r sha target digest extra <<<"$request" || true
 target="${target:-auto}"
-if ! [[ "${sha:-}" =~ ^[0-9a-f]{40}$ ]] || [[ -n "${extra:-}" ]]; then
-    echo "usage: ci-deploy.sh <40자 commit sha> [auto|all|portal|observability]" >&2
+if [[ "$request" == *$'\n'* || ! "$sha" =~ ^[0-9a-f]{40}$ || -n "$extra" ]] ||
+   [[ -n "$digest" && "$digest" != reuse && ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+    echo "usage: ci-deploy.sh <40자 commit sha> [auto|all|portal|observability] [digest|reuse]" >&2
     exit 2
 fi
 case "$target" in
@@ -38,15 +41,35 @@ if ! git merge-base --is-ancestor "$sha" origin/main; then
     echo "[ci-deploy] $sha 는 origin/main 이력에 없다" >&2
     exit 1
 fi
+if [[ -n "$digest" ]] &&
+   ! git show "$sha:scripts/ci-deploy.sh" | grep -Fx "DEPLOY_PROTOCOL=$DEPLOY_PROTOCOL" >/dev/null; then
+    echo "[ci-deploy] $sha 배포 프로토콜과 호환되지 않는다" >&2
+    exit 1
+fi
 # reset --hard가 아니라 checkout이다. 운영 checkout에 손으로 고친 tracked 파일이 있으면 덮어쓰지 않고 멈춘다.
 git checkout --quiet --detach "$sha"
 echo "[ci-deploy] $(git log -1 --format='%h %s')"
 
 # 마지막 성공 배포부터 이번 SHA까지의 누적 변경을 본다. 상태가 없거나 이력이 끊기면 일부 변경을 놓치지 않도록 all을 고른다.
 state_file=.deploy-state/last-successful-sha
-if [ "$target" = auto ]; then
+portal_state=.deploy-state/portal
+applied_sha=
+applied_digest=
+if [[ -s "$portal_state" ]]; then
+    read -r applied_sha applied_digest < "$portal_state"
+    [[ "$applied_sha" =~ ^[0-9a-f]{40}$ && "$applied_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+fi
+requested_target="$target"
+if [[ "$target" == auto ]]; then
     previous_sha="$(cat "$state_file" 2>/dev/null || true)"
-    if [[ "$previous_sha" =~ ^[0-9a-f]{40}$ ]] && git merge-base --is-ancestor "$previous_sha" "$sha" 2>/dev/null; then
+    if [[ "$previous_sha" == "$sha" ]]; then
+        if [[ -z "$digest" || "$digest" == reuse || ( "$sha" == "$applied_sha" && "$digest" == "$applied_digest" ) ]]; then
+            echo "[ci-deploy] 이미 적용된 SHA다. healthcheck만 실행한다."
+            HEALTHCHECK_CONNECT_HOST=127.0.0.1 EXPECTED_PORTAL_SHA="$applied_sha" ./scripts/healthcheck.sh
+            exit 0
+        fi
+        target=all
+    elif [[ "$previous_sha" =~ ^[0-9a-f]{40}$ ]] && git merge-base --is-ancestor "$previous_sha" "$sha" 2>/dev/null; then
         target="$(./scripts/select-target.sh "$previous_sha" "$sha")"
     else
         echo "[ci-deploy] 마지막 성공 배포 SHA가 없거나 이번 커밋의 조상이 아니다. 전체를 배포한다" >&2
@@ -56,21 +79,54 @@ fi
 echo "[ci-deploy] target: $target"
 echo "::notice title=배포 대상::$target"
 
+expected_portal_sha="$applied_sha"
+if [[ "$target" != observability ]]; then
+    expected_portal_sha=
+    if [[ "$digest" == reuse ]]; then
+        if [[ "$applied_sha" != "$sha" ]]; then
+            echo "[ci-deploy] 같은 SHA의 Portal 적용 기록이 없다. 게시된 digest가 필요하다." >&2
+            exit 1
+        fi
+        digest="$applied_digest"
+    fi
+    if [[ -n "$digest" ]]; then
+        export PORTAL_IMAGE="ghcr.io/kanggihoo/vps-infra-portal@$digest"
+        docker pull "$PORTAL_IMAGE"
+        revision="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$PORTAL_IMAGE")"
+        if [[ "$revision" != "$sha" ]]; then
+            echo "[ci-deploy] Portal 이미지 revision과 요청 SHA가 다르다" >&2
+            exit 1
+        fi
+        expected_portal_sha="$sha"
+    fi
+fi
+
 # 커밋된 SOPS 파일로 .env와 secret 파일을 다시 만든다. 운영 값의 원본은 레포다. VPS에서 .env를 직접 고치면 덮어써진다.
 # sops는 호스트에 설치하지 않고 tools 이미지로 실행한다. key는 ~/.config/sops/age/keys.txt다.
+docker compose build tools
 HOST_UID="$(id -u)" HOST_GID="$(id -g)" ENV_NAME=prod \
     docker compose run --rm --no-deps -T tools ./scripts/secrets.sh decrypt
 
 ./scripts/deploy.sh "$target"
 
 # 공개 DNS 대신 호스트의 nginx(443)로 바로 붙는다. 컨테이너가 VPS 공인 IP로 자기 자신에 못 붙는 hairpin 문제와 무관하다.
-HEALTHCHECK_CONNECT_HOST=127.0.0.1 ./scripts/healthcheck.sh
+HEALTHCHECK_CONNECT_HOST=127.0.0.1 EXPECTED_PORTAL_SHA="$expected_portal_sha" ./scripts/healthcheck.sh
 
 # runtime state라 Git에 넣지 않는다. 임시 파일을 rename해 중간에 죽어도 깨진 SHA 파일을 남기지 않는다.
 mkdir -p "$(dirname "$state_file")"
 umask 077
-printf '%s\n' "$sha" > "$state_file.tmp.$$"
-mv "$state_file.tmp.$$" "$state_file"
+if [[ "$target" != observability ]]; then
+    # 빈 기록은 legacy 빌드로 교체한 경우다.
+    : > "$portal_state.tmp.$$"
+    if [[ -n "$expected_portal_sha" ]]; then
+        printf '%s %s\n' "$expected_portal_sha" "$digest" > "$portal_state.tmp.$$"
+    fi
+    mv "$portal_state.tmp.$$" "$portal_state"
+fi
+if [[ "$requested_target" == auto || "$target" == all ]]; then
+    printf '%s\n' "$sha" > "$state_file.tmp.$$"
+    mv "$state_file.tmp.$$" "$state_file"
+fi
 echo "[ci-deploy] done $sha ($target)"
 exit 0
 }
