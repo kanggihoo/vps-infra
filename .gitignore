@@ -48,3 +48,6 @@ graphify-out/
 
 .playwright-cli/
 output/
+
+# scripts/test-nginx-templates.sh가 실행 중에 만드는 더미 인증서
+.nginx-template-test.*/

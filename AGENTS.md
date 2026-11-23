@@ -9,4 +9,6 @@
 - OKF concept는 파일 하나당 개념 하나로 유지한다.
 - OKF 수정 후 strict validation을 실행한다.
 
+## 변경 규칙
 
+- branch, PR 제목, merge 규칙은 `CONTRIBUTING.md`를 따른다.
