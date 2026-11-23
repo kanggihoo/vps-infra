@@ -1,0 +1,59 @@
+name: Infra deploy
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# push 배포와 수동 재배포(redeploy.yml)가 같은 group을 쓴다. 진행 중인 배포는 끊지 않는다.
+concurrency:
+  group: infra-deploy
+  cancel-in-progress: false
+
+jobs:
+  # PR CI를 통과한 뒤에도 main이 앞서 나갔을 수 있으므로 merge 결과를 다시 검사한다.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: ci
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish.yml
+
+  deploy:
+    needs: publish
+    uses: ./.github/workflows/cd.yml
+    permissions: {}
+    with:
+      target: auto
+      digest: ${{ needs.publish.outputs.digest }}
+      use-ghcr: ${{ vars.PORTAL_GHCR_DEPLOY == 'true' }}
+    secrets:
+      VPS_DEPLOY_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
+
+  # 배포 결과를 Mattermost로 알린다(ADR 0012). 취소된 실행은 알리지 않는다.
+  notify:
+    needs: [ci, publish, deploy]
+    if: always() && !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # 커밋 메시지 같은 사용자 입력은 env로만 넘긴다. run에 ${{ }}로 넣으면 셸 코드로 해석될 수 있다.
+      - name: Send to Mattermost
+        env:
+          HOOK: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
+          CI: ${{ needs.ci.result }}
+          PUBLISH: ${{ needs.publish.result }}
+          DEPLOY: ${{ needs.deploy.result }}
+          TARGET: auto
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: ./scripts/notify-mattermost.sh

@@ -1,0 +1,54 @@
+name: Infra redeploy
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 배포 대상
+        type: choice
+        options: [auto, all, portal, observability]
+        default: auto
+      digest:
+        description: GHCR 재배포 digest (비어 있으면 같은 SHA의 적용 기록 사용)
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+# push 배포(main.yml)와 같은 group을 쓴다. 진행 중인 배포는 끊지 않는다.
+concurrency:
+  group: infra-deploy
+  cancel-in-progress: false
+
+jobs:
+  # 이미 main에 들어가 검증된 SHA를 다시 적용하므로 CI를 다시 돌리지 않는다.
+  # main이 아닌 branch에서 실행하면 cd.yml의 guard가 배포를 건너뛴다.
+  deploy:
+    uses: ./.github/workflows/cd.yml
+    permissions: {}
+    with:
+      target: ${{ inputs.target }}
+      digest: ${{ inputs.digest }}
+      use-ghcr: ${{ vars.PORTAL_GHCR_DEPLOY == 'true' }}
+    secrets:
+      VPS_DEPLOY_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
+
+  # 배포 결과를 Mattermost로 알린다(ADR 0012). main이 아니거나 취소된 실행은 알리지 않는다.
+  notify:
+    needs: deploy
+    if: always() && github.ref == 'refs/heads/main' && needs.deploy.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Send to Mattermost
+        env:
+          HOOK: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
+          DEPLOY: ${{ needs.deploy.result }}
+          TARGET: ${{ inputs.target }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: ./scripts/notify-mattermost.sh

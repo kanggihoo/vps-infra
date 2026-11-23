@@ -16,7 +16,7 @@ Redis는 Docker internal network 안에서만 접근한다.
 
 ```txt
 GitHub main push
-  -> GitHub Actions (pipeline.yml: CI gate -> GHCR publish -> deploy -> notify)
+  -> GitHub Actions (main.yml: CI gate -> GHCR publish -> deploy -> notify)
     -> ssh kkh@VPS "<sha> <target>" (forced command)
       -> ~/app/vps-infra/scripts/ci-deploy.sh
         -> git checkout <sha> -> SOPS 복호화 -> scripts/deploy.sh -> healthcheck

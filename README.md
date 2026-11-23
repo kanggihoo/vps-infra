@@ -93,9 +93,11 @@ app2.example.com             -> app2 public
 
 ### GitHub Actions 배포 전략
 
-[Infra pipeline](.github/workflows/pipeline.yml)이 CI, GHCR 게시, VPS 배포를 순서대로 실행한다.
-PR은 Compose·nginx·SOPS 검사, Gitleaks, Portal 빌드가 모두 성공해야 CI gate를 통과한다.
-main push는 gate 뒤 Portal 이미지를 GHCR에 게시하고 SSH forced command로 VPS에 배포한다.
+workflow는 trigger마다 파일 하나다. [Infra PR](.github/workflows/pr.yml)은 PR에서 CI만 실행한다.
+CI는 Compose·nginx·SOPS 검사, Gitleaks, Portal 빌드가 모두 성공해야 `ci / gate`를 통과한다.
+[Infra deploy](.github/workflows/main.yml)는 main push에서 CI를 다시 실행한 뒤 Portal 이미지를 GHCR에 게시하고 SSH forced command로 VPS에 배포한다.
+[Infra redeploy](.github/workflows/redeploy.yml)는 수동 실행으로 main SHA를 다시 적용한다.
+PR, branch, merge 규칙은 [기여 가이드](CONTRIBUTING.md)에 있다.
 
 로컬에서 Gitleaks 8.30.1과 Lefthook을 설치한 뒤 레포 루트에서 `lefthook install`을 실행한다.
 커밋 전 staged 변경만 검사한다. 전환, 재배포, 롤백 절차는 [배포 문서](okf/services/deploy.md)에 있다.
