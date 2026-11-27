@@ -3,7 +3,7 @@ type: Service
 title: 관측 스택 (Grafana·Prometheus·Loki·Tempo·Alloy)
 description: VPS의 메트릭·로그·트레이스를 Alloy 하나로 모아 Grafana에서 조회하고 Mattermost로 알린다.
 tags: [observability, grafana, prometheus, loki, tempo, alloy, monitoring]
-timestamp: 2026-11-20T00:00:00+09:00
+timestamp: 2026-11-27T00:00:00+09:00
 ---
 
 # 개요

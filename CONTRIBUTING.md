@@ -36,6 +36,8 @@ git ls-files -s scripts/new-script.sh   # 100755로 나와야 한다
 | nginx 템플릿 | `./scripts/test-nginx-templates.sh` |
 | compose 파일 | `cp .env.example .env && docker compose config >/dev/null` |
 | 배포 대상 선택 로직 | `./scripts/test-select-target.sh` |
+| `deploy.sh`의 `.env` 가드 | `./scripts/test-deploy-guards.sh` |
+| 라우팅·Tinyauth SSO (스택 기동 후, CI 밖) | `./scripts/test-routing.sh` |
 | SOPS 파일 | `./scripts/check-sops.sh` |
 
 ## PR 제목

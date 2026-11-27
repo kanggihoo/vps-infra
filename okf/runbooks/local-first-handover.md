@@ -3,7 +3,7 @@ type: Runbook
 title: 로컬 우선 인프라 인수 절차
 description: spec 0001 단계 0~5 구현 후 사용자가 직접 해야 하는 작업과 로컬 검증 명령을 정리한다.
 tags: [runbook, local-development, sops, jenkins, handover]
-timestamp: 2026-09-28T00:00:00+09:00
+timestamp: 2026-11-27T00:00:00+09:00
 ---
 
 > [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어냈다. 아래 Jenkins 관련 절차(`jenkins/.env`, 로컬 Jenkins, JCasC)는 기록이며 현재 절차가 아니다. 현재 배포는 [배포](/services/deploy.md)를 본다.
@@ -25,7 +25,7 @@ age key 생성과 secret 암호화는 **완료되었다.** 아래는 현재 상�
 | 공개키 | `.sops.yaml`에 반영됨 |
 | `.env` (로컬) | `secrets/env.local.sops.env`로 암호화 |
 | `.env` (VPS) | `secrets/env.prod.sops.env`로 암호화, 운영 DB 값 보존 |
-| notes Basic Auth | `secrets/basic-auth.htpasswd.sops.txt` (VPS 기존 자격증명 그대로) |
+| 보호 서브도메인 인증 | Tinyauth SSO. 계정은 `.env`의 `TINYAUTH_AUTH_USERS`([ADR 0022](/adr/0022-tinyauth-sso.md)). Basic Auth 파일은 지웠다 |
 | `github-pat` | **미암호화.** PAT 발급이 필요하다(아래 참조) |
 
 ## ⚠️ age key 백업 (남은 필수 작업)
@@ -71,8 +71,8 @@ docker compose run --rm tools ./scripts/secrets.sh encrypt .env secrets/env.loca
 환경을 늘릴 때는 `secrets/env.<이름>.sops.env`를 추가하면 된다
 (spec 사용자 스토리 14).
 
-암호화 파일(`secrets/*.sops.*`)은 커밋한다. 복호화 결과(`.env`,
-`secrets/basic-auth.htpasswd`)는 gitignored다.
+암호화 파일(`secrets/*.sops.*`)은 커밋한다. 복호화 결과(`.env`)는
+gitignored다.
 
 **파일명이 `.sops.env` / `.sops.txt`인 이유**: `creation_rules`는 암호화할
 때만 적용되고, 복호화할 때 SOPS는 **확장자**로 형식을 판단한다. `.sops`로
@@ -84,13 +84,9 @@ docker compose run --rm tools ./scripts/secrets.sh encrypt .env secrets/env.loca
 cp jenkins/.env.example jenkins/.env
 ```
 
-`.env.example`의 `BASIC_AUTH_HTPASSWD`는 공개 테스트 fixture(`test`/`test`)를
-가리킨다. clean clone에서도 `docker compose up`이 성공하도록 한 기본값이다.
-실제 secret으로 바꿀 때만 수정한다.
-
-```bash
-BASIC_AUTH_HTPASSWD=./secrets/basic-auth.htpasswd
-```
+`.env.example`의 `TINYAUTH_AUTH_USERS`는 공개 테스트 계정(`test`/`test`)이다.
+clean clone에서도 `docker compose up`과 로그인이 되도록 한 기본값이다.
+`TLS_MODE=live` 배포는 이 계정을 거부한다.
 
 `jenkins/.env`에서 **반드시** 수정할 항목:
 
@@ -125,14 +121,14 @@ docker compose run --rm --no-deps tools ./scripts/test-sops.sh
 # 스택 기동
 docker compose up -d --build
 
-# seam 2 — 라우팅, try_files, Basic Auth, TLS 모드 분기
+# seam 2 — 라우팅, try_files, Tinyauth 쿠키 SSO, TLS 모드 분기
 ./scripts/test-routing.sh
 
 # 헬스체크
 ./scripts/healthcheck.sh
 ```
 
-브라우저로 `http://portal.localhost`에 접속한다. `*.localhost`는 브라우저가
+브라우저로 `http://portal.vps.localhost`에 접속한다. `*.localhost`는 브라우저가
 `127.0.0.1`로 풀어주므로 hosts 파일 수정이 필요 없다.
 
 ## 로컬 Jenkins

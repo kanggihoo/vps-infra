@@ -67,7 +67,8 @@ services:
       TINYAUTH_APPURL: ${TINYAUTH_APPURL:-http://auth.vps.localhost}
       # user:bcrypt 쉼표 구분. 로컬은 test 계정, live 배포는 deploy.sh가 test 계정을 거부한다.
       TINYAUTH_AUTH_USERS: ${TINYAUTH_AUTH_USERS:?TINYAUTH_AUTH_USERS is required}
-      TINYAUTH_AUTH_SESSIONEXPIRY: 86400
+      # 24시간(초). spec D-8로 고정한 값이며 .env 계약에 포함된다.
+      TINYAUTH_AUTH_SESSIONEXPIRY: ${TINYAUTH_AUTH_SESSIONEXPIRY:-86400}
       # VPS(https)에서만 true. 로컬(http)에서 true면 쿠키가 전송되지 않는다.
       TINYAUTH_AUTH_SECURECOOKIE: ${TINYAUTH_AUTH_SECURECOOKIE:-false}
       # 클라이언트 IP를 nginx가 준 X-Forwarded-For로 읽는다. Docker 내부망만 신뢰한다.

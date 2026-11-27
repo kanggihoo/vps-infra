@@ -3,7 +3,7 @@ type: Decision
 title: SOPS 기반 secret 관리
 description: secret을 SOPS + age로 암호화해 레포에 커밋하고, 복호화 key만 각 환경에 배치한다.
 tags: [secrets, sops, age, security]
-timestamp: 2026-08-23T00:00:00+09:00
+timestamp: 2026-11-27T00:00:00+09:00
 ---
 
 # 상태

@@ -172,6 +172,11 @@ authed_checks() {
   # vps-info는 자기 레포 compose로 뜬다. 없으면 502이고, 이것도 인증을 통과해 백엔드까지 갔다는 뜻이다.
   check "[$tag] info 인증 통과" "info.${base_domain}" / "200|502" -b "$jar"
   check "[$tag] grafana 인증 통과" "grafana.${base_domain}" / 200 -b "$jar"
+  # 로그인 상태에서도 /tinyauth는 internal이라 404다. internal;이 빠지면 Tinyauth 응답(200)이 그대로 나간다.
+  # 미인증 호출은 auth_request가 먼저 302로 막으므로 internal;은 로그인 상태에서만 드러난다.
+  for h in erd notes info grafana; do
+    check "[$tag] $h /tinyauth는 로그인 상태에서도 404" "$h.${base_domain}" /tinyauth 404 -b "$jar"
+  done
 }
 
 echo "--- 같은 쿠키로 보호 대상 4곳 통과 ---"

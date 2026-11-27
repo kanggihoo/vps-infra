@@ -3,7 +3,7 @@ type: Service
 title: vps-info (Signal Archive)
 description: 자기 레포에서 compose와 GitHub Actions CI/CD를 소유하고 공용 PostgreSQL과 nginx를 쓰는 첫 외부 프로젝트.
 tags: [project, github-actions, ghcr, sops, postgres, nginx]
-timestamp: 2026-11-20T00:00:00+09:00
+timestamp: 2026-11-27T00:00:00+09:00
 ---
 
 # 개요

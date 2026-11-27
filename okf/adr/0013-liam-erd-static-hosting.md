@@ -3,7 +3,7 @@ type: Decision
 title: DB 스키마 ERD를 Liam으로 빌드해 nginx에서 정적으로 서빙한다
 description: 각 프로젝트의 Jenkins job이 Liam ERD를 빌드해 erd-site 볼륨에 넣고, nginx가 erd 서브도메인의 하위 경로로 Basic Auth 뒤에서 서빙한다.
 tags: [erd, liam, nginx, jenkins, static]
-timestamp: 2026-09-30T00:00:00+09:00
+timestamp: 2026-11-27T00:00:00+09:00
 ---
 
 # 상태
