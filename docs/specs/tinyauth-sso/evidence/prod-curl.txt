@@ -1,0 +1,25 @@
+## erd.kkh-hub.tech/ (미인증)
+HTTP/1.1 302 Moved Temporarily
+Location: https://auth.kkh-hub.tech/login?redirect_uri=https://erd.kkh-hub.tech/
+## notes.kkh-hub.tech/ (미인증)
+HTTP/1.1 302 Moved Temporarily
+Location: https://auth.kkh-hub.tech/login?redirect_uri=https://notes.kkh-hub.tech/
+## info.kkh-hub.tech/ (미인증)
+HTTP/1.1 302 Moved Temporarily
+Location: https://auth.kkh-hub.tech/login?redirect_uri=https://info.kkh-hub.tech/
+## grafana.kkh-hub.tech/ (미인증)
+HTTP/1.1 302 Moved Temporarily
+Location: https://auth.kkh-hub.tech/login?redirect_uri=https://grafana.kkh-hub.tech/
+## auth/portal/health
+auth 200
+portal 200
+health 200
+## erd /tinyauth 직접 호출
+HTTP/1.1 404 Not Found
+## grafana Remote-User/X-Forwarded-Host 위조
+HTTP/1.1 302 Moved Temporarily
+Location: https://auth.kkh-hub.tech/login?redirect_uri=https://grafana.kkh-hub.tech/api/user
+## auth.kkh-hub.tech 인증서
+X509v3 Subject Alternative Name: 
+    DNS:auth.kkh-hub.tech, DNS:erd.kkh-hub.tech, DNS:grafana.kkh-hub.tech, DNS:health.kkh-hub.tech, DNS:info.kkh-hub.tech, DNS:kkh-hub.tech, DNS:notes.kkh-hub.tech, DNS:portal.kkh-hub.tech
+notAfter=Feb 25 14:36:47 2027 GMT

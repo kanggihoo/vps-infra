@@ -46,15 +46,15 @@ GET http://health.vps.localhost/  (로그인 쿠키 보유 상태)
 
 - [x] AC-1: 미인증 요청이 `erd.${BASE_DOMAIN}`, `notes.${BASE_DOMAIN}`, `info.${BASE_DOMAIN}`, `grafana.${BASE_DOMAIN}`의 어떤 경로(루트, 정적 자산, `/api/live/` WebSocket, `notes`의 `/404.html` 포함)로 들어와도 `200`을 반환하지 않고 `auth.${BASE_DOMAIN}` 로그인 URL로 `302` 리다이렉트한다 (D-1, D-3, D-10).
 - [x] AC-2: `portal.${BASE_DOMAIN}`과 `health.${BASE_DOMAIN}`, `auth.${BASE_DOMAIN}`은 미인증 상태에서 접근 가능하며, `health.${BASE_DOMAIN}`은 `nginx`가 `Cookie` 헤더를 제거해 `whoami` 응답 본문에 세션 쿠키가 반사되지 않는다 (D-1, D-3, D-8).
-- [ ] AC-3: 로컬 계정(ID/PW) 로그인 또는 허용 이메일 화이트리스트(`TINYAUTH_OAUTH_WHITELIST`)에 포함된 Google OAuth 로그인에 성공하면 `24시간(86400초)` 만료 쿠키 세션이 발급되고, 동일 상위 도메인 아래 보호 대상 4곳에 재로그인 없이 접근할 수 있다 (D-2, D-8).
-- [ ] AC-4: Google OAuth 화이트리스트에 없는 이메일은 로그인에 실패(거부)하며, `TINYAUTH_OAUTH_WHITELIST`가 비어 있는 상태에서 Google OAuth로 임의 계정이 통과하지 않는다 (D-2, D-10).
+- [x] AC-3: 로컬 계정(ID/PW) 로그인 또는 허용 이메일 화이트리스트(`TINYAUTH_OAUTH_WHITELIST`)에 포함된 Google OAuth 로그인에 성공하면 `24시간(86400초)` 만료 쿠키 세션이 발급되고, 동일 상위 도메인 아래 보호 대상 4곳에 재로그인 없이 접근할 수 있다 (D-2, D-8).
+- [x] AC-4: Google OAuth 화이트리스트에 없는 이메일은 로그인에 실패(거부)하며, `TINYAUTH_OAUTH_WHITELIST`가 비어 있는 상태에서 Google OAuth로 임의 계정이 통과하지 않는다 (D-2, D-10).
 - [x] AC-5: 보호 서브도메인의 `/tinyauth` subrequest `location`은 `internal;`로 외부 직접 호출이 차단되며, `X-Forwarded-Host`는 nginx `$host`로 덮어쓰여 헤더 스푸핑으로 인증을 우회할 수 없다 (D-10).
 - [x] AC-6: Grafana(`grafana.${BASE_DOMAIN}`)는 `/`와 `/api/live/` 모두 `Remote-User` 헤더 기반 Admin 자동 로그인만 허용하고 자체 로그인 폼 및 Basic Auth API는 비활성화되며, nginx가 `Remote-User`를 Tinyauth 결과로 덮어쓰고 `Authorization` 헤더를 비워 클라이언트 위조 헤더가 통과하지 않는다 (D-6, D-10).
 - [x] AC-7: Tinyauth 세션 DB(SQLite)는 named volume(`vps_tinyauth_data`)에 저장되어 컨테이너 재배포 후에도 유효한 24시간 세션이 유지된다 (D-8).
 - [x] AC-8: `secrets/basic-auth.htpasswd.sops.txt`, `nginx/test-fixtures/basic-auth.htpasswd`, `scripts/set-basic-auth.sh` 및 관련 참조가 제거되고, `scripts/secrets.sh decrypt`와 `scripts/check-sops.sh`가 `secrets/env.{local,prod}.sops.env` 단일 체계로 통과한다 (D-5).
 - [x] AC-9: `TLS_MODE=none` 로컬 clean clone 환경(`BASE_DOMAIN=vps.localhost`)에서는 Google OAuth 설정 없이 테스트 계정만으로 스택 기동, `--no-deps` `nginx -t` 문법 검사, 그리고 `curl --resolve` 기반 `scripts/test-routing.sh` 쿠키 세션 검증이 모두 통과한다 (D-1, D-9).
-- [ ] AC-10: `TLS_MODE=live` 배포 시 `scripts/deploy.sh`는 빈 `TINYAUTH_AUTH_USERS`·로컬 테스트 계정·빈 `TINYAUTH_OAUTH_WHITELIST`·`.env` 내 따옴표 없는 `$` 값을 감지하면 즉시 실패로 중단하고, 정상 설정에서는 `CHALLENGE_DOMAINS`에 포함된 `auth.${BASE_DOMAIN}` 인증서 확장을 수행한다 (D-3, D-5, D-9, D-10).
-- [ ] AC-11: `observability/alloy/config.alloy`는 `grafana`를 내부 주소(`http://grafana:3000/api/health`)로 probe하고 `auth.${BASE_DOMAIN}` 공개 probe를 포함하며, `scripts/healthcheck.sh`는 `auth.${BASE_DOMAIN}` 공개 헬스, `http://grafana:3000/api/health` 내부 헬스, 보호 라우트의 `302` 리다이렉트를 모두 검증한다 (D-7).
+- [x] AC-10: `TLS_MODE=live` 배포 시 `scripts/deploy.sh`는 빈 `TINYAUTH_AUTH_USERS`·로컬 테스트 계정·빈 `TINYAUTH_OAUTH_WHITELIST`·`.env` 내 따옴표 없는 `$` 값을 감지하면 즉시 실패로 중단하고, 정상 설정에서는 `CHALLENGE_DOMAINS`에 포함된 `auth.${BASE_DOMAIN}` 인증서 확장을 수행한다 (D-3, D-5, D-9, D-10).
+- [x] AC-11: `observability/alloy/config.alloy`는 `grafana`를 내부 주소(`http://grafana:3000/api/health`)로 probe하고 `auth.${BASE_DOMAIN}` 공개 probe를 포함하며, `scripts/healthcheck.sh`는 `auth.${BASE_DOMAIN}` 공개 헬스, `http://grafana:3000/api/health` 내부 헬스, 보호 라우트의 `302` 리다이렉트를 모두 검증한다 (D-7).
 - [x] AC-12: 보호 대상 4곳은 동일한 전역 허용 사용자 목록을 공유하며 Tinyauth 컨테이너에 `/var/run/docker.sock`을 마운트하지 않는다 (D-4).
 - [x] AC-13: Basic Auth → Tinyauth 전환을 기록한 새 ADR(`okf/adr/0022-...`)과 갱신된 OKF 문서(`nginx.md`, `erd.md`, `0010-sops-secrets.md`)가 OKF strict validation을 통과하고, 새 ADR의 Consequences 절에 수용된 트레이드오프 4건이 기록된다 (D-11).
 
