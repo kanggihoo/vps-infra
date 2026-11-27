@@ -15,7 +15,8 @@ Glossary: none · ADRs: [0008](../../../okf/adr/0008-nginx-env-templates.md), [0
 
 ## D-3 Login portal subdomain
 - Status: settled
-- Decision: Tinyauth 로그인 포털은 `auth.${BASE_DOMAIN}`(운영 `auth.kkh-hub.tech`, 로컬 `auth.localhost`)으로 고정하고, 운영 TLS 인증서는 `CHALLENGE_DOMAINS`에 추가해 certbot `--expand`로 발급한다(DNS A 레코드는 운영자가 등록).
+- Decision: Tinyauth 로그인 포털은 `auth.${BASE_DOMAIN}`(운영 `auth.kkh-hub.tech`, 로컬 `auth.vps.localhost`)으로 고정하고, 운영 TLS 인증서는 `CHALLENGE_DOMAINS`에 추가해 certbot `--expand`로 발급한다(DNS A 레코드는 운영자가 등록). 로컬 `BASE_DOMAIN`은 `vps.localhost`다.
+- Rejected: 로컬 `BASE_DOMAIN=localhost` 유지 → Tinyauth v5가 `localhost`를 TLD로 보고 쿠키를 `Domain=auth.localhost`로 발급해, `erd.localhost` 확인이 `domain does not match cookie domain`으로 500이 된다(2026-11-27 v5.2.0 실측)
 - Reuse: `scripts/deploy.sh#CHALLENGE_DOMAINS` (reuse) — `CHALLENGE_DOMAINS` 기반 certbot `--expand` 경로 그대로 사용
 
 ## D-4 Access control granularity
@@ -44,18 +45,18 @@ Glossary: none · ADRs: [0008](../../../okf/adr/0008-nginx-env-templates.md), [0
 
 ## D-8 Session persistence and lifetime
 - Status: settled
-- Decision: Tinyauth 세션 DB(SQLite)는 named volume(`vps_tinyauth_data`)에 영속 저장하고, 세션 만료 시간은 24시간(1일)으로 고정한다. (상위 도메인 쿠키의 `portal` 전송과 화이트리스트 변경 후 최대 24시간 세션 유지는 수용된 트레이드오프이며, 긴급 회수 시 세션 DB·시크릿 교체로 무효화한다.)
-- Rejected: 7일 장기 세션 → 세션 노출 기간이 길어짐 · 비영속 저장 → 재배포마다 강제 로그아웃
+- Decision: Tinyauth 세션 DB(SQLite)는 named volume(`vps_tinyauth_data`)에 영속 저장하고, 세션 만료 시간은 24시간(1일)으로 고정한다. (상위 도메인 쿠키의 `portal` 전송과 화이트리스트 변경 후 최대 24시간 세션 유지는 수용된 트레이드오프이며, 긴급 회수 시 세션 DB 볼륨을 삭제해 모든 세션을 무효화한다.)
+- Rejected: 7일 장기 세션 → 세션 노출 기간이 길어짐 · 비영속 저장 → 재배포마다 강제 로그아웃 · 서명 시크릿(`TINYAUTH_SECRET`) 교체로 세션 무효화 → Tinyauth v5는 쿠키에 무작위 세션 ID만 담고 DB로 검증해 secret 설정이 없다
 
 ## D-9 Cookie-session verification and environment guards
 - Status: settled
-- Decision: 인증 검증은 브라우저 쿠키 세션 경로를 기준으로 하며 `test-routing.sh`는 로컬 `curl --resolve <host>:80:127.0.0.1`로 쿠키를 발급·검증한다. 로컬(`TLS_MODE=none`)은 Google OAuth 없이 테스트 계정만으로 통과하고, 운영(`TLS_MODE=live`)은 테스트 기본값·빈 시크릿·빈 OAuth 화이트리스트 및 `.env`의 따옴표 없는 `$` 값을 감지해 배포를 차단한다.
+- Decision: 인증 검증은 브라우저 쿠키 세션 경로를 기준으로 하며 `test-routing.sh`는 로컬 `curl --resolve <host>:80:127.0.0.1`로 쿠키를 발급·검증한다. 로컬(`TLS_MODE=none`)은 Google OAuth 없이 테스트 계정만으로 통과하고, 운영(`TLS_MODE=live`)은 빈 `TINYAUTH_AUTH_USERS`·로컬 테스트 계정·빈 OAuth 화이트리스트 및 `.env`의 따옴표 없는 `$` 값을 감지해 배포를 차단한다.
 - Rejected: `curl -u` Basic Auth 헤더 기반 테스트 유지 → 실제 브라우저 쿠키 세션 경로를 검증하지 못함
-- Reuse: `scripts/test-routing.sh#check` (modify) — `--resolve` 기반 Tinyauth 미인증(302) 및 로그인 쿠키 세션 통과 검증으로 교체 · `scripts/deploy.sh#TLS_MODE` (modify) — Tinyauth 시크릿·기본값·화이트리스트 및 따옴표 없는 `$` 가드 적용
+- Reuse: `scripts/test-routing.sh#check` (modify) — `--resolve` 기반 Tinyauth 미인증(302) 및 로그인 쿠키 세션 통과 검증으로 교체 · `scripts/deploy.sh#TLS_MODE` (modify) — Tinyauth 계정·테스트 계정·화이트리스트 및 따옴표 없는 `$` 가드 적용
 
 ## D-10 Security invariants
 - Status: settled
-- Decision: 다음 4가지는 절대 허용하지 않는다: (1) 빈 Google OAuth 화이트리스트로 임의 계정이 통과하는 것, (2) `TLS_MODE=live`에서 로컬 테스트 계정/시크릿 기본값으로 기동되는 것, (3) 보호 서브도메인의 `/tinyauth` subrequest가 `internal;` 없이 외부에 노출되거나, `X-Forwarded-Host`(`$host`)·`Remote-User`(Tinyauth 결과) 덮어쓰기 누락으로 인증이 우회되는 것, (4) 보호 대상 4곳(`erd`, `notes`, `info`, `grafana`)의 어떤 경로(정적 자산·WebSocket·`/404.html` 포함)도 미인증 요청에 200을 반환하는 것.
+- Decision: 다음 4가지는 절대 허용하지 않는다: (1) 빈 Google OAuth 화이트리스트로 임의 계정이 통과하는 것, (2) `TLS_MODE=live`에서 로컬 테스트 계정이나 빈 계정 목록으로 기동되는 것, (3) 보호 서브도메인의 `/tinyauth` subrequest가 `internal;` 없이 외부에 노출되거나, `X-Forwarded-Host`(`$host`)·`Remote-User`(Tinyauth 결과) 덮어쓰기 누락으로 인증이 우회되는 것, (4) 보호 대상 4곳(`erd`, `notes`, `info`, `grafana`)의 어떤 경로(정적 자산·WebSocket·`/404.html` 포함)도 미인증 요청에 200을 반환하는 것.
 
 ## D-11 ADR and OKF documentation
 - Status: settled

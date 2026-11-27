@@ -13,31 +13,31 @@ Decisions: [decisions.md](decisions.md) · Glossary and ADRs: [0008](../../../ok
 
 ### 1. 미인증 브라우저 요청 → 로그인 → SSO 통과
 ```txt
-client = curl --resolve erd.localhost:80:127.0.0.1 --resolve auth.localhost:80:127.0.0.1
-GET http://erd.localhost/probe/
-  -> 302 Location: http://auth.localhost/login?redirect_uri=http://erd.localhost/probe/
+client = curl --resolve erd.vps.localhost:80:127.0.0.1 --resolve auth.vps.localhost:80:127.0.0.1
+GET http://erd.vps.localhost/probe/
+  -> 302 Location: http://auth.vps.localhost/login?redirect_uri=http://erd.vps.localhost/probe/
 
-POST http://auth.localhost/api/user/login  (로컬 계정 JSON 또는 Google OAuth 콜백)
-  -> 200 Set-Cookie: tinyauth-session=...; Domain=localhost; Max-Age=86400
+POST http://auth.vps.localhost/api/user/login  (로컬 계정 JSON 또는 Google OAuth 콜백)
+  -> 200 Set-Cookie: tinyauth-session-<hash>=...; Domain=vps.localhost; Max-Age=86400
 
-GET http://erd.localhost/probe/  (동일 쿠키 jar)
+GET http://erd.vps.localhost/probe/  (동일 쿠키 jar)
   -> 200 (정적 ERD 응답)
-GET http://grafana.localhost/    (동일 쿠키 jar)
+GET http://grafana.vps.localhost/    (동일 쿠키 jar)
   -> 200 (nginx가 Remote-User 전달 -> Grafana Admin 자동 로그인)
 ```
 
 ### 2. 공개 서브도메인과 쿠키 격리
 ```txt
-GET http://portal.localhost/
+GET http://portal.vps.localhost/
   -> 200 (인증 없이 통과)
 
-GET http://health.localhost/  (로그인 쿠키 보유 상태)
+GET http://health.vps.localhost/  (로그인 쿠키 보유 상태)
   -> 200 (응답 본문에 Cookie 헤더가 반사되지 않음)
 ```
 
 ### 3. 운영 배포 가드 (`TLS_MODE=live`)
 ```txt
-.env에 테스트 기본값·빈 TINYAUTH_SECRET·빈 TINYAUTH_OAUTH_WHITELIST·따옴표 없는 $ 포함 시:
+.env에 빈 TINYAUTH_AUTH_USERS·로컬 테스트 계정·빈 TINYAUTH_OAUTH_WHITELIST·따옴표 없는 $ 포함 시:
 ./scripts/deploy.sh all
   -> exit non-zero (스택 기동 전 즉시 중단)
 ```
@@ -52,8 +52,8 @@ GET http://health.localhost/  (로그인 쿠키 보유 상태)
 - [ ] AC-6: Grafana(`grafana.${BASE_DOMAIN}`)는 `/`와 `/api/live/` 모두 `Remote-User` 헤더 기반 Admin 자동 로그인만 허용하고 자체 로그인 폼 및 Basic Auth API는 비활성화되며, nginx가 `Remote-User`를 Tinyauth 결과로 덮어쓰고 `Authorization` 헤더를 비워 클라이언트 위조 헤더가 통과하지 않는다 (D-6, D-10).
 - [ ] AC-7: Tinyauth 세션 DB(SQLite)는 named volume(`vps_tinyauth_data`)에 저장되어 컨테이너 재배포 후에도 유효한 24시간 세션이 유지된다 (D-8).
 - [ ] AC-8: `secrets/basic-auth.htpasswd.sops.txt`, `nginx/test-fixtures/basic-auth.htpasswd`, `scripts/set-basic-auth.sh` 및 관련 참조가 제거되고, `scripts/secrets.sh decrypt`와 `scripts/check-sops.sh`가 `secrets/env.{local,prod}.sops.env` 단일 체계로 통과한다 (D-5).
-- [ ] AC-9: `TLS_MODE=none` 로컬 clean clone 환경에서는 Google OAuth 설정 없이 테스트 계정만으로 스택 기동, `--no-deps` `nginx -t` 문법 검사, 그리고 `curl --resolve` 기반 `scripts/test-routing.sh` 쿠키 세션 검증이 모두 통과한다 (D-1, D-9).
-- [ ] AC-10: `TLS_MODE=live` 배포 시 `scripts/deploy.sh`는 테스트 기본값·빈 `TINYAUTH_SECRET`·빈 `TINYAUTH_OAUTH_WHITELIST`·`.env` 내 따옴표 없는 `$` 값을 감지하면 즉시 실패로 중단하고, 정상 설정에서는 `CHALLENGE_DOMAINS`에 포함된 `auth.${BASE_DOMAIN}` 인증서 확장을 수행한다 (D-3, D-5, D-9, D-10).
+- [ ] AC-9: `TLS_MODE=none` 로컬 clean clone 환경(`BASE_DOMAIN=vps.localhost`)에서는 Google OAuth 설정 없이 테스트 계정만으로 스택 기동, `--no-deps` `nginx -t` 문법 검사, 그리고 `curl --resolve` 기반 `scripts/test-routing.sh` 쿠키 세션 검증이 모두 통과한다 (D-1, D-9).
+- [ ] AC-10: `TLS_MODE=live` 배포 시 `scripts/deploy.sh`는 빈 `TINYAUTH_AUTH_USERS`·로컬 테스트 계정·빈 `TINYAUTH_OAUTH_WHITELIST`·`.env` 내 따옴표 없는 `$` 값을 감지하면 즉시 실패로 중단하고, 정상 설정에서는 `CHALLENGE_DOMAINS`에 포함된 `auth.${BASE_DOMAIN}` 인증서 확장을 수행한다 (D-3, D-5, D-9, D-10).
 - [ ] AC-11: `observability/alloy/config.alloy`는 `grafana`를 내부 주소(`http://grafana:3000/api/health`)로 probe하고 `auth.${BASE_DOMAIN}` 공개 probe를 포함하며, `scripts/healthcheck.sh`는 `auth.${BASE_DOMAIN}` 공개 헬스, `http://grafana:3000/api/health` 내부 헬스, 보호 라우트의 `302` 리다이렉트를 모두 검증한다 (D-7).
 - [ ] AC-12: 보호 대상 4곳은 동일한 전역 허용 사용자 목록을 공유하며 Tinyauth 컨테이너에 `/var/run/docker.sock`을 마운트하지 않는다 (D-4).
 - [ ] AC-13: Basic Auth → Tinyauth 전환을 기록한 새 ADR(`okf/adr/0022-...`)과 갱신된 OKF 문서(`nginx.md`, `erd.md`, `0010-sops-secrets.md`)가 OKF strict validation을 통과하고, 새 ADR의 Consequences 절에 수용된 트레이드오프 4건이 기록된다 (D-11).
@@ -92,16 +92,16 @@ location = /tinyauth {
 ### 3. Tinyauth · Grafana 환경변수 및 볼륨 계약 (`.env` / Compose)
 ```dotenv
 # Tinyauth (SOPS env.{local,prod}.sops.env에 통합, bcrypt $ 포함 값은 작은따옴표 필수)
-TINYAUTH_APPURL=https://auth.kkh-hub.tech          # 로컬: http://auth.localhost
-TINYAUTH_SECRET=<32+ byte secret>
+TINYAUTH_APPURL=https://auth.kkh-hub.tech          # 로컬: http://auth.vps.localhost
 TINYAUTH_AUTH_USERS='user:$2a$10$...'               # 쉼표 구분 user:bcrypt_hash
 TINYAUTH_AUTH_SESSIONEXPIRY=86400                   # 24시간(초)
 TINYAUTH_OAUTH_WHITELIST=user@gmail.com             # TLS_MODE=live 시 필수
-TINYAUTH_PROVIDERS_GOOGLE_CLIENTID=...
-TINYAUTH_PROVIDERS_GOOGLE_CLIENTSECRET=...
+TINYAUTH_OAUTH_PROVIDERS_GOOGLE_CLIENTID=...
+TINYAUTH_OAUTH_PROVIDERS_GOOGLE_CLIENTSECRET=...
 CHALLENGE_DOMAINS="... auth.kkh-hub.tech"
 ```
 - Tinyauth 세션 볼륨: `vps_tinyauth_data` (`/data` 또는 Tinyauth SQLite 경로 마운트).
+- Tinyauth v5는 서명 시크릿 설정이 없다. 세션은 쿠키의 무작위 ID를 SQLite에서 조회해 검증한다 (D-8).
 - Grafana 환경변수(`observability/compose.yml`): `GF_AUTH_PROXY_ENABLED=true`, `GF_AUTH_PROXY_HEADER_NAME=Remote-User`, `GF_AUTH_PROXY_AUTO_SIGN_UP=true`, `GF_USERS_AUTO_ASSIGN_ORG_ROLE=Admin`, `GF_AUTH_DISABLE_LOGIN_FORM=true`, `GF_AUTH_BASIC_ENABLED=false`.
 
 ## Constraints
@@ -110,7 +110,7 @@ CHALLENGE_DOMAINS="... auth.kkh-hub.tech"
 - **로컬 TOTP 미적용 (D-2):** 로컬 계정의 TOTP(2FA)는 초기 도입 범위에 포함하지 않는다.
 - **SOPS `.env` 셸 호환성 (D-5, D-9):** `deploy.sh`와 `healthcheck.sh`가 `.env`를 `set -u` 상태로 source하므로 bcrypt 해시 등 `$` 문자를 포함한 값은 `.env`에서 반드시 작은따옴표(`'...'`)로 감싼다.
 - **nginx `--no-deps` 템플릿 호환 (D-1):** `/tinyauth` 및 `auth` 업스트림은 `resolver 127.0.0.11`과 변수 `proxy_pass`를 사용해 `tinyauth` 컨테이너 없이 실행되는 `nginx -t` 검증을 통과해야 한다.
-- **수용된 트레이드오프 (D-6, D-8, D-11):** (1) `vps_proxy` 내부 컨테이너 간 네트워크 신뢰, (2) 로컬 계정과 Google 로그인 시 Grafana Admin 계정 분리 생성, (3) `portal`로의 상위 도메인 세션 쿠키 전송, (4) 화이트리스트·계정 변경 시 최대 24시간 세션 유지(긴급 회수 시 세션 DB·시크릿 교체로 무효화)를 수용하고 새 ADR Consequences 절에 기록한다.
+- **수용된 트레이드오프 (D-6, D-8, D-11):** (1) `vps_proxy` 내부 컨테이너 간 네트워크 신뢰, (2) 로컬 계정과 Google 로그인 시 Grafana Admin 계정 분리 생성, (3) `portal`로의 상위 도메인 세션 쿠키 전송, (4) 화이트리스트·계정 변경 시 최대 24시간 세션 유지(긴급 회수 시 세션 DB 볼륨 `vps_tinyauth_data` 삭제로 무효화)를 수용하고 새 ADR Consequences 절에 기록한다.
 - **기존 프로젝트 규칙 준수:** `okf/adr/0008`의 `envsubst` 템플릿 구조, `okf/adr/0010`의 SOPS+age 관리, `okf/adr/0016`의 관측 스택 분리 원칙을 따른다.
 
 ## Existing code
@@ -133,7 +133,7 @@ CHALLENGE_DOMAINS="... auth.kkh-hub.tech"
 | `.env.example#BASIC_AUTH_HTPASSWD` | modify | `BASIC_AUTH_HTPASSWD` 제거 및 Tinyauth 예시 변수 추가 | D-5 |
 | `INFRA.md#basic-auth.htpasswd` | modify | Basic Auth secret 참조를 Tinyauth `.env` 구조로 갱신 | D-5 |
 | `scripts/deploy.sh#CHALLENGE_DOMAINS` | reuse | `CHALLENGE_DOMAINS` 기반 certbot `--expand` 경로 그대로 사용 | D-3 |
-| `scripts/deploy.sh#TLS_MODE` | modify | `BASIC_AUTH_HTPASSWD` 가드를 Tinyauth 시크릿·기본값·화이트리스트 및 따옴표 없는 `$` 가드로 교체 | D-5, D-9, D-10 |
+| `scripts/deploy.sh#TLS_MODE` | modify | `BASIC_AUTH_HTPASSWD` 가드를 빈 `TINYAUTH_AUTH_USERS`·로컬 테스트 계정·빈 화이트리스트 및 따옴표 없는 `$` 가드로 교체 | D-5, D-9, D-10 |
 | `scripts/test-routing.sh#check` | modify | `curl --resolve` 기반 미인증(302)·로그인 쿠키 발급·보호 경로/정적 자산/Grafana 통과 검증 | D-9 |
 | `scripts/healthcheck.sh#check_public_route` | modify | `auth.${BASE_DOMAIN}` 공개 헬스, `grafana:3000/api/health` 내부 헬스, 보호 라우트 `302` 검증 추가 | D-7 |
 | `okf/services/nginx.md#개요` | modify | 라우팅 목록(`auth`)과 인증 방식(Tinyauth) 갱신 | D-11 |
@@ -145,7 +145,7 @@ CHALLENGE_DOMAINS="... auth.kkh-hub.tech"
 - **nginx 템플릿 문법 검증** (`example`), AC-1, AC-5, AC-9: `./scripts/test-nginx-templates.sh`로 `none`/`live` 양 모드 렌더링과 `nginx -t`를 검증한다. 놓치는 것: 런타임 쿠키·백엔드 연동.
 - **SOPS 무결성 검증** (`example`), AC-8: `./scripts/check-sops.sh` 및 `scripts/secrets.sh decrypt`로 단일화된 `.env` 복호화와 평문 미추적을 검증한다. 놓치는 것: 실제 운영 키 유무.
 - **로컬 라우팅·쿠키 E2E 검증** (`e2e`), AC-1, AC-2, AC-3, AC-5, AC-6, AC-7, AC-9, AC-12: `TLS_MODE=none`으로 스택 기동 후 `curl --resolve` 기반 `scripts/test-routing.sh`로 보호 4곳 미인증 `302`, `/tinyauth` 외부 접근 차단(`404`/내부 전용), `X-Forwarded-Host`·`Remote-User` 스푸핑 차단, `health` 쿠키 미반사, 로컬 로그인 쿠키로 `erd`·`notes`·`info`·`grafana` 통과 및 재기동 후 세션 유지를 검증한다. 놓치는 것: Google OAuth 실연동.
-- **배포 가드·헬스체크 검증** (`example`), AC-10, AC-11: `deploy.sh`에 잘못된 `.env`(테스트 기본값, 빈 시크릿, 빈 화이트리스트, 따옴표 없는 `$`)를 넣은 실패 케이스와 정상 `healthcheck.sh` 실행(`auth` 공개 헬스, 내부 `grafana:3000/api/health`, 보호 라우트 `302`)으로 검증한다. 놓치는 것: 실제 Let's Encrypt 서버 발급.
+- **배포 가드·헬스체크 검증** (`example`), AC-10, AC-11: `deploy.sh`에 잘못된 `.env`(빈 `TINYAUTH_AUTH_USERS`, 로컬 테스트 계정, 빈 화이트리스트, 따옴표 없는 `$`)를 넣은 실패 케이스와 정상 `healthcheck.sh` 실행(`auth` 공개 헬스, 내부 `grafana:3000/api/health`, 보호 라우트 `302`)으로 검증한다. 놓치는 것: 실제 Let's Encrypt 서버 발급.
 - **Google OAuth 및 운영 배포 수동 검증** (`manual`), AC-3, AC-4, AC-10, AC-11: 운영 VPS 배포 후 브라우저에서 `auth.kkh-hub.tech` Google OAuth 화이트리스트 허용 계정 성공 및 비허용 계정 거부를 확인하고 `evidence.md`에 기록한다.
 - **OKF strict validation** (`example`), AC-13: OKF validator를 실행해 새 ADR(`0022-...`)과 갱신된 OKF 문서의 strict validation 통과를 검증한다.
 
