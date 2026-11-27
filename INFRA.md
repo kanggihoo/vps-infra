@@ -24,7 +24,11 @@
 |--------|------|-----------|------|
 | `health.kkh-hub.tech` | whoami | `http://whoami:80` | 없음 |
 | `portal.kkh-hub.tech` | portal | `http://portal:8080` | 없음 |
-| `notes.kkh-hub.tech` | nginx 정적 파일 | `/var/www/notes` | Basic Auth |
+| `auth.kkh-hub.tech` | Tinyauth 로그인 포털 | `http://tinyauth:3000` | 없음 |
+| `notes.kkh-hub.tech` | nginx 정적 파일 | `/var/www/notes` | Tinyauth SSO |
+| `erd.kkh-hub.tech` | nginx 정적 파일 | `/var/www/erd` | Tinyauth SSO |
+| `info.kkh-hub.tech` | vps-info | `http://vps-info-app:8000` | Tinyauth SSO |
+| `grafana.kkh-hub.tech` | Grafana | `http://grafana:3000` | Tinyauth SSO (Auth Proxy) |
 | `kkh-hub.tech` | nginx | HTTP에서 HTTPS로 redirect | 없음 |
 
 PostgreSQL과 Redis는 `vps_data`에만 연결되며 host port를 publish하지 않는다.
@@ -120,13 +124,15 @@ docker compose exec nginx nginx -t
 ```text
 secrets/env.local.sops.env
 secrets/env.prod.sops.env
-secrets/basic-auth.htpasswd.sops.txt
 ```
+
+Tinyauth 계정(`TINYAUTH_AUTH_USERS`), Google OAuth client와 허용 이메일(`TINYAUTH_OAUTH_*`)도 이 `.env`에 있다.
+bcrypt 해시처럼 `$`가 든 값은 작은따옴표로 감싼다([ADR 0022](okf/adr/0022-tinyauth-sso.md)).
 
 - SOPS: 암호화·복호화 관리 도구
 - age: 복호화 key backend
 - age private key: `~/.config/sops/age/keys.txt`에만 보관
-- 복호화 결과: `.env`, `secrets/basic-auth.htpasswd` 등 Gitignored 파일
+- 복호화 결과: `.env` (Gitignored)
 
 ```bash
 HOST_UID=$(id -u) HOST_GID=$(id -g) \

@@ -5,7 +5,7 @@
 # erd-site 볼륨의 /<프로젝트>/ 에 넣고, nginx가 파일을 직접 읽어 응답한다.
 # 파일은 요청마다 디스크에서 읽으므로 산출물이 바뀌어도 nginx reload가 필요 없다.
 #
-# 스키마는 DB 구조를 그대로 보여주므로 공용 Basic Auth를 건다.
+# 스키마는 DB 구조를 그대로 보여주므로 Tinyauth SSO로 보호한다(snippets/tinyauth.conf).
 # ============================================================
 
 server {
@@ -16,8 +16,7 @@ server {
 
     root /var/www/erd;
 
-    auth_basic           "ERD";
-    auth_basic_user_file /etc/nginx/basic-auth.htpasswd;
+    include /etc/nginx/conf.d/snippets/tinyauth.conf;
 
     # 루트에서는 배포된 프로젝트 폴더 목록을 보여준다.
     location = / {

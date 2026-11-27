@@ -24,7 +24,7 @@ services:
     environment:
       # nginx 공식 이미지 entrypoint가 기동 시 templates/*.template을
       # envsubst로 치환해 /etc/nginx/conf.d/에 쓴다. 새 의존성이 없다.
-      BASE_DOMAIN: ${BASE_DOMAIN:-localhost}
+      BASE_DOMAIN: ${BASE_DOMAIN:-vps.localhost}
       NGINX_LISTEN: ${NGINX_LISTEN:-80}
       # none = 빈 파일(로컬), live = 인증서 경로(VPS)
       TLS_MODE: ${TLS_MODE:-none}
@@ -40,27 +40,50 @@ services:
       - quartz-site:/var/www/notes:ro
       # Liam ERD 산출물. 각 프로젝트의 배포 스크립트가 /<프로젝트>/ 폴더에 채운다(vps-info는 scripts/erd.sh).
       - erd-site:/var/www/erd:ro
-      # Basic Auth 사용자 파일.
-      #
-      # 기본값이 공개 fixture(test/test)인 이유: 이 경로에 파일이 없으면
-      # Docker가 디렉터리를 만들고 nginx가 auth_basic_user_file 오류로 죽는다.
-      # 즉 clean clone에서 `up`이 실패해 로컬 검증을 시작할 수 없다.
-      #
-      # 실제 secret을 쓰려면 SOPS로 복호화한 뒤 이 변수를 덮어쓴다(단계 3):
-      #   BASIC_AUTH_HTPASSWD=./secrets/basic-auth.htpasswd
-      - ${BASIC_AUTH_HTPASSWD:-./nginx/test-fixtures/basic-auth.htpasswd}:/etc/nginx/basic-auth.htpasswd:ro
     networks:
       proxy:
         # 컨테이너는 VPS의 공개 IP로 자기 자신(nginx)에 붙지 못한다(hairpin, 2026-10-08 확인).
         # 공개 이름을 nginx의 내부 alias로 두면 같은 네트워크의 컨테이너가 실제 인증서와
         # SNI로 nginx를 거친다. Alloy의 서브도메인 probe가 이 경로를 쓴다(ADR 0016).
         aliases:
-          - health.${BASE_DOMAIN:-localhost}
-          - portal.${BASE_DOMAIN:-localhost}
-          - grafana.${BASE_DOMAIN:-localhost}
+          - health.${BASE_DOMAIN:-vps.localhost}
+          - portal.${BASE_DOMAIN:-vps.localhost}
+          - grafana.${BASE_DOMAIN:-vps.localhost}
+          - auth.${BASE_DOMAIN:-vps.localhost}
     depends_on:
       - whoami
       - portal
+      - tinyauth
+
+  # Tinyauth: 보호 서브도메인(erd, notes, info, grafana)의 SSO 게이트웨이.
+  # nginx가 요청마다 /api/auth/nginx로 인증을 묻고, 로그인 화면은 auth.<도메인>이다.
+  # 값은 모두 .env(SOPS)에서 온다. bcrypt 해시처럼 $가 든 값은 .env에서 작은따옴표로 감싼다.
+  # docker.sock은 마운트하지 않는다. 모든 보호 대상이 같은 허용 목록을 쓴다(label ACL 없음).
+  tinyauth:
+    image: ghcr.io/tinyauthapp/tinyauth:v5.2.0
+    container_name: vps-tinyauth
+    restart: unless-stopped
+    environment:
+      TINYAUTH_APPURL: ${TINYAUTH_APPURL:-http://auth.vps.localhost}
+      # user:bcrypt 쉼표 구분. 로컬은 test 계정, live 배포는 deploy.sh가 test 계정을 거부한다.
+      TINYAUTH_AUTH_USERS: ${TINYAUTH_AUTH_USERS:?TINYAUTH_AUTH_USERS is required}
+      # 24시간(초). spec D-8로 고정한 값이며 .env 계약에 포함된다.
+      TINYAUTH_AUTH_SESSIONEXPIRY: ${TINYAUTH_AUTH_SESSIONEXPIRY:-86400}
+      # VPS(https)에서만 true. 로컬(http)에서 true면 쿠키가 전송되지 않는다.
+      TINYAUTH_AUTH_SECURECOOKIE: ${TINYAUTH_AUTH_SECURECOOKIE:-false}
+      # 클라이언트 IP를 nginx가 준 X-Forwarded-For로 읽는다. Docker 내부망만 신뢰한다.
+      TINYAUTH_AUTH_TRUSTEDPROXIES: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+      # 비어 있으면 모든 Google 계정이 통과한다. deploy.sh가 빈 값을 거부한다.
+      TINYAUTH_OAUTH_WHITELIST: ${TINYAUTH_OAUTH_WHITELIST:-}
+      TINYAUTH_OAUTH_PROVIDERS_GOOGLE_CLIENTID: ${TINYAUTH_OAUTH_PROVIDERS_GOOGLE_CLIENTID:-}
+      TINYAUTH_OAUTH_PROVIDERS_GOOGLE_CLIENTSECRET: ${TINYAUTH_OAUTH_PROVIDERS_GOOGLE_CLIENTSECRET:-}
+      TINYAUTH_ANALYTICS_ENABLED: "false"
+    volumes:
+      # 세션 DB(SQLite, /data/tinyauth.db). 재배포해도 24시간 세션이 유지된다.
+      # 모든 세션을 즉시 끊으려면 이 볼륨을 지우고 다시 띄운다.
+      - tinyauth-data:/data
+    networks:
+      - proxy
 
   certbot:
     # 태그를 생략하면 latest이므로 명시적으로 고정한다.
@@ -182,3 +205,6 @@ volumes:
   # Liam ERD 산출물. 프로젝트 배포 스크립트가 `-v vps_erd_site:/out`으로 채운다(vps-info는 scripts/erd.sh).
   erd-site:
     name: vps_erd_site
+  # Tinyauth 세션 DB.
+  tinyauth-data:
+    name: vps_tinyauth_data

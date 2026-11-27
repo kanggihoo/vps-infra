@@ -1,56 +1,63 @@
 #!/usr/bin/env bash
 # seam 2 검증. 기동된 스택에 실제 HTTP 요청을 보내 상태 코드와 본문을 본다.
 #
-# 렌더된 conf를 검사하지 않는 이유: 200 응답 하나가 템플릿 렌더·라우팅·
+# 렌더된 conf를 검사하지 않는 이유: 응답 하나가 템플릿 렌더·라우팅·
 # 네트워크 연결을 동시에 증명한다. conf 내용을 diff하면 구현을 바꿀 때마다 깨진다.
 #
-# 전제: docker compose up -d 가 이미 완료된 상태.
-#   BASE_URL 로 대상 변경 가능 (기본 http://127.0.0.1)
+# 전제: docker compose up -d 가 이미 완료된 상태. 관측 스택(grafana)도 떠 있어야 한다.
+#   docker compose -f observability/compose.yml --env-file .env up -d
 #
-# notes 자격증명은 환경변수로 받는다. 기본값은 공개 fixture(test/test)이며,
-# 실제 secret(secrets/basic-auth.htpasswd)을 마운트한 상태에서 검증하려면
-# NOTES_USER / NOTES_PASS 를 넘긴다. 하드코딩하면 secret을 바꾼 뒤 깨진다.
+# 요청은 실제 호스트명으로 보내고 curl --resolve로 연결 IP만 바꾼다. 쿠키가 도메인 규칙대로
+# 저장·전송되어야 브라우저와 같은 SSO 경로를 검증할 수 있다(Host 헤더 방식은 쿠키 jar가 IP에 묶인다).
+#   SCHEME       http(기본, 로컬) | https(VPS)
+#   CONNECT_IP   127.0.0.1(기본)
+#   BASE_DOMAIN  vps.localhost(기본)
+#   AUTH_USER / AUTH_PASS  Tinyauth 로컬 계정. 기본값은 공개 테스트 계정(test/test)
 set -euo pipefail
 
-base_url="${BASE_URL:-http://127.0.0.1}"
-base_domain="${BASE_DOMAIN:-localhost}"
-notes_user="${NOTES_USER:-test}"
-notes_pass="${NOTES_PASS:-test}"
+cd "$(dirname "$0")/.."
 
-# 스킴에 따라 요청 방식이 다르다.
-#   http  (로컬): IP로 접속하고 Host 헤더로 서브도메인을 지정한다.
-#                 로컬은 인증서가 없으므로 이 방식이 필요하다.
-#   https (VPS):  호스트명으로 직접 접속한다. IP+Host 헤더로는 SNI가
-#                 인증서 이름과 맞지 않아 TLS 핸드셰이크가 실패한다(코드 000).
-scheme="${base_url%%://*}"
+scheme="${SCHEME:-http}"
+connect_ip="${CONNECT_IP:-127.0.0.1}"
+base_domain="${BASE_DOMAIN:-vps.localhost}"
+auth_user="${AUTH_USER:-test}"
+auth_pass="${AUTH_PASS:-test}"
+port=80
+[ "$scheme" = https ] && port=443
 
-# 요청 인자를 스킴에 맞게 만든다. 호출부는 항상 전체 호스트명을 넘긴다.
-# 결과를 전역 REQ 배열에 담는다(bash 3.2 호환을 위해 반환값 대신 전역 사용).
-build_req() {
-  local host="$1" path="$2"
-  if [ "$scheme" = "https" ]; then
-    REQ=("https://${host}${path}")
-  else
-    REQ=(-H "Host: ${host}" "${base_url}${path}")
-  fi
-}
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+jar="$work/cookies.txt"
 
 fail=0
+ok()  { echo "ok   - $*"; }
+bad() { echo "FAIL - $*" >&2; fail=1; }
 
-# check <설명> <호스트명> <경로> <기대 상태코드> [curl 추가인자...]
+# req <호스트명> <경로> [curl 추가인자...]  응답 본문을 stdout으로 낸다.
+req() {
+  local host="$1" path="$2"
+  shift 2
+  curl -s --connect-timeout 5 --max-time 15 \
+    --resolve "${host}:${port}:${connect_ip}" "$@" "${scheme}://${host}${path}" || true
+}
+
+# code <호스트명> <경로> [curl 추가인자...]  "<상태코드> <Location>"
+code() {
+  local host="$1" path="$2"
+  shift 2
+  req "$host" "$path" -o /dev/null -w '%{http_code} %{redirect_url}' "$@"
+}
+
+# check <설명> <호스트명> <경로> <기대 상태코드 정규식> [curl 추가인자...]
 check() {
   local desc="$1" host="$2" path="$3" want="$4"
   shift 4
-  build_req "$host" "$path"
   local got
-  got="$(curl -s -o /dev/null -w '%{http_code}' \
-    --connect-timeout 5 --max-time 15 \
-    "$@" "${REQ[@]}" || true)"
-  if [ "$got" = "$want" ]; then
-    echo "ok   - $desc ($host$path -> $got)"
+  got="$(code "$host" "$path" "$@")"
+  if [[ "${got%% *}" =~ ^(${want})$ ]]; then
+    ok "$desc ($host$path -> ${got%% *})"
   else
-    echo "FAIL - $desc: $host$path want $want, got $got" >&2
-    fail=1
+    bad "$desc: $host$path want $want, got ${got%% *}"
   fi
 }
 
@@ -58,94 +65,159 @@ check() {
 body_contains() {
   local desc="$1" host="$2" path="$3" want="$4"
   shift 4
-  build_req "$host" "$path"
-  local body
-  body="$(curl -s --connect-timeout 5 --max-time 15 \
-    "$@" "${REQ[@]}" || true)"
-  if printf '%s' "$body" | grep -q "$want"; then
-    echo "ok   - $desc"
+  if req "$host" "$path" "$@" | grep -qF -- "$want"; then
+    ok "$desc"
   else
-    echo "FAIL - $desc: '$want' not found in response body" >&2
-    fail=1
+    bad "$desc: '$want' not found in response body"
   fi
 }
 
-echo "--- 로컬 HTTP 기동 확인 (TLS 모드 분기) ---"
-# 인증서 없이 80에서 응답하면 TLS_MODE=none 분기가 동작한 것이다.
-check "portal이 HTTP 80에서 응답" "portal.${base_domain}" / 200
+# login_redirect <설명> <호스트명> <경로> [curl 추가인자...]
+#   미인증 요청이 auth 로그인 URL로 302 되는지. redirect_uri가 원래 주소를 담는지도 본다.
+login_redirect() {
+  local desc="$1" host="$2" path="$3"
+  shift 3
+  local got want="302 ${scheme}://auth.${base_domain}/login?redirect_uri=${scheme}://${host}${path}"
+  got="$(code "$host" "$path" "$@")"
+  if [ "$got" = "$want" ]; then
+    ok "$desc ($host$path -> 302 login)"
+  else
+    bad "$desc: $host$path want '$want', got '$got'"
+  fi
+}
 
-echo "--- 서브도메인 라우팅 ---"
+# Sec-WebSocket-Key는 매 요청 무작위 16바이트(base64)다. 고정 문자열을 두면 gitleaks가 API key로 오인한다.
+ws=(-H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: $(openssl rand -base64 16)")
+
+echo "--- probe 파일 준비 ---"
+# nginx는 정적 볼륨을 :ro로 마운트하므로 쓰기는 별도 컨테이너로 한다.
+docker run --rm -v "${QUARTZ_VOLUME:-vps_quartz_site}":/w alpine:3.24 \
+  sh -c 'echo "<h1>note body</h1>" > /w/probe.html && echo "body{}" > /w/probe.css && echo "<h1>quartz 404</h1>" > /w/404.html' >/dev/null
+docker run --rm -v "${ERD_VOLUME:-vps_erd_site}":/w alpine:3.24 \
+  sh -c 'mkdir -p /w/probe && echo "<h1>erd body</h1>" > /w/probe/index.html && echo "{\"tables\":{}}" > /w/probe/schema.json' >/dev/null
+
+echo "--- 공개 서브도메인 ---"
+check "portal은 인증 없이 200" "portal.${base_domain}" / 200
 check "health -> whoami" "health.${base_domain}" / 200
 body_contains "whoami 응답 본문 확인" "health.${base_domain}" / "Hostname"
-check "portal -> portal:8080" "portal.${base_domain}" / 200
+check "auth 로그인 포털은 인증 없이 200" "auth.${base_domain}" / 200
 # 등록 안 된 Host는 444(응답 없이 끊김)라 curl은 000을 본다.
 check "등록 안 된 Host는 연결을 끊는다" "unknown.invalid" / 000
 
-echo "--- Basic Auth ---"
-# 자격증명 없이 401이어야 한다. 200이면 인증이 빠진 것.
-check "notes 인증 없이 401" "notes.${base_domain}" / 401
-# 틀린 비밀번호도 401이어야 한다. 여기서 500이 나오면 nginx가 htpasswd 파일을
-# 읽지 못하는 것이다(파일 권한 600 + nginx 워커가 비-root인 경우).
-# 401과 500을 구분하지 않으면 이 권한 문제가 테스트를 통과해버린다.
-check "notes 틀린 비밀번호도 401" "notes.${base_domain}" / 401 -u "${notes_user}:definitely-wrong"
-# 올바른 자격증명으로는 통과해야 한다.
-# 콘텐츠가 없으면 404, 있으면 200 — 둘 다 인증 통과를 뜻한다.
-build_req "notes.${base_domain}" "/"
-got="$(curl -s -o /dev/null -w '%{http_code}' \
-  --connect-timeout 5 --max-time 15 \
-  -u "${notes_user}:${notes_pass}" "${REQ[@]}" || echo 000)"
-if [ "$got" = "200" ] || [ "$got" = "404" ]; then
-  echo "ok   - notes 올바른 자격증명으로 인증 통과 ($got)"
+echo "--- 미인증 요청은 어떤 경로도 200이 아니라 로그인으로 302 ---"
+login_redirect "erd 루트" "erd.${base_domain}" /
+login_redirect "erd 하위 경로" "erd.${base_domain}" /probe/
+login_redirect "erd 정적 자산(json)" "erd.${base_domain}" /probe/schema.json
+login_redirect "notes 루트" "notes.${base_domain}" /
+login_redirect "notes 노트" "notes.${base_domain}" /probe
+login_redirect "notes 정적 자산(css)" "notes.${base_domain}" /probe.css
+login_redirect "notes /404.html" "notes.${base_domain}" /404.html
+login_redirect "notes 없는 경로(404 페이지)" "notes.${base_domain}" /no-such-note
+login_redirect "info 루트" "info.${base_domain}" /
+login_redirect "grafana 루트" "grafana.${base_domain}" /
+login_redirect "grafana /api/health" "grafana.${base_domain}" /api/health
+login_redirect "grafana /api/live/ WebSocket" "grafana.${base_domain}" /api/live/ws "${ws[@]}"
+
+echo "--- 헤더 위조로 우회할 수 없다 ---"
+# nginx가 X-Forwarded-Host를 $host로 덮어쓰므로, 공개 서브도메인인 척해도 erd 인증을 묻는다.
+login_redirect "X-Forwarded-Host 위조는 무시된다" "erd.${base_domain}" /probe/ \
+  -H "X-Forwarded-Host: portal.${base_domain}" -H "X-Forwarded-Uri: /"
+# Grafana는 Remote-User를 믿는다. 미인증 요청이 보낸 Remote-User/Authorization으로는 들어갈 수 없다.
+login_redirect "Remote-User 위조는 인증을 대신하지 못한다" "grafana.${base_domain}" /api/user \
+  -H "Remote-User: admin"
+login_redirect "Grafana Basic Auth 헤더는 인증을 대신하지 못한다" "grafana.${base_domain}" /api/user \
+  -u "admin:${GRAFANA_ADMIN_PASSWORD:-x}"
+# /tinyauth는 internal이다. 외부에서 직접 부르면 200이 아니어야 한다(404 -> notes는 404 페이지도 인증 뒤).
+for h in erd notes info grafana; do
+  check "$h /tinyauth 외부 직접 호출 차단" "$h.${base_domain}" /tinyauth "404|302"
+done
+
+echo "--- 로컬 계정 로그인 -> 쿠키 세션 ---"
+login_headers="$(req "auth.${base_domain}" /api/user/login -D - -o /dev/null -c "$jar" \
+  -H 'Content-Type: application/json' \
+  --data "{\"username\":\"${auth_user}\",\"password\":\"${auth_pass}\"}")"
+cookie_line="$(printf '%s' "$login_headers" | grep -i '^set-cookie: tinyauth-session' || true)"
+if [ -n "$cookie_line" ]; then
+  ok "로그인 성공, 세션 쿠키 발급"
 else
-  echo "FAIL - notes 자격증명 통과 실패: got $got" >&2
-  fail=1
+  bad "로그인 실패: Set-Cookie tinyauth-session 없음"
+fi
+# 쿠키는 상위 도메인에 걸려야 다른 서브도메인으로 전송된다.
+if printf '%s' "$cookie_line" | grep -qiF "Domain=${base_domain};"; then
+  ok "세션 쿠키 Domain=${base_domain}"
+else
+  bad "세션 쿠키 Domain이 ${base_domain}이 아니다: $cookie_line"
+fi
+# 24시간(86400초). 발급 시각과의 반올림으로 86399가 올 수 있다.
+if printf '%s' "$cookie_line" | grep -qE 'Max-Age=(86400|86399);'; then
+  ok "세션 쿠키 Max-Age 24시간"
+else
+  bad "세션 쿠키 Max-Age가 24시간이 아니다: $cookie_line"
+fi
+bad_login="$(code "auth.${base_domain}" /api/user/login -H 'Content-Type: application/json' \
+  --data "{\"username\":\"${auth_user}\",\"password\":\"definitely-wrong\"}")"
+if [ "${bad_login%% *}" = 401 ]; then
+  ok "틀린 비밀번호는 401"
+else
+  bad "틀린 비밀번호: want 401, got ${bad_login%% *}"
 fi
 
-echo "--- 정적 사이트 try_files ---"
-# 확장자 없는 경로가 .html로 해석되는지. probe 파일을 볼륨에 넣어 확인한다.
-# nginx는 /var/www/notes를 :ro로 마운트하므로 쓰기는 별도 컨테이너로 한다.
-docker run --rm -v "${QUARTZ_VOLUME:-vps_quartz_site}":/w alpine:3.24 \
-  sh -c 'echo "<h1>note body</h1>" > /w/probe.html' >/dev/null 2>&1 || true
-# Basic Auth가 걸려 있으므로 자격증명을 함께 보낸다.
-body_contains "확장자 없는 /probe가 probe.html로 해석" \
-  "notes.${base_domain}" "/probe" "note body" -u "${notes_user}:${notes_pass}"
+authed_checks() {
+  local tag="$1"
+  body_contains "[$tag] erd /probe/ 가 index.html 서빙" "erd.${base_domain}" /probe/ "erd body" -b "$jar"
+  body_contains "[$tag] erd /probe/schema.json 서빙" "erd.${base_domain}" /probe/schema.json "tables" -b "$jar"
+  check "[$tag] erd /probe 는 /probe/ 로 redirect" "erd.${base_domain}" /probe 301 -b "$jar"
+  body_contains "[$tag] notes 확장자 없는 /probe가 probe.html로 해석" "notes.${base_domain}" /probe "note body" -b "$jar"
+  check "[$tag] notes 정적 자산" "notes.${base_domain}" /probe.css 200 -b "$jar"
+  body_contains "[$tag] notes 없는 경로는 Quartz 404 페이지" "notes.${base_domain}" /no-such-note "quartz 404" -b "$jar"
+  # vps-info는 자기 레포 compose로 뜬다. 없으면 502이고, 이것도 인증을 통과해 백엔드까지 갔다는 뜻이다.
+  check "[$tag] info 인증 통과" "info.${base_domain}" / "200|502" -b "$jar"
+  check "[$tag] grafana 인증 통과" "grafana.${base_domain}" / 200 -b "$jar"
+  # 로그인 상태에서도 /tinyauth는 internal이라 404다. internal;이 빠지면 Tinyauth 응답(200)이 그대로 나간다.
+  # 미인증 호출은 auth_request가 먼저 302로 막으므로 internal;은 로그인 상태에서만 드러난다.
+  for h in erd notes info grafana; do
+    check "[$tag] $h /tinyauth는 로그인 상태에서도 404" "$h.${base_domain}" /tinyauth 404 -b "$jar"
+  done
+}
 
-echo "--- ERD 정적 서빙 (하위 경로) ---"
-# erd-site 볼륨에 /probe 프로젝트 폴더를 만들고 Liam 산출물과 같은 모양(index.html, schema.json)을 넣는다.
-docker run --rm -v "${ERD_VOLUME:-vps_erd_site}":/w alpine:3.24 \
-  sh -c 'mkdir -p /w/probe && echo "<h1>erd body</h1>" > /w/probe/index.html && echo "{\"tables\":{}}" > /w/probe/schema.json' >/dev/null 2>&1 || true
-check "erd 인증 없이 401" "erd.${base_domain}" /probe/ 401
-body_contains "erd /probe/ 가 index.html 서빙" \
-  "erd.${base_domain}" "/probe/" "erd body" -u "${notes_user}:${notes_pass}"
-body_contains "erd /probe/schema.json 서빙" \
-  "erd.${base_domain}" "/probe/schema.json" "tables" -u "${notes_user}:${notes_pass}"
-# 슬래시 없는 경로는 nginx가 슬래시를 붙여 redirect한다.
-check "erd /probe 는 /probe/ 로 redirect" "erd.${base_domain}" /probe 301 -u "${notes_user}:${notes_pass}"
-# 파일명이 고정인 json은 캐시되면 갱신이 안 보인다.
-build_req "erd.${base_domain}" "/probe/schema.json"
-if curl -sI --connect-timeout 5 --max-time 15 -u "${notes_user}:${notes_pass}" "${REQ[@]}" \
-   | grep -qi '^cache-control: no-cache'; then
-  echo "ok   - erd schema.json은 no-cache"
+echo "--- 같은 쿠키로 보호 대상 4곳 통과 ---"
+authed_checks "로그인"
+if cache_headers="$(req "erd.${base_domain}" /probe/schema.json -I -b "$jar")" &&
+   printf '%s' "$cache_headers" | grep -qi '^cache-control: no-cache'; then
+  ok "erd schema.json은 no-cache"
 else
-  echo "FAIL - erd schema.json에 Cache-Control: no-cache가 없다" >&2
-  fail=1
+  bad "erd schema.json에 Cache-Control: no-cache가 없다"
 fi
 
-echo "--- 별도 compose 프로젝트 라우팅 ---"
-# grafana는 observability/compose.yml이 띄우므로 이 스택만으로는 없을 수 있다.
-# 어느 쪽이든 "nginx가 기동되어 이 server 블록을 처리한다"가 증명되어야 한다.
-#   502 = 관측 스택 미기동 (upstream 해석 실패 -> 변수+resolver가 동작한 것)
-#   200/302 = 관측 스택 기동 (루트는 /login으로 302)
-# 여기서 000(연결 실패)이나 404가 나오면 라우팅이 깨진 것이다.
-build_req "grafana.${base_domain}" "/"
-got="$(curl -s -o /dev/null -w '%{http_code}' \
-  --connect-timeout 5 --max-time 15 \
-  "${REQ[@]}" || echo 000)"
-case "$got" in
-  502) echo "ok   - 관측 스택 미기동 상태에서 nginx는 정상 기동하고 502를 준다 ($got)" ;;
-  200|302) echo "ok   - grafana로 라우팅된다 ($got)" ;;
-  *) echo "FAIL - grafana 라우팅 실패: got $got (502 또는 200/302 기대)" >&2; fail=1 ;;
-esac
+echo "--- Grafana Auth Proxy ---"
+# Grafana가 보는 사용자는 Tinyauth가 정한 사람이다. 클라이언트가 보낸 Remote-User는 덮어써진다.
+body_contains "Grafana 사용자는 Tinyauth 로그인 사용자" "grafana.${base_domain}" /api/user "\"login\":\"${auth_user}\"" \
+  -b "$jar" -H "Remote-User: admin"
+body_contains "Grafana 자동 가입 사용자는 Admin" "grafana.${base_domain}" /api/user/orgs '"role":"Admin"' -b "$jar"
+# Authorization을 nginx가 비우므로 admin 비밀번호를 보내도 admin이 되지 않는다.
+body_contains "Grafana Authorization 헤더는 비워진다" "grafana.${base_domain}" /api/user "\"login\":\"${auth_user}\"" \
+  -b "$jar" -u "admin:${GRAFANA_ADMIN_PASSWORD:-x}"
+check "grafana /api/live/ WebSocket 인증 통과" "grafana.${base_domain}" /api/live/ws 101 -b "$jar" "${ws[@]}" --max-time 3
+
+echo "--- health는 세션 쿠키를 반사하지 않는다 ---"
+health_body="$(req "health.${base_domain}" / -b "$jar")"
+if printf '%s' "$health_body" | grep -q "Hostname" && ! printf '%s' "$health_body" | grep -qi 'tinyauth-session'; then
+  ok "whoami 본문에 세션 쿠키가 없다"
+else
+  bad "whoami 본문에 세션 쿠키가 반사되었다(또는 응답 없음)"
+fi
+
+# 세션 DB가 named volume에 있으므로 컨테이너를 다시 만들어도 같은 쿠키가 유효해야 한다.
+# 운영 컨테이너를 재생성하지 않도록 로컬(http)에서만 실행한다.
+if [ "$scheme" = http ]; then
+  echo "--- tinyauth 재생성 후 세션 유지 ---"
+  docker compose up -d --force-recreate --no-deps tinyauth >/dev/null 2>&1
+  for _ in $(seq 1 20); do
+    [ "$(code "auth.${base_domain}" / | cut -d' ' -f1)" = 200 ] && break
+    sleep 1
+  done
+  authed_checks "재생성 후"
+fi
 
 if [ "$fail" -ne 0 ]; then
   echo "seam 2: FAILED" >&2

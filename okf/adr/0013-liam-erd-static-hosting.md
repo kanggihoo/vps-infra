@@ -3,13 +3,15 @@ type: Decision
 title: DB 스키마 ERD를 Liam으로 빌드해 nginx에서 정적으로 서빙한다
 description: 각 프로젝트의 Jenkins job이 Liam ERD를 빌드해 erd-site 볼륨에 넣고, nginx가 erd 서브도메인의 하위 경로로 Basic Auth 뒤에서 서빙한다.
 tags: [erd, liam, nginx, jenkins, static]
-timestamp: 2026-09-30T00:00:00+09:00
+timestamp: 2026-11-27T00:00:00+09:00
 ---
 
 # 상태
 
 **빌드 주체만 바뀜.** vps-info는 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md) 이후 Jenkins stage가 아니라
 배포 스크립트(`scripts/deploy.sh` → `scripts/erd.sh`)가 ERD를 만든다. 산출물 위치(`vps_erd_site:/<프로젝트>/`)와 nginx 서빙은 그대로다.
+
+**인증이 바뀜.** [ADR 0022](/adr/0022-tinyauth-sso.md)로 Basic Auth 대신 Tinyauth SSO 뒤에서 서빙한다.
 
 # 결정
 

@@ -2,8 +2,8 @@
 type: Service
 title: ERD 서빙 (Liam ERD)
 description: 프로젝트 DB 스키마의 ER 다이어그램을 erd 서브도메인에서 정적 파일로 제공한다.
-tags: [erd, liam, nginx, static, basic-auth]
-timestamp: 2026-09-30T00:00:00+09:00
+tags: [erd, liam, nginx, static, tinyauth]
+timestamp: 2026-11-27T00:00:00+09:00
 ---
 
 # 개요
@@ -22,7 +22,8 @@ timestamp: 2026-09-30T00:00:00+09:00
 
 # 접근
 
-공용 Basic Auth(`secrets/basic-auth.htpasswd.sops.txt`)를 쓴다. 계정은 `scripts/set-basic-auth.sh`로 바꾼다.
+Tinyauth SSO 뒤에 있다([ADR 0022](/adr/0022-tinyauth-sso.md)). 미인증 요청은 `auth.kkh-hub.tech` 로그인으로 302된다.
+계정은 `secrets/env.prod.sops.env`의 `TINYAUTH_AUTH_USERS`(로컬 계정)와 `TINYAUTH_OAUTH_WHITELIST`(Google 허용 이메일)로 바꾼다.
 
 # 프로젝트 추가
 

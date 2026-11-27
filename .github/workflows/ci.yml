@@ -28,6 +28,10 @@ jobs:
       - name: Run seam 1 (deploy target selection)
         run: ./scripts/test-select-target.sh
 
+      # deploy.sh의 .env 가드(live 계정·화이트리스트, 따옴표 없는 $)를 스택 없이 확인한다.
+      - name: Verify deploy guards
+        run: ./scripts/test-deploy-guards.sh
+
       - name: Run seam 3 (SOPS roundtrip)
         run: |
           docker compose --env-file .env.example \

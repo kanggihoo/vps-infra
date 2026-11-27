@@ -9,7 +9,7 @@
 # "host not found in upstream"으로 실패한다. 문법만 보려면 이름이 해석되어야
 # 하므로 더미 컨테이너를 같은 네트워크에 띄운다. 로컬 스택과 이름이 겹치지
 # 않도록 컨테이너 이름은 따로 두고 upstream 이름은 network alias로 준다.
-# (grafana는 변수+resolver를 쓰므로 기동 시 해석되지 않아도 된다)
+# (grafana, tinyauth는 변수+resolver를 쓰므로 기동 시 해석되지 않아도 된다)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -56,13 +56,12 @@ validate() {
     -v "$PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
     -v "$PWD/nginx/templates:/etc/nginx/templates:ro" \
     -v "$PWD/nginx/tls:/etc/nginx/tls:ro" \
-    -v "$PWD/nginx/test-fixtures/basic-auth.htpasswd:/etc/nginx/basic-auth.htpasswd:ro" \
     -v "$PWD/$CERT_DIR:/etc/letsencrypt:ro" \
     nginx:1.31.4-alpine-otel \
     sh -c '/docker-entrypoint.sh nginx -t'
 }
 
 # 두 모드를 모두 검증한다. 한쪽만 보면 다른 쪽 오타를 놓친다.
-validate localhost 80 none acme-challenge.invalid
+validate vps.localhost 80 none acme-challenge.invalid
 validate kkh-hub.tech "443 ssl" live \
-  "kkh-hub.tech health.kkh-hub.tech portal.kkh-hub.tech notes.kkh-hub.tech"
+  "kkh-hub.tech health.kkh-hub.tech portal.kkh-hub.tech notes.kkh-hub.tech auth.kkh-hub.tech"

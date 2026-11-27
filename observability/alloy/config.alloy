@@ -84,7 +84,7 @@ prometheus.exporter.blackbox "probe" {
   config = "{ modules: { http_2xx: { prober: http, timeout: 5s, http: { preferred_ip_protocol: ip4 } } } }"
 
   // name은 job 라벨이 된다(job="integrations/blackbox/<name>"). 알림 메시지에 이 값이 찍힌다.
-  // PROBE_SCHEME·BASE_DOMAIN은 compose가 루트 .env에서 넣어 준다(로컬 http·localhost, VPS https·kkh-hub.tech).
+  // PROBE_SCHEME·BASE_DOMAIN은 compose가 루트 .env에서 넣어 준다(로컬 http·vps.localhost, VPS https·kkh-hub.tech).
   target {
     name    = "health"
     address = sys.env("PROBE_SCHEME") + "://health." + sys.env("BASE_DOMAIN") + "/"
@@ -97,13 +97,22 @@ prometheus.exporter.blackbox "probe" {
     module  = "http_2xx"
   }
 
+  // Tinyauth 로그인 포털. 공개 서브도메인이라 nginx를 거쳐 200이어야 한다.
   target {
-    name    = "grafana"
-    address = sys.env("PROBE_SCHEME") + "://grafana." + sys.env("BASE_DOMAIN") + "/api/health"
+    name    = "auth"
+    address = sys.env("PROBE_SCHEME") + "://auth." + sys.env("BASE_DOMAIN") + "/"
     module  = "http_2xx"
   }
 
-  // vps-info는 nginx에 Basic Auth가 걸려 있어 공개 이름으로는 항상 401이다.
+  // grafana.<도메인>은 Tinyauth SSO 뒤에 있어 probe는 로그인으로 302를 받는다.
+  // 인증 예외 경로를 두지 않고, Grafana 생존은 vps_proxy 안에서 직접 본다.
+  target {
+    name    = "grafana"
+    address = "http://grafana:3000/api/health"
+    module  = "http_2xx"
+  }
+
+  // vps-info는 nginx에 Tinyauth SSO가 걸려 있어 공개 이름으로는 항상 302다.
   // 그래서 nginx를 건너뛰고 백엔드 health를 vps_proxy 안에서 직접 본다.
   target {
     name    = "vps-info"

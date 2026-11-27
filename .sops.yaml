@@ -27,7 +27,7 @@ creation_rules:
     output_type: dotenv
     age: age1mh8hd0zyjkx53jldewvwf4en9yn0mt96uqhaz3zj8yupemvupp4qv0amj8
 
-  # htpasswd와 PAT는 구조가 없는 텍스트이므로 파일 전체를 암호화한다.
+  # 그 밖의 secrets/ 파일은 구조가 없는 텍스트로 보고 파일 전체를 암호화한다.
   - path_regex: secrets/.*
     input_type: binary
     output_type: binary

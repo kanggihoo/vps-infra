@@ -3,7 +3,7 @@ type: Service
 title: nginx 리버스 프록시
 description: VPS의 public HTTP/HTTPS 진입점.
 tags: [nginx, reverse-proxy, tls, certbot, docker]
-timestamp: 2026-11-20T00:00:00+09:00
+timestamp: 2026-11-27T00:00:00+09:00
 ---
 
 # 개요
@@ -17,14 +17,23 @@ Docker label 기반 동적 라우팅은 없다. 전체 배포는 후보 템플�
 검사한 뒤 nginx를 강제 재생성한다. 템플릿만 바뀌어도 환경변수 치환 결과가 갱신된다.
 완성된 설정은 컨테이너 내부 `/etc/nginx/conf.d/`에 있다.
 
+보호 서브도메인(`erd`, `notes`, `info`, `grafana`)은 [Tinyauth SSO](/adr/0022-tinyauth-sso.md)로 인증한다.
+각 server 블록이 `nginx/templates/snippets/tinyauth.conf.template`(렌더 결과 `/etc/nginx/conf.d/snippets/tinyauth.conf`)를
+include한다. 모든 요청이 `auth_request /tinyauth`로 `tinyauth:3000/api/auth/nginx`에 인증을 묻고, 401이면
+`auth.<도메인>/login?redirect_uri=...`로 302를 준다. `/tinyauth`는 `internal;`이고 `X-Forwarded-Host`는 `$host`로 덮어쓴다.
+세션 쿠키는 상위 도메인에 걸리므로 한 번 로그인하면 4곳을 24시간 동안 다시 묻지 않는다.
+
 # Public Routes
 
 | Hostname | 대상 | conf 파일 |
 |----------|------|-----------|
-| `health.kkh-hub.tech` | [whoami](/services/whoami.md) | `nginx/templates/health.conf.template` |
+| `health.kkh-hub.tech` | [whoami](/services/whoami.md) (공개, `Cookie` 헤더 제거) | `nginx/templates/health.conf.template` |
+| `auth.kkh-hub.tech` | Tinyauth 로그인 포털 (공개) | `nginx/templates/auth.conf.template` |
 | `portal.kkh-hub.tech` | [공용 인프라 포털](/services/portal.md) | `nginx/templates/portal.conf.template` |
-| `erd.kkh-hub.tech` | [ERD 서빙](/services/erd.md) (정적 파일, Basic Auth) | `nginx/templates/erd.conf.template` |
-| `grafana.kkh-hub.tech` | [관측 스택](/services/observability.md) (Grafana 자체 로그인) | `nginx/templates/grafana.conf.template` |
+| `erd.kkh-hub.tech` | [ERD 서빙](/services/erd.md) (정적 파일, Tinyauth SSO) | `nginx/templates/erd.conf.template` |
+| `notes.kkh-hub.tech` | Quartz 정적 사이트 (Tinyauth SSO) | `nginx/templates/notes.conf.template` |
+| `info.kkh-hub.tech` | [vps-info](/services/vps-info.md) (Tinyauth SSO) | `nginx/templates/vps-info.conf.template` |
+| `grafana.kkh-hub.tech` | [관측 스택](/services/observability.md) (Tinyauth SSO, `Remote-User` Auth Proxy) | `nginx/templates/grafana.conf.template` |
 
 Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 (`ssafy.kkh-hub.tech`)은 nginx 전환과 함께 제거했다. SSAFY Workspace Webhook POC 서비스
@@ -58,7 +67,7 @@ default server(444)로 떨어진다. `CHALLENGE_DOMAINS`와 인증서 SAN에서�
 - UptimeRobot과 Alloy blackbox probe 요청은 user agent로 걸러 trace하지 않는다.
 - access log는 Grafana NGINX 연동의 `json_analytics` 포맷이다. 커뮤니티 대시보드가 이 필드 이름을 전제하므로
   원본을 유지하고 `level`(HTTP 상태 기준), `trace_id`, `span_id`만 덧붙인다.
-- `vps_proxy`에서 공개 이름(`health`, `portal`, `grafana`)을 alias로 갖는다. 컨테이너가 공개 IP로
+- `vps_proxy`에서 공개 이름(`health`, `portal`, `grafana`, `auth`)을 alias로 갖는다. 컨테이너가 공개 IP로
   hairpin하지 못하므로 내부 probe가 이 alias로 nginx를 거친다.
 
 # 책임
@@ -67,16 +76,18 @@ default server(444)로 떨어진다. `CHALLENGE_DOMAINS`와 인증서 SAN에서�
 - HTTP -> HTTPS redirect.
 - hostname 기반 라우팅 (`server_name` + 생성된 `conf.d/*.conf`).
 - Grafana WebSocket 연결을 위한 `Upgrade`/`Connection` 헤더 전달(`grafana.conf.template`).
+- 보호 서브도메인의 Tinyauth `auth_request`. Grafana에는 `Remote-User`를 Tinyauth 결과로 덮어쓰고 `Authorization`을 비워 넘긴다.
 
 # 제약
 
 - 다른 서비스는 `80`, `443`을 publish하지 않는다.
 - 인증서(`certbot-etc`)와 webroot(`certbot-www`) volume은 VPS에만 상태로 존재하고
   Git에 커밋하지 않는다.
-- `TLS_MODE=live` 배포는 공개 Basic Auth fixture를 거부한다. `BASIC_AUTH_HTPASSWD`에 SOPS로
-  복호화한 실제 파일을 지정해야 한다.
-- 이전 Traefik 시절 존재하던 dashboard/Basic Auth 보호 대상은 없다. 상태 확인은
-  `health.kkh-hub.tech` 응답과 `docker compose ps`로 대체한다.
+- `TLS_MODE=live` 배포는 빈 `TINYAUTH_AUTH_USERS`, 로컬 테스트 계정(`test`), 빈 `TINYAUTH_OAUTH_WHITELIST`,
+  `.env`의 작은따옴표 없는 `$` 값을 거부한다(`scripts/deploy.sh`).
+- `/tinyauth`와 `auth` upstream은 변수 `proxy_pass`와 `resolver 127.0.0.11`을 쓴다. tinyauth 컨테이너 없이
+  `docker compose run --no-deps nginx nginx -t`가 통과해야 한다.
+- `notes`는 `recursive_error_pages on;`이다. 미인증으로 `/404.html`을 부르면 404 → 401 → 로그인 302로 이어져야 한다.
 
 # 관계
 
