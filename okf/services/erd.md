@@ -10,7 +10,7 @@ timestamp: 2026-11-27T00:00:00+09:00
 
 `erd.kkh-hub.tech/<프로젝트>/`는 각 프로젝트의 Liam ERD 산출물을 보여준다. 서버 프로세스가 없고, nginx가
 `vps_erd_site` volume(컨테이너 안 `/var/www/erd`, read-only)의 파일을 직접 응답한다.
-결정과 이유는 [ADR 0013](/adr/0013-liam-erd-static-hosting.md)에 있다.
+결정과 이유는 [ADR 0013](../../docs/adr/0013-liam-erd-static-hosting.md)에 있다.
 
 # 소유 경계
 
@@ -22,7 +22,7 @@ timestamp: 2026-11-27T00:00:00+09:00
 
 # 접근
 
-Tinyauth SSO 뒤에 있다([ADR 0022](/adr/0022-tinyauth-sso.md)). 미인증 요청은 `auth.kkh-hub.tech` 로그인으로 302된다.
+Tinyauth SSO 뒤에 있다([ADR 0022](../../docs/adr/0022-tinyauth-sso.md)). 미인증 요청은 `auth.kkh-hub.tech` 로그인으로 302된다.
 계정은 `secrets/env.prod.sops.env`의 `TINYAUTH_AUTH_USERS`(로컬 계정)와 `TINYAUTH_OAUTH_WHITELIST`(Google 허용 이메일)로 바꾼다.
 
 # 프로젝트 추가

@@ -44,5 +44,5 @@ SCRIPT
 
 # 관계
 
-이 서비스는 [공통 데이터 서비스 결정](/adr/0002-shared-data-services.md)을 따른다.
+이 서비스는 [공통 데이터 서비스 결정](../../docs/adr/0002-shared-data-services.md)을 따른다.
 [초기 배포 검증](/runbooks/initial-deployment-validation.md)에서 상태를 확인한다.

@@ -8,9 +8,9 @@ timestamp: 2026-09-29T00:00:00+09:00
 
 # 상태
 
-**대체됨.** 빌드·배포 알림은 각 레포 workflow의 `notify` job이 보낸다. vps-info는 `ci.yml`([ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)·[ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)),
-vps-infra는 `validate.yml`([ADR 0020](/adr/0020-infra-cd-on-github-actions.md))이다. Shared Library `vps-shared`(`notifyMattermost()`)는
-[ADR 0021](/adr/0021-remove-jenkins.md)로 `jenkins/`와 함께 지웠다. 아래는 기록으로 남긴다.
+**대체됨.** 빌드·배포 알림은 각 레포 workflow의 `notify` job이 보낸다. vps-info는 `ci.yml`([ADR 0018](0018-vps-info-pr-ci-on-github-actions.md)·[ADR 0019](0019-vps-info-cd-on-github-actions.md)),
+vps-infra는 `validate.yml`([ADR 0020](0020-infra-cd-on-github-actions.md))이다. Shared Library `vps-shared`(`notifyMattermost()`)는
+[ADR 0021](0021-remove-jenkins.md)로 `jenkins/`와 함께 지웠다. 아래는 기록으로 남긴다.
 
 # 결정
 
@@ -29,9 +29,9 @@ post always
 # 메시지 형식
 
 - 제목: `<종류> 성공|실패|불안정|중단 · <job> #<번호>`. 종류는 `kind` 인자이고 기본값은 `배포`다. 누르면 빌드 페이지로 간다.
-  vps-info는 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md) 이후 Jenkins job이 없고, CI·CD 알림을 모두 자기 workflow의 `notify` job이 보낸다. 결과별 색 막대.
+  vps-info는 [ADR 0019](0019-vps-info-cd-on-github-actions.md) 이후 Jenkins job이 없고, CI·CD 알림을 모두 자기 workflow의 `notify` job이 보낸다. 결과별 색 막대.
 - 본문 첫 줄: `PR #3 「제목」` 또는 커밋 제목이다.
-- PR 빌드(CI) 알림은 [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md) 이후 Jenkins가 아니라 vps-info의 GitHub Actions
+- PR 빌드(CI) 알림은 [ADR 0018](0018-vps-info-pr-ci-on-github-actions.md) 이후 Jenkins가 아니라 vps-info의 GitHub Actions
   workflow(`notify` job)가 보낸다. 제목 `CI 성공|실패 · vps-info PR #<번호>`, 본문 `PR #3 「제목」 검증을 통과했습니다. 리뷰 가능합니다.`,
   필드는 PR(링크), 작성자, `브랜치 → 대상`이다. 실패 시 본문은 Actions run 링크다. 이 라이브러리의 `CHANGE_*` 경로는 지웠다.
 - 필드(main 빌드): PR(링크), 병합자, 커밋, 소요 시간. main 빌드에는 PR 환경변수가 없으므로
@@ -69,10 +69,10 @@ post always
 - 알림 전송 실패는 빌드 결과를 바꾸지 않는다. credential이 비어 있으면(로컬 Jenkins) 건너뛴다.
 - 라이브러리가 쓰는 `ansiColor`, `junit` plugin을 먼저 설치한 뒤에 그것을 쓰는 `Jenkinsfile`을 push한다.
   순서가 바뀌면 declarative 검증에서 빌드가 시작부터 실패한다.
-- Jenkins 지표(prometheus plugin)는 이번 범위에서 뺐다. 모니터링 구축([ADR 0016](/adr/0016-self-hosted-observability.md)) 때 다룬다.
+- Jenkins 지표(prometheus plugin)는 이번 범위에서 뺐다. 모니터링 구축([ADR 0016](0016-self-hosted-observability.md)) 때 다룬다.
 
 # 관련 개념
 
-- [Jenkins 설정을 코드로 관리](/adr/0009-jenkins-config-as-code.md)
-- [배포](/services/deploy.md)
-- [vps-info (Signal Archive)](/services/vps-info.md)
+- [Jenkins 설정을 코드로 관리](0009-jenkins-config-as-code.md)
+- [배포](../../okf/services/deploy.md)
+- [vps-info (Signal Archive)](../../okf/services/vps-info.md)

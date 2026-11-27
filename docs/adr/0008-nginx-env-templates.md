@@ -55,6 +55,6 @@ production 사이에서 재발한다.
 
 # 관련 개념
 
-- [nginx 리버스 프록시](/services/nginx.md)
-- [프로젝트별 독립 Compose](/adr/0007-per-project-compose.md)
-- [서브도메인 라우팅](/adr/0005-subdomain-routing.md)
+- [nginx 리버스 프록시](../../okf/services/nginx.md)
+- [프로젝트별 독립 Compose](0007-per-project-compose.md)
+- [서브도메인 라우팅](0005-subdomain-routing.md)

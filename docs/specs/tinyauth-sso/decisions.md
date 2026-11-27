@@ -1,6 +1,6 @@
 # Tinyauth SSO decisions
 
-Glossary: none · ADRs: [0008](../../../okf/adr/0008-nginx-env-templates.md), [0010](../../../okf/adr/0010-sops-secrets.md), [0016](../../../okf/adr/0016-self-hosted-observability.md)
+Glossary: none · ADRs: [0008](../../adr/0008-nginx-env-templates.md), [0010](../../adr/0010-sops-secrets.md), [0016](../../adr/0016-self-hosted-observability.md)
 
 ## D-1 Protected subdomain scope
 - Status: settled

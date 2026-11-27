@@ -17,7 +17,7 @@ Docker label 기반 동적 라우팅은 없다. 전체 배포는 후보 템플�
 검사한 뒤 nginx를 강제 재생성한다. 템플릿만 바뀌어도 환경변수 치환 결과가 갱신된다.
 완성된 설정은 컨테이너 내부 `/etc/nginx/conf.d/`에 있다.
 
-보호 서브도메인(`erd`, `notes`, `info`, `grafana`)은 [Tinyauth SSO](/adr/0022-tinyauth-sso.md)로 인증한다.
+보호 서브도메인(`erd`, `notes`, `info`, `grafana`)은 [Tinyauth SSO](../../docs/adr/0022-tinyauth-sso.md)로 인증한다.
 각 server 블록이 `nginx/templates/snippets/tinyauth.conf.template`(렌더 결과 `/etc/nginx/conf.d/snippets/tinyauth.conf`)를
 include한다. 모든 요청이 `auth_request /tinyauth`로 `tinyauth:3000/api/auth/nginx`에 인증을 묻고, 401이면
 `auth.<도메인>/login?redirect_uri=...`로 302를 준다. `/tinyauth`는 `internal;`이고 `X-Forwarded-Host`는 `$host`로 덮어쓴다.
@@ -37,7 +37,7 @@ include한다. 모든 요청이 `auth_request /tinyauth`로 `tinyauth:3000/api/a
 
 Traefik dashboard(`traefik.kkh-hub.tech`)와 SSAFY webhook 라우팅
 (`ssafy.kkh-hub.tech`)은 nginx 전환과 함께 제거했다. SSAFY Workspace Webhook POC 서비스
-자체도 폐기되었다. `jenkins.kkh-hub.tech`는 [ADR 0021](/adr/0021-remove-jenkins.md)로 템플릿을 지워
+자체도 폐기되었다. `jenkins.kkh-hub.tech`는 [ADR 0021](../../docs/adr/0021-remove-jenkins.md)로 템플릿을 지워
 default server(444)로 떨어진다. `CHALLENGE_DOMAINS`와 인증서 SAN에서도 뺐다(2026-11-20 재발급). DNS A 레코드만 남아 있다.
 
 # 인증서 발급 (certbot)
@@ -52,7 +52,7 @@ default server(444)로 떨어진다. `CHALLENGE_DOMAINS`와 인증서 SAN에서�
   모든 conf가 같은 `ssl_certificate` 경로(`/etc/letsencrypt/live/kkh-hub.tech/`)를
   참조하게 한다.
 - 갱신은 상주 `vps-certbot` 컨테이너가 12시간마다 확인하고, nginx가 하루 한 번 스스로
-  reload해 새 인증서를 읽는다([ADR 0011](/adr/0011-certbot-container-renewal.md)).
+  reload해 새 인증서를 읽는다([ADR 0011](../../docs/adr/0011-certbot-container-renewal.md)).
 - 새 서브도메인은 `secrets/env.prod.sops.env`의 `CHALLENGE_DOMAINS`에 넣고 push한다.
   `deploy.sh`(all 대상, `TLS_MODE=live`)가 인증서에 빠진 도메인을 찾아 전체 `-d` 목록으로
   같은 인증서(`--cert-name kkh-hub.tech`)를 `--expand`한다.
@@ -62,7 +62,7 @@ default server(444)로 떨어진다. `CHALLENGE_DOMAINS`와 인증서 SAN에서�
 # 로그와 트레이스
 
 - 이미지는 `nginx:1.31.4-alpine-otel`이다. OpenTelemetry 모듈이 요청마다 span을 Alloy(`alloy:4317`)로 보내고
-  `traceparent`를 백엔드로 전파한다([ADR 0017](/adr/0017-nginx-starts-traces.md)). Alloy가 없어도 nginx는 기동하고
+  `traceparent`를 백엔드로 전파한다([ADR 0017](../../docs/adr/0017-nginx-starts-traces.md)). Alloy가 없어도 nginx는 기동하고
   export 실패만 error 로그로 남긴다.
 - UptimeRobot과 Alloy blackbox probe 요청은 user agent로 걸러 trace하지 않는다.
 - access log는 Grafana NGINX 연동의 `json_analytics` 포맷이다. 커뮤니티 대시보드가 이 필드 이름을 전제하므로
@@ -92,4 +92,4 @@ default server(444)로 떨어진다. `CHALLENGE_DOMAINS`와 인증서 SAN에서�
 # 관계
 
 nginx는 [초기 배포 검증](/runbooks/initial-deployment-validation.md)에서 검증한다.
-라우팅 방식은 [서브도메인 라우팅 결정](/adr/0005-subdomain-routing.md)을 따른다.
+라우팅 방식은 [서브도메인 라우팅 결정](../../docs/adr/0005-subdomain-routing.md)을 따른다.

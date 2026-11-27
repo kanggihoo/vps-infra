@@ -1,22 +1,26 @@
 # 변경 기록
 
+## 2026-11-28
+* **이동**: ADR을 `okf/adr/`에서 [docs/adr/](../docs/adr/index.md)로 옮기고 링크를 갱신했다. ADR은 OKF 번들 밖에 두고, 기능 스펙은 `docs/specs/`에 쓴다.
+* **삭제**: Jenkins 기준이던 `okf/spec/`(0001, 0002)을 지웠다. 내용은 git history에 있다.
+
 ## 2026-11-27
-* **결정**: [ADR 0022](/adr/0022-tinyauth-sso.md)로 Basic Auth를 Tinyauth SSO로 바꾼다. `tinyauth` 서비스와 `vps_tinyauth_data` volume, `auth.<도메인>` 라우팅·alias·인증서 도메인, nginx `snippets/tinyauth.conf`를 추가했다. Grafana는 Auth Proxy로 바꾸고 로그인 폼을 껐다. `secrets/basic-auth.htpasswd.sops.txt`, `nginx/test-fixtures/basic-auth.htpasswd`, `scripts/set-basic-auth.sh`를 지웠다. 로컬 `BASE_DOMAIN`은 `vps.localhost`가 되었다.
-* **갱신**: [nginx](/services/nginx.md), [ERD](/services/erd.md), [vps-info](/services/vps-info.md), [관측 스택](/services/observability.md), [ADR 0010](/adr/0010-sops-secrets.md), [ADR 0013](/adr/0013-liam-erd-static-hosting.md) 상태, `INFRA.md`.
+* **결정**: [ADR 0022](../docs/adr/0022-tinyauth-sso.md)로 Basic Auth를 Tinyauth SSO로 바꾼다. `tinyauth` 서비스와 `vps_tinyauth_data` volume, `auth.<도메인>` 라우팅·alias·인증서 도메인, nginx `snippets/tinyauth.conf`를 추가했다. Grafana는 Auth Proxy로 바꾸고 로그인 폼을 껐다. `secrets/basic-auth.htpasswd.sops.txt`, `nginx/test-fixtures/basic-auth.htpasswd`, `scripts/set-basic-auth.sh`를 지웠다. 로컬 `BASE_DOMAIN`은 `vps.localhost`가 되었다.
+* **갱신**: [nginx](/services/nginx.md), [ERD](/services/erd.md), [vps-info](/services/vps-info.md), [관측 스택](/services/observability.md), [ADR 0010](../docs/adr/0010-sops-secrets.md), [ADR 0013](../docs/adr/0013-liam-erd-static-hosting.md) 상태, `INFRA.md`.
 
 ## 2026-11-22
 * **변경**: [배포](/services/deploy.md) pipeline을 CI, GHCR 게시, CD로 나눴다. 최종 gate, Gitleaks와 Lefthook, Portal digest 배포 및 SHA 검증을 코드에 반영했다. VPS 전환은 repository variable로 활성화한다.
 
 ## 2026-11-20
 * **정리**: Jenkins 잔여물을 지웠다. VPS의 `jenkins/.env`, Jenkins volume 2개와 이미지, 옛 vps-info 이미지, 제한 없는 `github-actions-vps-infra` key와 vps-infra secret 4개, `secrets/github-pat.sops.txt`(와 `secrets.sh`·`check-sops.sh`·`.gitignore` 참조). `CHALLENGE_DOMAINS`에서 jenkins를 빼고 인증서를 jenkins 없이 재발급했다(2027-02-18 만료). 두 SOPS 파일의 Jenkins 주석을 고쳤다. DNS A 레코드만 남았다.
-* **결정**: [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어냈다. `jenkins/` 전체, `jenkins.conf.template`과 `jenkins` nginx alias, Alloy의 Jenkins probe, Grafana "Jenkins 큐 적체" 알림과 Jenkins 대시보드를 지웠다. `vps-jenkins`는 병합 뒤 멈추고 `vps_jenkins_data` volume, `jenkins` DNS·인증서 SAN은 후속 정리로 남긴다. 갱신: `services/jenkins-deploy.md`를 [배포](/services/deploy.md)로 바꿔 Actions 흐름을 적었고, ADR 0001·0004·0006·0009·0010·0012·0016 상태, [관측 스택](/services/observability.md), [nginx](/services/nginx.md), [시스템 개요](/architecture/system-overview.md), [Hostinger VPS](/environments/hostinger-vps.md), 런북, `README.md`, `INFRA.md`를 고쳤다.
-* **결정**: [ADR 0020](/adr/0020-infra-cd-on-github-actions.md)으로 vps-infra 배포를 GitHub Actions(`validate.yml`의 deploy job → SSH forced command `scripts/ci-deploy.sh`)로 옮기고 `Jenkinsfile`을 지웠다. VPS에 `vps-infra-deploy` forced command 줄을 추가했다.
-* **결정**: [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 vps-info 배포를 GitHub Actions(이미지 GHCR push → SSH forced command로 `scripts/deploy.sh <sha>`)로 옮겼다. vps-info PR #30 병합으로 전환했고 첫 Actions 배포가 성공했다. `jobs.groovy`에서 `vps-info` multibranch job을, `plugins.txt`에서 `github-branch-source`를 지웠다(plugin 제거는 Jenkins 재빌드 때 반영).
+* **결정**: [ADR 0021](../docs/adr/0021-remove-jenkins.md)로 Jenkins를 걷어냈다. `jenkins/` 전체, `jenkins.conf.template`과 `jenkins` nginx alias, Alloy의 Jenkins probe, Grafana "Jenkins 큐 적체" 알림과 Jenkins 대시보드를 지웠다. `vps-jenkins`는 병합 뒤 멈추고 `vps_jenkins_data` volume, `jenkins` DNS·인증서 SAN은 후속 정리로 남긴다. 갱신: `services/jenkins-deploy.md`를 [배포](/services/deploy.md)로 바꿔 Actions 흐름을 적었고, ADR 0001·0004·0006·0009·0010·0012·0016 상태, [관측 스택](/services/observability.md), [nginx](/services/nginx.md), [시스템 개요](/architecture/system-overview.md), [Hostinger VPS](/environments/hostinger-vps.md), 런북, `README.md`, `INFRA.md`를 고쳤다.
+* **결정**: [ADR 0020](../docs/adr/0020-infra-cd-on-github-actions.md)으로 vps-infra 배포를 GitHub Actions(`validate.yml`의 deploy job → SSH forced command `scripts/ci-deploy.sh`)로 옮기고 `Jenkinsfile`을 지웠다. VPS에 `vps-infra-deploy` forced command 줄을 추가했다.
+* **결정**: [ADR 0019](../docs/adr/0019-vps-info-cd-on-github-actions.md)로 vps-info 배포를 GitHub Actions(이미지 GHCR push → SSH forced command로 `scripts/deploy.sh <sha>`)로 옮겼다. vps-info PR #30 병합으로 전환했고 첫 Actions 배포가 성공했다. `jobs.groovy`에서 `vps-info` multibranch job을, `plugins.txt`에서 `github-branch-source`를 지웠다(plugin 제거는 Jenkins 재빌드 때 반영).
 * **변경**: VPS에 `~/app/vps-info` clone과 `authorized_keys`의 `vps-info-deploy` forced command 줄을 추가했다. 배포 key로 셸·다른 명령·포트 포워딩이 막히는 것을 확인했다.
 * **갱신**: ADR 0006·0012·0013·0014·0015·0018 상태, [vps-info](/services/vps-info.md), [ERD](/services/erd.md), [배포](/services/deploy.md), 트러블슈팅, compose 주석.
-* **결정**: [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md)로 `vps-info` PR 검증을 Jenkins multibranch PR 빌드에서 vps-info의 GitHub Actions(`ci.yml`, job `check:task`)로 옮긴다. main 배포는 Jenkins에 남긴다. [ADR 0014](/adr/0014-multibranch-pr-ci.md)는 일부 대체, [ADR 0015](/adr/0015-multibranch-periodic-scan.md)는 main push 보완으로 범위를 줄였다.
+* **결정**: [ADR 0018](../docs/adr/0018-vps-info-pr-ci-on-github-actions.md)로 `vps-info` PR 검증을 Jenkins multibranch PR 빌드에서 vps-info의 GitHub Actions(`ci.yml`, job `check:task`)로 옮긴다. main 배포는 Jenkins에 남긴다. [ADR 0014](../docs/adr/0014-multibranch-pr-ci.md)는 일부 대체, [ADR 0015](../docs/adr/0015-multibranch-periodic-scan.md)는 main push 보완으로 범위를 줄였다.
 * **변경**: `jobs.groovy`의 `vps-info` multibranch가 `includes('main')`, `buildOriginPRMerge(false)`로 main만 발견한다. `notifyMattermost()`에서 PR 빌드 전용 경로(`CHANGE_*`, `kind == 'CI'`)를 지웠다. main 빌드 payload가 이전과 같은지 Jenkins 밖에서 수정 전후 출력을 비교해 확인했다.
-* **갱신**: [ADR 0012](/adr/0012-mattermost-build-notification.md) 메시지 형식, [vps-info](/services/vps-info.md) 소유 경계·배포 흐름, [배포](/services/deploy.md), [webhook 유실 트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)에 PR CI 이전을 반영했다.
+* **갱신**: [ADR 0012](../docs/adr/0012-mattermost-build-notification.md) 메시지 형식, [vps-info](/services/vps-info.md) 소유 경계·배포 흐름, [배포](/services/deploy.md), [webhook 유실 트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)에 PR CI 이전을 반영했다.
 ## 2026-11-17
 * **갱신**: S15P31A302 종료에 맞춰 [A302 인프라 도입 후보 검토](/architecture/a302-adoption-candidates.md)를 종료 시점(`41a8214`) 기준으로 다시 정리했다. 우선순위 표를 더하고, 복원 리허설 3회·런북 형식·읽기 전용 role 등 운영 결과로 기존 후보를 보강하고, 후보 6개(nginx 보안 헤더와 HSTS, 메타데이터 차단, 컨테이너 사라짐 알림, 재구축 표, secret 교체 표, nginx 조건부 재생성)를 더했다.
 * **갱신**: 같은 문서에 A302 GitLab CI/CD와 이 레포·vps-info Jenkins 파이프라인을 비교한 CI/CD 후보 8개(검증 통과 커밋만 배포, 마이그레이션 전 덤프, SHA 태그 롤백, 배포 SHA 확인, PR 빌드 취소, Jenkinsfile 구조 시험, 베이스 이미지 고정, 배포 잠금·이력)를 더했다.
@@ -28,44 +32,44 @@
 * **검토**: [A302 인프라 도입 후보 검토](/architecture/a302-adoption-candidates.md)를 추가했다. S15P31A302 인프라에서 가져올 후보 8개(로그·prune, 디스크 검사, R2 암호화 백업, DB·role 멱등 생성, CI 검사 3종, 호스트 스크립트)와 적용 방법을 미확정으로 기록한다.
 
 ## 2026-10-08
-* **결정**: [ADR 0016](/adr/0016-self-hosted-observability.md)으로 Grafana·Prometheus·Loki·Tempo를 VPS에 셀프호스팅하고 Alloy 하나로 수집한다. Grafana Cloud를 전제로 한 루트 `OBSERVABILITY.md`를 삭제하고 유효한 내용(cAdvisor 필터, DB 트레이스는 앱이 만든다)을 ADR로 옮겼다.
-* **결정**: [ADR 0017](/adr/0017-nginx-starts-traces.md)로 외부 요청의 trace는 nginx otel 모듈이 시작하고 W3C `traceparent`로 전파한다. 앱은 이어받기만 한다.
+* **결정**: [ADR 0016](../docs/adr/0016-self-hosted-observability.md)으로 Grafana·Prometheus·Loki·Tempo를 VPS에 셀프호스팅하고 Alloy 하나로 수집한다. Grafana Cloud를 전제로 한 루트 `OBSERVABILITY.md`를 삭제하고 유효한 내용(cAdvisor 필터, DB 트레이스는 앱이 만든다)을 ADR로 옮겼다.
+* **결정**: [ADR 0017](../docs/adr/0017-nginx-starts-traces.md)로 외부 요청의 trace는 nginx otel 모듈이 시작하고 W3C `traceparent`로 전파한다. 앱은 이어받기만 한다.
 * **변경**: `grafana.kkh-hub.tech` DNS A 레코드를 추가했고 `secrets/env.prod.sops.env`의 `CHALLENGE_DOMAINS`에 넣었다.
 * **구현**: [관측 스택](/services/observability.md)을 `observability/compose.yml`로 추가했다. nginx를 `-otel` 이미지와 JSON access log로 바꾸고, Jenkins에 `opentelemetry` plugin을 넣었다(이미지 재빌드 필요). 배포 대상에 `observability`를 추가했고 `deploy.sh`가 설정 checksum으로 바뀐 서비스만 재생성한다. 로컬에서 메트릭·로그·트레이스·알림 규칙 로드를 확인했다.
-* **결정 변경**: Jenkins 메트릭은 OTel plugin이 OTLP로 내므로 `prometheus` plugin과 scrape 전용 계정을 두지 않는다([ADR 0016](/adr/0016-self-hosted-observability.md)).
+* **결정 변경**: Jenkins 메트릭은 OTel plugin이 OTLP로 내므로 `prometheus` plugin과 scrape 전용 계정을 두지 않는다([ADR 0016](../docs/adr/0016-self-hosted-observability.md)).
 
 ## 2026-10-03
-* **결정**: [ADR 0015](/adr/0015-multibranch-periodic-scan.md)로 `vps-info` multibranch에 15분 주기 스캔을 추가해 유실된 webhook을 보완한다. `jobs.groovy`에 `periodicFolderTrigger`를 넣었다.
-* **변경**: `notifyMattermost()`가 PR 번호·제목·작성자·브랜치와 main 빌드의 병합 PR을 알림에 싣는다([ADR 0012](/adr/0012-mattermost-build-notification.md)). 제목의 `#번호`가 빌드 번호라 어느 PR인지 알 수 없던 문제를 고친다.
+* **결정**: [ADR 0015](../docs/adr/0015-multibranch-periodic-scan.md)로 `vps-info` multibranch에 15분 주기 스캔을 추가해 유실된 webhook을 보완한다. `jobs.groovy`에 `periodicFolderTrigger`를 넣었다.
+* **변경**: `notifyMattermost()`가 PR 번호·제목·작성자·브랜치와 main 빌드의 병합 PR을 알림에 싣는다([ADR 0012](../docs/adr/0012-mattermost-build-notification.md)). 제목의 `#번호`가 빌드 번호라 어느 PR인지 알 수 없던 문제를 고친다.
 * **기록**: PR #3의 webhook 유실 사례를 [트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)으로 남기고 `troubleshooting/` 그룹을 만들었다.
 
 ## 2026-10-01
-* **결정**: [ADR 0014](/adr/0014-multibranch-pr-ci.md)로 `vps-info` job을 multibranch(github-branch-source)로 바꿔 PR마다 Test를 돌려 commit status로 보고하고, 배포는 main 빌드에서만 한다. `plugins.txt`에 `github-branch-source`를 추가했다(Jenkins 이미지 재빌드 필요).
+* **결정**: [ADR 0014](../docs/adr/0014-multibranch-pr-ci.md)로 `vps-info` job을 multibranch(github-branch-source)로 바꿔 PR마다 Test를 돌려 commit status로 보고하고, 배포는 main 빌드에서만 한다. `plugins.txt`에 `github-branch-source`를 추가했다(Jenkins 이미지 재빌드 필요).
 * **변경**: `notifyMattermost()`에 `kind` 인자를 추가해 PR 빌드는 `CI`, main 빌드는 `CD`로 알린다. PR 빌드의 브랜치는 `BRANCH_NAME`(PR-n)을 쓴다.
 
 ## 2026-09-30
-* **결정**: [ADR 0013](/adr/0013-liam-erd-static-hosting.md)으로 DB 스키마 ERD를 Liam으로 빌드해 `erd.<도메인>/<프로젝트>/`에서 정적으로 서빙한다. `erd.conf.template`, `vps_erd_site` volume, `CHALLENGE_DOMAINS`의 `erd`, routing 테스트를 추가했다. vps-info Drizzle 스키마(5개 테이블) 파싱과 하위 경로 서빙을 로컬에서 확인했다.
+* **결정**: [ADR 0013](../docs/adr/0013-liam-erd-static-hosting.md)으로 DB 스키마 ERD를 Liam으로 빌드해 `erd.<도메인>/<프로젝트>/`에서 정적으로 서빙한다. `erd.conf.template`, `vps_erd_site` volume, `CHALLENGE_DOMAINS`의 `erd`, routing 테스트를 추가했다. vps-info Drizzle 스키마(5개 테이블) 파싱과 하위 경로 서빙을 로컬에서 확인했다.
 * **변경**: notes 전용이던 `notes.htpasswd`·`NOTES_HTPASSWD`를 `basic-auth.htpasswd`·`BASIC_AUTH_HTPASSWD`로 바꾸고, 계정은 `scripts/set-basic-auth.sh`로 바꾼다.
 
 ## 2026-09-29
-* **결정**: [ADR 0012](/adr/0012-mattermost-build-notification.md)로 모든 Jenkins job이 implicit Shared Library `vps-shared`의 `notifyMattermost()`로 성공·실패를 SSAFY Mattermost에 알린다. vps-info는 vitest JUnit 결과를 `docker cp`로 꺼내 `junit`으로 집계한다.
-* **정리**: [ADR 0009](/adr/0009-jenkins-config-as-code.md)에 plugin 정리를 기록했다. `ws-cleanup`, `build-timeout`, `docker-workflow`를 빼고 `pipeline-graph-view`, `ansicolor`, `junit`을 넣었다. `jenkins/start.sh`가 기동마다 volume의 `plugins/`를 비워 `plugins.txt`를 실제 설치 목록으로 만든다.
-* **결정 변경**: [ADR 0009](/adr/0009-jenkins-config-as-code.md)에 따라 `jenkins.yaml`과 `jobs.groovy`를 `jenkins/casc/`로 옮기고 이미지 `COPY` 대신 폴더 마운트로 바꿨다. vps-infra 파이프라인이 마지막 단계에서 JCasC를 token reload하므로 Job 추가와 설정 변경에 Jenkins 재빌드가 필요 없다. `jenkins/.env`에 `CASC_RELOAD_TOKEN`이 필요하다.
+* **결정**: [ADR 0012](../docs/adr/0012-mattermost-build-notification.md)로 모든 Jenkins job이 implicit Shared Library `vps-shared`의 `notifyMattermost()`로 성공·실패를 SSAFY Mattermost에 알린다. vps-info는 vitest JUnit 결과를 `docker cp`로 꺼내 `junit`으로 집계한다.
+* **정리**: [ADR 0009](../docs/adr/0009-jenkins-config-as-code.md)에 plugin 정리를 기록했다. `ws-cleanup`, `build-timeout`, `docker-workflow`를 빼고 `pipeline-graph-view`, `ansicolor`, `junit`을 넣었다. `jenkins/start.sh`가 기동마다 volume의 `plugins/`를 비워 `plugins.txt`를 실제 설치 목록으로 만든다.
+* **결정 변경**: [ADR 0009](../docs/adr/0009-jenkins-config-as-code.md)에 따라 `jenkins.yaml`과 `jobs.groovy`를 `jenkins/casc/`로 옮기고 이미지 `COPY` 대신 폴더 마운트로 바꿨다. vps-infra 파이프라인이 마지막 단계에서 JCasC를 token reload하므로 Job 추가와 설정 변경에 Jenkins 재빌드가 필요 없다. `jenkins/.env`에 `CASC_RELOAD_TOKEN`이 필요하다.
 * **정리**: VPS의 옛 `/opt/jenkins`, `/opt/nginx-auth`, `/opt/vps-infra`, `/opt/quartz-build`, `/opt/quartz-site`가 어디에서도 참조되지 않음을 확인하고 삭제 대상으로 정했다. [인수 절차](/runbooks/local-first-handover.md)의 `/opt` 롤백 경로를 폐기했다.
 * **갱신**: [배포](/services/deploy.md) 초기화를 `~/app/vps-infra/jenkins/.env` 기준으로 고치고, age key 위치와 Jenkins 자신은 수동 재기동이라는 자동화 범위를 기록했다.
 * **삭제**: 폐기된 SSAFY Workspace Webhook POC 서비스 문서(`services/ssafy-workspace-webhook.md`)를 제거했다.
-* **수정**: [ADR 0010](/adr/0010-sops-secrets.md)의 "호스트에 key를 노출하지 않는다"를 실제 구성(`keys.txt`와 `jenkins/.env` 두 곳)에 맞게 고쳤다.
+* **수정**: [ADR 0010](../docs/adr/0010-sops-secrets.md)의 "호스트에 key를 노출하지 않는다"를 실제 구성(`keys.txt`와 `jenkins/.env` 두 곳)에 맞게 고쳤다.
 
 ## 2026-09-28
 * **구현**: vps-infra 파이프라인이 배포 전 SOPS로 `.env`를 복호화하고, `deploy.sh`가 `CHALLENGE_DOMAINS` 중 인증서에 빠진 도메인을 `--expand`로 추가한다. 새 서브도메인 추가에 SSH가 필요 없다.
-* **결정**: [ADR 0011](/adr/0011-certbot-container-renewal.md)로 인증서 갱신을 상주 certbot 컨테이너와 nginx 일일 reload로 바꾸고 systemd timer와 `renew-certificates.sh`를 삭제했다. timer가 VPS에 설치되지 않아 옛 상주 컨테이너 제거 후 자동 갱신 주체가 없던 문제를 해소한다.
+* **결정**: [ADR 0011](../docs/adr/0011-certbot-container-renewal.md)로 인증서 갱신을 상주 certbot 컨테이너와 nginx 일일 reload로 바꾸고 systemd timer와 `renew-certificates.sh`를 삭제했다. timer가 VPS에 설치되지 않아 옛 상주 컨테이너 제거 후 자동 갱신 주체가 없던 문제를 해소한다.
 * **생성**: [vps-info](/services/vps-info.md) 배포를 연결했다. Jenkins 이미지에 sops를 넣고 `vps-info` Job, `info` 서브도메인, `CHALLENGE_DOMAINS`를 추가했다. spec 0001 단계 8에 해당한다.
 * **수정**: Jenkinsfile의 `DEPLOY_SHA` 대입이 `script` 블록 밖에 있어 2026-09-13 이후 vps-infra 파이프라인이 컴파일 단계에서 실패하던 문제를 고쳤다.
 * **정리**: `quartz-deploy` Job 정의와 `QUARTZ_SCM_URL`을 제거했다.
 * **갱신**: VPS Jenkins가 JCasC 이미지로 동작함을 확인해(`CASC_JENKINS_CONFIG` 설정됨) [인수 절차](/runbooks/local-first-handover.md)의 단계 6-b를 완료로 바꿨다.
 
 ## 2026-09-13
-* **생성**: [Jenkins·nginx 리뷰 보완](/spec/0002-infra-review-remediation.md) 스펙을 추가했다.
+* **생성**: Jenkins·nginx 리뷰 보완 스펙을 추가했다.
 * **구현**: nginx 후보 설정 검사·강제 재생성, portal 경로 healthcheck, private notes 캐시 정책, Jenkins 누적 SHA 배포 상태, systemd 기반 인증서 갱신을 추가했다.
 * **갱신**: Jenkins controller executor를 전역 1개로 제한하고, host BuildKit 자원 관측 조건을 ADR 0006에 기록했다.
 
@@ -82,16 +86,16 @@
 * **구현**: spec 0001 단계 0~5을 구현했다. 배포 대상 판정을 셸 스크립트로 내리고(빈 diff는 판정 불가로 실패), nginx conf를 envsubst 템플릿으로 바꿔 로컬 HTTP 기동을 가능하게 했고, SOPS 배선과 Jenkins JCasC/job-dsl을 추가했다. 로컬 Jenkins가 빈 volume에서 기동만으로 Job을 복원하고 파이프라인 전체가 통과함을 확인했다. 단계 6~8은 VPS 접근과 외부 레포가 필요해 미구현이다.
 * **삭제**: `docs/superpowers/`와 `references/` 그룹을 제거했다. 원본 설계 문서가 traefik + GitHub Actions 시절 내용이라 이미 폐기된 구조를 서술하고 있었고, 이를 가리키던 reference concept와 `# Citations` 블록 12개도 함께 정리했다.
 * **정리**: ADR 파일명을 작성 시점 순 `0001`~`0010`으로 통일하고 inbound 링크를 갱신했다. 이전에는 초기 결정 5개가 번호 없는 slug 이름이었다.
-* **생성**: [로컬 우선 인프라 재구성](/spec/0001-local-first-infra.md) spec을 추가하고, seam 3개(스크립트 / 기동된 스택 HTTP / SOPS 왕복)와 8단계 작업 순서를 기록했다.
+* **생성**: 로컬 우선 인프라 재구성 spec을 추가하고, seam 3개(스크립트 / 기동된 스택 HTTP / SOPS 왕복)와 8단계 작업 순서를 기록했다.
 * **정리**: 고아 certbot container와 `hello-world` 잔재를 제거했다. 원인은 `docker compose run` 시 `--entrypoint certbot` 누락으로 `Cmd` 인자가 무시되고 renew 루프가 중복 실행된 것이다.
 * **이동**: 번들 위치를 `.okf/`에서 `okf/`로, `decisions/`를 `adr/`로 옮기고 참조 경로를 갱신했다.
-* **생성**: [Jenkins가 VPS에서 이미지를 빌드한다](/adr/0006-jenkins-builds-on-vps.md) - GHCR 대신 VPS 빌드를 유지하는 근거와 리소스 실측을 기록했다.
-* **생성**: [프로젝트별 독립 Compose](/adr/0007-per-project-compose.md) - 중앙집중 `compose.yml` 방침을 뒤집고, Quartz 이미지화와 rollback 확보를 기록했다.
-* **생성**: [nginx 설정의 환경 템플릿화](/adr/0008-nginx-env-templates.md) - envsubst 기반 로컬/VPS 공용 설정을 기록했다.
-* **생성**: [Jenkins 설정을 코드로 관리](/adr/0009-jenkins-config-as-code.md) - JCasC/job-dsl 도입과 GUI 편집 무효화 제약을 기록했다.
-* **생성**: [SOPS 기반 secret 관리](/adr/0010-sops-secrets.md) - 암호화 secret을 레포에 두는 방식과 Vault 거절 근거를 기록했다.
-* **갱신**: [Jenkins 내부 배포](/adr/0004-jenkins-deployment.md)에서 `/opt/vps-infra` 경로 전제를 걷어내고 대체된 항목을 명시했다.
-* **갱신**: [SSH Git-Pull 배포](/adr/0001-ssh-git-pull-deployment.md)를 폐기로 표시하고, Actions를 검증 전용으로 전환하는 근거를 기록했다.
+* **생성**: [Jenkins가 VPS에서 이미지를 빌드한다](../docs/adr/0006-jenkins-builds-on-vps.md) - GHCR 대신 VPS 빌드를 유지하는 근거와 리소스 실측을 기록했다.
+* **생성**: [프로젝트별 독립 Compose](../docs/adr/0007-per-project-compose.md) - 중앙집중 `compose.yml` 방침을 뒤집고, Quartz 이미지화와 rollback 확보를 기록했다.
+* **생성**: [nginx 설정의 환경 템플릿화](../docs/adr/0008-nginx-env-templates.md) - envsubst 기반 로컬/VPS 공용 설정을 기록했다.
+* **생성**: [Jenkins 설정을 코드로 관리](../docs/adr/0009-jenkins-config-as-code.md) - JCasC/job-dsl 도입과 GUI 편집 무효화 제약을 기록했다.
+* **생성**: [SOPS 기반 secret 관리](../docs/adr/0010-sops-secrets.md) - 암호화 secret을 레포에 두는 방식과 Vault 거절 근거를 기록했다.
+* **갱신**: [Jenkins 내부 배포](../docs/adr/0004-jenkins-deployment.md)에서 `/opt/vps-infra` 경로 전제를 걷어내고 대체된 항목을 명시했다.
+* **갱신**: [SSH Git-Pull 배포](../docs/adr/0001-ssh-git-pull-deployment.md)를 폐기로 표시하고, Actions를 검증 전용으로 전환하는 근거를 기록했다.
 * **갱신**: [시스템 아키텍처 개요](/architecture/system-overview.md)의 운영 파일 경계에서 traefik 잔재를 제거하고 nginx 템플릿·SOPS·age key를 반영했다.
 
 ## 2026-07-03

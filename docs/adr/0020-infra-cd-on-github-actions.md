@@ -9,7 +9,7 @@ timestamp: 2026-11-20T00:00:00+09:00
 # 결정
 
 vps-infra의 main 배포를 Jenkins `vps-infra-pipeline`에서 이 레포의 `.github/workflows/validate.yml`로 옮긴다.
-vps-info([ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md))와 같은 방식이다. 이미지 레지스트리는 쓰지 않는다. portal·tools는 작고 드물게 바뀌어 VPS에서 그대로 빌드한다.
+vps-info([ADR 0019](0019-vps-info-cd-on-github-actions.md))와 같은 방식이다. 이미지 레지스트리는 쓰지 않는다. portal·tools는 작고 드물게 바뀌어 VPS에서 그대로 빌드한다.
 
 ```txt
 main push -> validate(compose·nginx 문법, seam 1·3, SOPS 암호화 확인)
@@ -47,6 +47,6 @@ main push -> validate(compose·nginx 문법, seam 1·3, SOPS 암호화 확인)
 
 # 관련 개념
 
-- [vps-info 배포를 GitHub Actions + GHCR + SSH forced command로 옮긴다](/adr/0019-vps-info-cd-on-github-actions.md)
-- [Jenkins 내부 배포](/adr/0004-jenkins-deployment.md)
-- [SSH Git-Pull 배포](/adr/0001-ssh-git-pull-deployment.md)
+- [vps-info 배포를 GitHub Actions + GHCR + SSH forced command로 옮긴다](0019-vps-info-cd-on-github-actions.md)
+- [Jenkins 내부 배포](0004-jenkins-deployment.md)
+- [SSH Git-Pull 배포](0001-ssh-git-pull-deployment.md)

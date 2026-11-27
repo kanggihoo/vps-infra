@@ -103,7 +103,7 @@ GitHub ruleset 적용 여부는 미확인이다. required checks와 main 보호�
 ## P2: Jenkins 메모리 제한이 호스트 이미지 빌드까지 제한하지 않는다
 
 근거: `jenkins/compose.yml:14`, `jenkins/compose.yml:54`, `jenkins/jenkins.yaml:12`,
-[ADR 0006](/adr/0006-jenkins-builds-on-vps.md).
+[ADR 0006](../../docs/adr/0006-jenkins-builds-on-vps.md).
 Jenkins 컨테이너의 2GB 제한은 Docker socket으로 호스트 daemon에 요청한
 BuildKit 작업의 전체 메모리 상한이 아니다. Job별 disableConcurrentBuilds도
 서로 다른 Job 간 동시 빌드를 막지 않는다.

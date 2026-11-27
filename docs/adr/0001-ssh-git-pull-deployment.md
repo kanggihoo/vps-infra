@@ -18,8 +18,8 @@ GitHub Actions는 배포에서 빼고 **검증 전용**으로 전환한다(`dock
 `nginx -t`, SOPS 파일 무결성). Jenkins 장애 시 비상 수단은 SSH 접속 후 직접
 `docker compose up`이며, 이는 문서로 관리한다.
 
-이후 Jenkins 내부 배포([ADR 0004](/adr/0004-jenkins-deployment.md))도 폐기되어, 현재 자동 배포는 GitHub Actions가 forced command로 묶인 key로
-SSH해 VPS 스크립트를 부르는 방식이다([ADR 0020](/adr/0020-infra-cd-on-github-actions.md)). 이 ADR의 제한 없는 `VPS_SSH_KEY`는 다시 쓰지 않는다.
+이후 Jenkins 내부 배포([ADR 0004](0004-jenkins-deployment.md))도 폐기되어, 현재 자동 배포는 GitHub Actions가 forced command로 묶인 key로
+SSH해 VPS 스크립트를 부르는 방식이다([ADR 0020](0020-infra-cd-on-github-actions.md)). 이 ADR의 제한 없는 `VPS_SSH_KEY`는 다시 쓰지 않는다.
 
 # 과거 결정
 
@@ -41,5 +41,5 @@ GitHub Actions에서 Hostinger VPS에 SSH로 접속한 뒤 `/opt/vps-infra`에�
 
 # 관련 개념
 
-- [GitHub Actions 배포](/services/github-actions-deploy.md)
-- [초기 배포 검증](/runbooks/initial-deployment-validation.md)
+- [GitHub Actions 배포](../../okf/services/github-actions-deploy.md)
+- [초기 배포 검증](../../okf/runbooks/initial-deployment-validation.md)

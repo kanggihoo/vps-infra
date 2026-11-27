@@ -23,8 +23,8 @@ GitHub main push
 ```
 
 [배포](/services/deploy.md)는 `main` push마다 GitHub Actions가 검증 뒤 실행한다. VPS에는 배포용 상주 프로세스가 없다.
-vps-info도 자기 레포의 Actions가 같은 방식으로 배포한다([ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)).
-Jenkins는 [ADR 0021](/adr/0021-remove-jenkins.md)로 걷어냈다.
+vps-info도 자기 레포의 Actions가 같은 방식으로 배포한다([ADR 0019](../../docs/adr/0019-vps-info-cd-on-github-actions.md)).
+Jenkins는 [ADR 0021](../../docs/adr/0021-remove-jenkins.md)로 걷어냈다.
 
 # 런타임 구조
 
@@ -64,7 +64,7 @@ grafana.kkh-hub.tech
   -> grafana
 ```
 
-라우팅은 [서브도메인 라우팅](/adr/0005-subdomain-routing.md) 결정을 따른다.
+라우팅은 [서브도메인 라우팅](../../docs/adr/0005-subdomain-routing.md) 결정을 따른다.
 서브도메인을 서비스 경계로 사용한다. nginx는 Docker label 기반 동적 라우팅이
 없으므로 호스트의 `nginx/templates/*.template`에 서비스당 템플릿 파일 1개를 둔다.
 nginx 공식 이미지가 기동 시 환경변수를 치환해 컨테이너 내부
@@ -86,7 +86,7 @@ nginx 전환과 함께 제거했다.
 # 데이터 서비스 격리 방향
 
 초기 단계에서는 PostgreSQL과 Redis를 실행 상태로 검증하는 것이 목표다. 실제 앱이
-생기면 [공통 데이터 서비스](/adr/0002-shared-data-services.md) 결정에 따라 격리한다.
+생기면 [공통 데이터 서비스](../../docs/adr/0002-shared-data-services.md) 결정에 따라 격리한다.
 
 PostgreSQL:
 
@@ -132,7 +132,7 @@ backups
 
 # 재부팅 복구
 
-재부팅 복구는 [Docker 재시작 복구](/adr/0003-docker-restart-recovery.md) 결정을 따른다.
+재부팅 복구는 [Docker 재시작 복구](../../docs/adr/0003-docker-restart-recovery.md) 결정을 따른다.
 
 ```txt
 sudo systemctl enable docker

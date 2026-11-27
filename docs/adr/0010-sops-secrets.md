@@ -8,10 +8,10 @@ timestamp: 2026-11-27T00:00:00+09:00
 
 # 상태
 
-**key 위치와 대상이 바뀜.** [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins가 없어져 `jenkins/.env`의 `SOPS_AGE_KEY_CONTENT` 사본을 지웠다.
-Jenkins checkout용 `github-pat`도 대상에서 빼고 `secrets/github-pat.sops.txt`를 지웠다. [ADR 0022](/adr/0022-tinyauth-sso.md)로 Basic Auth 파일(`secrets/basic-auth.htpasswd.sops.txt`)도 지웠다. 복호화 대상은 환경별 `.env` 하나다.
+**key 위치와 대상이 바뀜.** [ADR 0021](0021-remove-jenkins.md)로 Jenkins가 없어져 `jenkins/.env`의 `SOPS_AGE_KEY_CONTENT` 사본을 지웠다.
+Jenkins checkout용 `github-pat`도 대상에서 빼고 `secrets/github-pat.sops.txt`를 지웠다. [ADR 0022](0022-tinyauth-sso.md)로 Basic Auth 파일(`secrets/basic-auth.htpasswd.sops.txt`)도 지웠다. 복호화 대상은 환경별 `.env` 하나다.
 배포가 쓰는 복호화 key는 `~/.config/sops/age/keys.txt` 하나이고,
-배포 스크립트가 `tools` 컨테이너로 읽는다([ADR 0020](/adr/0020-infra-cd-on-github-actions.md)). 나머지 결정은 유효하다.
+배포 스크립트가 `tools` 컨테이너로 읽는다([ADR 0020](0020-infra-cd-on-github-actions.md)). 나머지 결정은 유효하다.
 
 # 결정
 
@@ -65,5 +65,5 @@ checkout이 실패해 반쪽 복구가 되기 때문이다.
 
 # 관련 개념
 
-- [Jenkins 설정을 코드로 관리](/adr/0009-jenkins-config-as-code.md)
-- [Hostinger VPS](/environments/hostinger-vps.md)
+- [Jenkins 설정을 코드로 관리](0009-jenkins-config-as-code.md)
+- [Hostinger VPS](../../okf/environments/hostinger-vps.md)

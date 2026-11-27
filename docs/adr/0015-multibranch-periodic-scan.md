@@ -8,19 +8,19 @@ timestamp: 2026-10-03T00:00:00+09:00
 
 # 상태
 
-**폐기.** [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 `vps-info` multibranch job을 지웠다. Actions는 GitHub 내부 이벤트로
+**폐기.** [ADR 0019](0019-vps-info-cd-on-github-actions.md)로 `vps-info` multibranch job을 지웠다. Actions는 GitHub 내부 이벤트로
 돌기 때문에 webhook 유실을 보완할 스캔이 필요 없다. 아래는 기록으로 남긴다.
 
 # 결정
 
-`vps-info` multibranch job에 `periodicFolderTrigger`를 15분 간격으로 둔다([ADR 0014](/adr/0014-multibranch-pr-ci.md)).
+`vps-info` multibranch job에 `periodicFolderTrigger`를 15분 간격으로 둔다([ADR 0014](0014-multibranch-pr-ci.md)).
 webhook은 즉시 반응용으로 그대로 두고, 스캔은 놓친 이벤트를 늦게라도 잡는 안전망이다.
 
 # 배경
 
 2026-10-03 PR #3의 `pull_request.opened` webhook이 연결 단계에서 실패해 Jenkins에 PR이 생기지 않았다.
 GitHub는 실패한 webhook을 자동 재시도하지 않으므로 이벤트 기반만으로는 이런 누락을 스스로 복구하지 못한다.
-조사 과정과 원인 추정은 [트러블슈팅](/troubleshooting/webhook-pr-event-lost.md)에 있다.
+조사 과정과 원인 추정은 [트러블슈팅](../../okf/troubleshooting/webhook-pr-event-lost.md)에 있다.
 
 # 이유
 

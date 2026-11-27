@@ -39,5 +39,5 @@ VPS 메모리와 운영 부담을 낮추면서, 나중에 서비스별 접근 �
 
 # 관련 개념
 
-- [PostgreSQL](/services/postgresql.md)
-- [Redis](/services/redis.md)
+- [PostgreSQL](../../okf/services/postgresql.md)
+- [Redis](../../okf/services/redis.md)

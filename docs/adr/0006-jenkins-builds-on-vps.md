@@ -8,9 +8,9 @@ timestamp: 2026-09-13T00:00:00+09:00
 
 # 상태
 
-**폐기.** vps-info 이미지는 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 GitHub Actions가 빌드해 GHCR에 올린다.
-vps-infra(portal, tools)는 [ADR 0020](/adr/0020-infra-cd-on-github-actions.md)의 `scripts/ci-deploy.sh`가 VPS에서 그대로 빌드한다.
-학습 목적을 달성해 Jenkins는 [ADR 0021](/adr/0021-remove-jenkins.md)로 걷어냈다. 아래는 기록으로 남긴다.
+**폐기.** vps-info 이미지는 [ADR 0019](0019-vps-info-cd-on-github-actions.md)로 GitHub Actions가 빌드해 GHCR에 올린다.
+vps-infra(portal, tools)는 [ADR 0020](0020-infra-cd-on-github-actions.md)의 `scripts/ci-deploy.sh`가 VPS에서 그대로 빌드한다.
+학습 목적을 달성해 Jenkins는 [ADR 0021](0021-remove-jenkins.md)로 걷어냈다. 아래는 기록으로 남긴다.
 
 # 결정
 
@@ -56,5 +56,5 @@ CPU     상시 0%대
 
 # 관련 개념
 
-- [배포](/services/deploy.md)
-- [Jenkins 설정을 코드로 관리](/adr/0009-jenkins-config-as-code.md)
+- [배포](../../okf/services/deploy.md)
+- [Jenkins 설정을 코드로 관리](0009-jenkins-config-as-code.md)

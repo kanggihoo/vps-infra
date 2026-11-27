@@ -44,6 +44,6 @@ Jenkins를 별도 Compose project로 분리한 이유(배포 중 자기 자신�
 
 # 관련 개념
 
-- [서브도메인 라우팅](/adr/0005-subdomain-routing.md)
-- [nginx 설정의 환경 템플릿화](/adr/0008-nginx-env-templates.md)
-- [nginx 리버스 프록시](/services/nginx.md)
+- [서브도메인 라우팅](0005-subdomain-routing.md)
+- [nginx 설정의 환경 템플릿화](0008-nginx-env-templates.md)
+- [nginx 리버스 프록시](../../okf/services/nginx.md)

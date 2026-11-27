@@ -53,6 +53,6 @@ nginx 설정을 다시 바꾸지 않아도 된다.
 
 # 관련 개념
 
-- [관측 스택을 VPS에 셀프호스팅하고 Alloy 하나로 수집한다](/adr/0016-self-hosted-observability.md)
-- [nginx 리버스 프록시](/services/nginx.md)
-- [vps-info (Signal Archive)](/services/vps-info.md)
+- [관측 스택을 VPS에 셀프호스팅하고 Alloy 하나로 수집한다](0016-self-hosted-observability.md)
+- [nginx 리버스 프록시](../../okf/services/nginx.md)
+- [vps-info (Signal Archive)](../../okf/services/vps-info.md)

@@ -15,10 +15,10 @@ forced command로 묶인 key로 `scripts/ci-deploy.sh`만 부르는 다른 방�
 # 개요
 
 Jenkins migration 전 GitHub Actions가 `main` 변경을 자동 배포했다. 이후 Jenkins가 배포를 맡았다가
-[ADR 0020](/adr/0020-infra-cd-on-github-actions.md)·[ADR 0021](/adr/0021-remove-jenkins.md)로 다시 Actions로 돌아왔다.
+[ADR 0020](../../docs/adr/0020-infra-cd-on-github-actions.md)·[ADR 0021](../../docs/adr/0021-remove-jenkins.md)로 다시 Actions로 돌아왔다.
 아래 SSH 흐름은 과거 구현 기록이다.
 
-이 서비스는 [SSH git-pull 배포 결정](/adr/0001-ssh-git-pull-deployment.md)을 구현한다.
+이 서비스는 [SSH git-pull 배포 결정](../../docs/adr/0001-ssh-git-pull-deployment.md)을 구현한다.
 
 # 과거 트리거
 

@@ -9,7 +9,7 @@ timestamp: 2026-11-17T00:00:00+09:00
 # 상태
 
 확정된 결정이 아니라 후보 목록이다. 항목을 진행하기로 정하면 결정은
-[ADR](/adr/)로, 구현 범위는 [스펙](/spec/)으로 옮기고 이 문서에서는 그 항목을
+[ADR](../../docs/adr/)로, 구현 범위는 `docs/specs/`의 스펙으로 옮기고 이 문서에서는 그 항목을
 "옮김"으로 표시한다.
 
 비교 기준은 A302 레포(`docs/infra/design.md`, `docs/infra/runbooks/`, `infra/`)와 이 레포다.
@@ -103,12 +103,12 @@ A302는 Docker 데몬의 `json-file` 로그를 10MB×3으로 제한하고, syste
 주 1회 쓰지 않는 이미지와 빌드 캐시를 지운다. 앱 이미지는 최근 5개를 남기고
 볼륨은 지우지 않는다.
 
-이 VPS는 Jenkins가 이미지를 직접 빌드한다([ADR 0006](/adr/0006-jenkins-builds-on-vps.md)).
+이 VPS는 Jenkins가 이미지를 직접 빌드한다([ADR 0006](../../docs/adr/0006-jenkins-builds-on-vps.md)).
 그래서 이미지와 BuildKit 캐시가 배포마다 쌓이고, 디스크가 차면 Postgres와 nginx가
 함께 멈춘다. 적용 전에 VPS에서 `docker system df`로 현재 누적량을 본다.
 
 적용 방법 후보는 두 가지다. 호스트 systemd 타이머는 A302 파일을 거의 그대로 쓴다.
-[ADR 0011](/adr/0011-certbot-container-renewal.md)처럼 호스트 timer를 피하려면
+[ADR 0011](../../docs/adr/0011-certbot-container-renewal.md)처럼 호스트 timer를 피하려면
 Jenkins 주기 job으로 돌리고 `notifyMattermost()`로 결과를 받는다.
 
 종료 시점 보강: A302의 prune 스크립트는 운영 끝까지 대상 이미지 이름(`ai`)만 늘었고 구조는
@@ -135,10 +135,10 @@ A302 `preflight.sh`는 디스크 여유가 기본 5GB 미만이면 배포를 멈
 3. 백업 전용 age 공개키로 암호화한다.
 4. `rclone`으로 R2 버킷에 올린다. API 토큰은 그 버킷에만 권한을 준다.
 5. 보관 기간은 R2 객체 수명주기 규칙으로 지운다. 삭제 스크립트를 두지 않는다.
-6. 성공·실패는 `notifyMattermost()`([ADR 0012](/adr/0012-mattermost-build-notification.md))가 알린다.
+6. 성공·실패는 `notifyMattermost()`([ADR 0012](../../docs/adr/0012-mattermost-build-notification.md))가 알린다.
 7. 가끔 노트북에서 내려받아 복호화·복원해 본다.
 
-age 키는 [SOPS 키](/adr/0010-sops-secrets.md)와 분리한다. SOPS 개인키는 배포 때문에
+age 키는 [SOPS 키](../../docs/adr/0010-sops-secrets.md)와 분리한다. SOPS 개인키는 배포 때문에
 VPS와 Jenkins credential에 있으므로, 같은 키로 백업을 암호화하면 VPS 침해 시
 백업도 풀린다. A302도 백업 개인키를 서버에 두지 않는다.
 
@@ -229,7 +229,7 @@ critical을 낸다.
 이 레포는 Alloy blackbox가 health·portal·jenkins를 `https://`로 이미 프로브하므로
 `probe_ssl_earliest_cert_expiry` 지표가 있다. 빠진 것은
 `observability/grafana/provisioning/alerting/alerting.yaml`의 알림 규칙 하나다.
-2026-09-28까지 자동 갱신 주체가 없던 일([ADR 0011](/adr/0011-certbot-container-renewal.md))을
+2026-09-28까지 자동 갱신 주체가 없던 일([ADR 0011](../../docs/adr/0011-certbot-container-renewal.md))을
 이 알림이 만료 전에 드러냈을 것이다.
 
 ## 10. VPS 밖에서 보는 감시
@@ -309,7 +309,7 @@ A302는 2026-11-02 EC2에서 컨테이너가 `169.254.169.254`(IMDSv2) 토큰 �
 뜻이라, `DOCKER-USER` 체인에 그 주소로 가는 컨테이너발 패킷을 버리는 규칙을 넣고 부팅·Docker
 재시작 때 다시 넣는 systemd 유닛을 뒀다(`block-imds.sh`). 호스트 자신의 접근은 막지 않는다.
 
-이 레포도 Jenkins가 PR 코드를 VPS에서 빌드·시험한다([ADR 0014](/adr/0014-multibranch-pr-ci.md)).
+이 레포도 Jenkins가 PR 코드를 VPS에서 빌드·시험한다([ADR 0014](../../docs/adr/0014-multibranch-pr-ci.md)).
 다만 Hostinger VPS는 EC2가 아니라 메타데이터 서비스가 있는지부터 모른다. 먼저 VPS의 컨테이너
 안에서 그 주소로 짧은 timeout의 HTTP 요청을 보내 응답이 있는지 본다. 응답이 없으면 할 일이 없다.
 응답이 있고 그 안에 자격 증명이나 user-data(초기 root 비밀번호 등)가 있으면 A302 스크립트를
@@ -360,7 +360,7 @@ A302 RB-12는 "무엇이 어디에 있어서 무엇이 되살아나나" 표로 �
 | Grafana·Prometheus·Loki·Tempo 데이터 | VPS 볼륨만 | 잃는다. 잃어도 되는지 정한다 |
 | ERD 정적 파일 | erd-site 볼륨 | 프로젝트 Jenkins job이 다시 빌드 |
 
-[ADR 0010](/adr/0010-sops-secrets.md)은 age 키 백업을 운영 요구사항으로 적었지만 어디에 두는지는
+[ADR 0010](../../docs/adr/0010-sops-secrets.md)은 age 키 백업을 운영 요구사항으로 적었지만 어디에 두는지는
 정하지 않았다. A302가 env 사본을 USB에 둔 것과 같은 이유로 SOPS 개인키의 오프라인 사본 위치를
 이 표에 함께 정한다. 리허설(새 VPS에 처음부터 올리기)은 3번이 생긴 뒤에 한다.
 
@@ -372,7 +372,7 @@ Grafana admin, 백업 age 키, SSH 키 등). 운영 secret을 실제로 바꿔 �
 이 레포는 SOPS로 값 보관은 해결했지만, 바꿀 때 무엇을 다시 해야 하는지는 정리돼 있지 않다.
 예를 들어 `POSTGRES_PASSWORD`는 빈 볼륨에서 처음 뜰 때만 적용되므로, SOPS 값만 바꾸고 배포하면
 DB의 실제 비밀번호와 어긋난다. `ALTER ROLE`이 먼저다. 4번 스크립트가 생기면 비밀번호를 env 값으로
-다시 맞추므로 이 문제는 줄어든다. SOPS 키 교체는 [ADR 0010](/adr/0010-sops-secrets.md)에 두 곳을
+다시 맞추므로 이 문제는 줄어든다. SOPS 키 교체는 [ADR 0010](../../docs/adr/0010-sops-secrets.md)에 두 곳을
 함께 바꾼다고 적혀 있다.
 
 ## 18. 설정이 바뀐 배포에서만 nginx 재생성
@@ -391,7 +391,7 @@ A302는 배포·롤백 순간에 연결이 한두 번 끊기는 것을 재고(RB
 
 A302는 GitLab이고 이 레포는 Jenkins라 문법은 다르지만, 파이프라인이 지키는 규칙은 옮길 수 있다.
 비교 대상은 이 레포의 `Jenkinsfile`(`vps-infra-pipeline`, main만 빌드하는 단일 job)과
-vps-info의 `Jenkinsfile`(multibranch, [ADR 0014](/adr/0014-multibranch-pr-ci.md))이다.
+vps-info의 `Jenkinsfile`(multibranch, [ADR 0014](../../docs/adr/0014-multibranch-pr-ci.md))이다.
 
 A302 파이프라인의 뼈대:
 
@@ -473,7 +473,7 @@ A302는 `interruptible`을 verify 잡에만 둔다. 새 push가 오면 낡은 �
 전환 도중에 끊기면 안 되므로 취소하지 않는다.
 
 vps-info는 모든 브랜치가 `disableConcurrentBuilds()`라 PR에 연달아 push하면 낡은 Test가 줄을 서서
-VPS CPU를 쓴다([ADR 0006](/adr/0006-jenkins-builds-on-vps.md)). PR 브랜치만
+VPS CPU를 쓴다([ADR 0006](../../docs/adr/0006-jenkins-builds-on-vps.md)). PR 브랜치만
 `disableConcurrentBuilds(abortPrevious: true)`로 두고 main은 지금처럼 기다리게 한다.
 declarative `options`에서 브랜치별로 다르게 줄 수 있는지는 확인이 필요하다. 안 되면 job-dsl 쪽
 설정이나 스크립트 `properties()`로 준다.
@@ -484,7 +484,7 @@ A302 `test_pipeline_structure.py`는 `.gitlab-ci.yml`을 읽어 "배포 잡은 �
 "prod는 사람이 눌러야", "배포 잡은 전체 이력을 받는다", "verify 잡만 취소 가능" 같은 규칙을 시험한다.
 규칙을 깨는 CI 변경은 MR에서 막힌다.
 
-이 레포에서 같은 종류의 함정은 [ADR 0014](/adr/0014-multibranch-pr-ci.md)에 이미 적혀 있다:
+이 레포에서 같은 종류의 함정은 [ADR 0014](../../docs/adr/0014-multibranch-pr-ci.md)에 이미 적혀 있다:
 단일 job에서는 `BRANCH_NAME`이 비어 `when { branch 'main' }`이 늘 거짓이고, 배포 stage를 건너뛰고도
 빌드는 성공으로 보인다. 시험 후보:
 
@@ -531,9 +531,9 @@ merge-base 다운그레이드 가드가 정상 배포를 막자(2026-10-27), pre
 
 | 항목 | 이유 |
 |---|---|
-| Blue/Green 배포, `rollback.sh` | 서버 2대와 무중단 요구가 전제다. 이 레포는 [누적 변경 배포](/spec/0002-infra-review-remediation.md)로 충분하다 |
+| Blue/Green 배포, `rollback.sh` | 서버 2대와 무중단 요구가 전제다. 이 레포는 누적 변경 배포로 충분하다 |
 | Caddy 엣지 | nginx와 certbot이 같은 역할을 한다 |
-| `fit-up.sh` | [ADR 0003](/adr/0003-docker-restart-recovery.md)의 restart policy가 재부팅 복구를 한다 |
+| `fit-up.sh` | [ADR 0003](../../docs/adr/0003-docker-restart-recovery.md)의 restart policy가 재부팅 복구를 한다 |
 | GitLab Runner 2대, 이미지 아키텍처 검사 | 서버 1대, 아키텍처 1종이다 |
 | 마이그레이션 불변 검사, 병합 커밋 금지 | 팀 작업용 규칙이다 |
 | 서버에만 두는 env 파일, `envset.py` | SOPS가 로컬·CI·VPS를 한 파일로 맞춰 더 낫다 |
@@ -568,7 +568,7 @@ merge-base 다운그레이드 가드가 정상 배포를 막자(2026-10-27), pre
 # 관련 개념
 
 - [Jenkins·nginx 보안 및 운영 리뷰](/architecture/infra-review-2026-09-11.md)
-- [SOPS 기반 secret 관리](/adr/0010-sops-secrets.md)
+- [SOPS 기반 secret 관리](../../docs/adr/0010-sops-secrets.md)
 - [PostgreSQL](/services/postgresql.md)
 - [관측 스택](/services/observability.md)
 - [nginx 리버스 프록시](/services/nginx.md)

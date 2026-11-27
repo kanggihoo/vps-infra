@@ -8,10 +8,10 @@ timestamp: 2026-11-27T00:00:00+09:00
 
 # 상태
 
-**빌드 주체만 바뀜.** vps-info는 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md) 이후 Jenkins stage가 아니라
+**빌드 주체만 바뀜.** vps-info는 [ADR 0019](0019-vps-info-cd-on-github-actions.md) 이후 Jenkins stage가 아니라
 배포 스크립트(`scripts/deploy.sh` → `scripts/erd.sh`)가 ERD를 만든다. 산출물 위치(`vps_erd_site:/<프로젝트>/`)와 nginx 서빙은 그대로다.
 
-**인증이 바뀜.** [ADR 0022](/adr/0022-tinyauth-sso.md)로 Basic Auth 대신 Tinyauth SSO 뒤에서 서빙한다.
+**인증이 바뀜.** [ADR 0022](0022-tinyauth-sso.md)로 Basic Auth 대신 Tinyauth SSO 뒤에서 서빙한다.
 
 # 결정
 
@@ -32,11 +32,11 @@ nginx는 `erd.<BASE_DOMAIN>/<프로젝트>/`로 그 파일을 직접 서빙하�
   다른 프로젝트는 `pg_dump --schema-only` 결과를 `--format postgres`로 넘긴다. 마이그레이션이 바뀌면 스키마 파일도
   바뀌므로 빌드마다 ERD가 최신이 된다.
 - **정적 파일이라 프로세스가 없다.** 산출물은 `index.html`, `assets/`, `schema.json`이다. nginx가 요청마다 디스크에서
-  읽으므로 산출물이 바뀌어도 nginx reload가 필요 없다([notes 정적 서빙](/services/nginx.md)과 같은 방식).
+  읽으므로 산출물이 바뀌어도 nginx reload가 필요 없다([notes 정적 서빙](../../okf/services/nginx.md)과 같은 방식).
 - **하위 경로 한 도메인이다.** 프로젝트마다 서브도메인을 만들면 템플릿, `CHALLENGE_DOMAINS`, 인증서 expand가 반복된다.
   산출물이 상대 경로(`./assets`, `./schema.json`)를 써서 하위 경로에서도 동작한다.
 - **Basic Auth를 건다.** ERD는 테이블·컬럼 구조를 그대로 보여준다. GitHub Pages는 private 공개에 Enterprise가 필요하다.
-  [공용 Basic Auth](/adr/0010-sops-secrets.md)를 재사용해 새 secret이 없다.
+  [공용 Basic Auth](0010-sops-secrets.md)를 재사용해 새 secret이 없다.
 
 # 결과
 
@@ -50,6 +50,6 @@ nginx는 `erd.<BASE_DOMAIN>/<프로젝트>/`로 그 파일을 직접 서빙하�
 
 # 관련 개념
 
-- [ERD 서빙](/services/erd.md)
-- [프로젝트별 독립 Compose](/adr/0007-per-project-compose.md)
-- [nginx 리버스 프록시](/services/nginx.md)
+- [ERD 서빙](../../okf/services/erd.md)
+- [프로젝트별 독립 Compose](0007-per-project-compose.md)
+- [nginx 리버스 프록시](../../okf/services/nginx.md)

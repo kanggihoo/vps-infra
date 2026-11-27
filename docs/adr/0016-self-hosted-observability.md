@@ -8,7 +8,7 @@ timestamp: 2026-10-08T00:00:00+09:00
 
 # 상태
 
-**Jenkins 수집 폐기.** [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어내 Jenkins OTel 메트릭·trace·빌드 로그, Jenkins probe,
+**Jenkins 수집 폐기.** [ADR 0021](0021-remove-jenkins.md)로 Jenkins를 걷어내 Jenkins OTel 메트릭·trace·빌드 로그, Jenkins probe,
 "Jenkins 큐 적체" 알림, Jenkins 대시보드가 없어졌다. Alloy OTLP receiver는 nginx trace용으로 남는다. 나머지 결정은 유효하다.
 
 # 결정
@@ -80,7 +80,7 @@ CPU     2코어
 ```
 
 컨테이너 10개, 시리즈 수천 개 규모에서 단일 바이너리 모드에 상한을 걸면 스택 전체가 약 0.9~1.6GB다.
-여유 안에 들어간다. [ADR 0006](/adr/0006-jenkins-builds-on-vps.md)이 Jenkins를 VPS에서 빌드하게 한 것과
+여유 안에 들어간다. [ADR 0006](0006-jenkins-builds-on-vps.md)이 Jenkins를 VPS에서 빌드하게 한 것과
 같은 논리로, 관측 스택 운영 자체가 학습 대상이다. 관측 데이터가 외부로 나가지 않는다는 점도 이점이다.
 
 **Alloy 하나로 수집한다.** 기존 문서는 OTEL Collector를 골랐다. 로그를 앱 SDK push로만 받는다는 전제였다.
@@ -90,11 +90,11 @@ CPU     2코어
 
 **별도 Compose project로 둔다.** 인프라 배포(`docker compose up -d`)가 관측 스택을 재생성하면 배포 중
 장애를 관측할 수 없다. Jenkins를 분리한 것과 같은 논리다
-([ADR 0007](/adr/0007-per-project-compose.md)). 별도 레포는 같은 VPS, SOPS key, nginx 템플릿을 공유하므로
+([ADR 0007](0007-per-project-compose.md)). 별도 레포는 같은 VPS, SOPS key, nginx 템플릿을 공유하므로
 얻는 것이 없다.
 
 **Grafana 설정을 파일로 관리한다.** 볼륨을 잃으면 UI에서 만든 데이터소스, 대시보드, 알림 규칙을
-재현할 수 없다. [ADR 0009](/adr/0009-jenkins-config-as-code.md)(JCasC)와 같은 이유다.
+재현할 수 없다. [ADR 0009](0009-jenkins-config-as-code.md)(JCasC)와 같은 이유다.
 
 # 결과
 
@@ -119,7 +119,7 @@ CPU     2코어
 - Prometheus, Loki, Tempo는 내부 네트워크 `vps_observability`에만 둔다. `vps_proxy`의 앱은 저장소에 직접 닿지 않는다.
   Alloy와 Grafana만 두 네트워크에 붙는다.
 - nginx는 `1.31.4-alpine-otel` 이미지로 바꾸고 로그를 JSON으로 바꾼다. 트레이스 규칙은
-  [ADR 0017](/adr/0017-nginx-starts-traces.md)을 따른다.
+  [ADR 0017](0017-nginx-starts-traces.md)을 따른다.
 - `grafana.kkh-hub.tech` DNS A 레코드를 추가했고, `secrets/env.prod.sops.env`의 `CHALLENGE_DOMAINS`에 넣었다.
   인증서는 배포 시 `deploy.sh`가 `--expand`한다.
 - 배포 대상에 `observability`를 추가했다. `observability/`만 바뀌면 그 project만, `all`이면 인프라 뒤에 함께 올린다.
@@ -154,9 +154,9 @@ CPU     2코어
 
 # 관련 개념
 
-- [외부 요청의 trace는 nginx가 시작한다](/adr/0017-nginx-starts-traces.md)
-- [Jenkins가 VPS에서 이미지를 빌드한다](/adr/0006-jenkins-builds-on-vps.md)
-- [프로젝트별 독립 Compose](/adr/0007-per-project-compose.md)
-- [Jenkins 설정을 코드로 관리](/adr/0009-jenkins-config-as-code.md)
-- [빌드 결과를 Shared Library로 Mattermost에 알린다](/adr/0012-mattermost-build-notification.md)
-- [Hostinger VPS](/environments/hostinger-vps.md)
+- [외부 요청의 trace는 nginx가 시작한다](0017-nginx-starts-traces.md)
+- [Jenkins가 VPS에서 이미지를 빌드한다](0006-jenkins-builds-on-vps.md)
+- [프로젝트별 독립 Compose](0007-per-project-compose.md)
+- [Jenkins 설정을 코드로 관리](0009-jenkins-config-as-code.md)
+- [빌드 결과를 Shared Library로 Mattermost에 알린다](0012-mattermost-build-notification.md)
+- [Hostinger VPS](../../okf/environments/hostinger-vps.md)

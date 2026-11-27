@@ -10,12 +10,12 @@ timestamp: 2026-11-23T00:00:00+09:00
 
 VPS 배포는 프로젝트마다 자기 레포의 GitHub Actions가 맡는다. VPS에는 배포용 상주 프로세스가 없다.
 Actions는 `authorized_keys`의 forced command로 묶인 key로 접속해 SHA(와 옵션)만 넘기고, 배포 순서는 VPS의 스크립트에 있다.
-Jenkins는 [ADR 0021](/adr/0021-remove-jenkins.md)로 걷어냈다.
+Jenkins는 [ADR 0021](../../docs/adr/0021-remove-jenkins.md)로 걷어냈다.
 
 | 레포 | workflow | VPS 진입점 | 결정 |
 |------|----------|-----------|------|
-| vps-infra | `.github/workflows/pr.yml`, `main.yml`, `redeploy.yml` | `~/app/vps-infra/scripts/ci-deploy.sh "<sha> <target> [digest|reuse]"` | [ADR 0020](/adr/0020-infra-cd-on-github-actions.md) |
-| vps-info | vps-info `.github/workflows/ci.yml` | `~/app/vps-info/scripts/deploy.sh "<sha> [erd]"` | [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md) |
+| vps-infra | `.github/workflows/pr.yml`, `main.yml`, `redeploy.yml` | `~/app/vps-infra/scripts/ci-deploy.sh "<sha> <target> [digest|reuse]"` | [ADR 0020](../../docs/adr/0020-infra-cd-on-github-actions.md) |
+| vps-info | vps-info `.github/workflows/ci.yml` | `~/app/vps-info/scripts/deploy.sh "<sha> [erd]"` | [ADR 0019](../../docs/adr/0019-vps-info-cd-on-github-actions.md) |
 
 vps-info 쪽 상세는 [vps-info](/services/vps-info.md)에 있다. 이 문서는 vps-infra 배포를 다룬다.
 
@@ -85,8 +85,8 @@ conflict가 있는 PR은 ruleset과 상관없이 GitHub가 merge를 막는다. P
 
 # 관련 개념
 
-- [vps-infra 배포를 GitHub Actions + SSH forced command로 옮긴다](/adr/0020-infra-cd-on-github-actions.md)
-- [Jenkins를 VPS에서 걷어낸다](/adr/0021-remove-jenkins.md)
+- [vps-infra 배포를 GitHub Actions + SSH forced command로 옮긴다](../../docs/adr/0020-infra-cd-on-github-actions.md)
+- [Jenkins를 VPS에서 걷어낸다](../../docs/adr/0021-remove-jenkins.md)
 - [vps-info (Signal Archive)](/services/vps-info.md)
 - [시스템 아키텍처 개요](/architecture/system-overview.md)
 - [과거 GitHub Actions SSH 배포](/services/github-actions-deploy.md)
