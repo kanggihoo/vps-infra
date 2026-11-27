@@ -58,6 +58,15 @@ if grep -qE '^[A-Z_]+=[^"'"'"']*[[:space:]]' .env; then
   exit 2
 fi
 
+# 따옴표 없는 $도 같은 이유로 막는다. bcrypt 해시(TINYAUTH_AUTH_USERS)의 $2y$...가
+# set -u 상태에서 "unbound variable"로 죽거나, 조용히 다른 값으로 바뀐다.
+# 작은따옴표만 허용한다. 큰따옴표 안의 $도 셸이 치환한다.
+if grep -qE '^[A-Z_]+=([^'"'"'].*)?[$]' .env; then
+  echo "[deploy] .env에 작은따옴표 없는 \$ 값이 있다. 예: TINYAUTH_AUTH_USERS='user:\$2y\$10\$...'" >&2
+  grep -nE '^[A-Z_]+=([^'"'"'].*)?[$]' .env | sed 's/=.*/=<...>/' >&2
+  exit 2
+fi
+
 # .env의 환경변수들을 현재 셸 환경으로 export
 set -a
 . ./.env
@@ -66,12 +75,29 @@ set +a
 # ------------------------------------------------------------------------------
 # 4. 운영 환경(live TLS) 보안 안전장치
 # ------------------------------------------------------------------------------
-# live TLS에서 test/test fixture로 시작하면 notes 인증이 공개된다.
-# 로컬 clean clone은 fixture를 계속 쓸 수 있고, 운영 진입점만 명확히 막는다.
-if [ "${TLS_MODE:-none}" = "live" ] && \
-   [ "${BASIC_AUTH_HTPASSWD:-}" = "./nginx/test-fixtures/basic-auth.htpasswd" ]; then
-  echo "[deploy] TLS_MODE=live에서는 BASIC_AUTH_HTPASSWD에 실제 secret 파일이 필요하다" >&2
+# Tinyauth는 OAuth 화이트리스트가 비어 있으면 모든 Google 계정을 통과시킨다.
+# Google client를 설정했다면 환경과 상관없이 화이트리스트가 있어야 한다.
+if [ -n "${TINYAUTH_OAUTH_PROVIDERS_GOOGLE_CLIENTID:-}" ] && [ -z "${TINYAUTH_OAUTH_WHITELIST:-}" ]; then
+  echo "[deploy] Google OAuth를 쓰려면 TINYAUTH_OAUTH_WHITELIST가 필요하다" >&2
   exit 2
+fi
+
+# 로컬 clean clone은 공개 테스트 계정(test/test)으로 기동하고, 운영 진입점만 막는다.
+if [ "${TLS_MODE:-none}" = "live" ]; then
+  if [ -z "${TINYAUTH_AUTH_USERS:-}" ]; then
+    echo "[deploy] TLS_MODE=live에서는 TINYAUTH_AUTH_USERS가 필요하다" >&2
+    exit 2
+  fi
+  case ",${TINYAUTH_AUTH_USERS}" in
+    *,test:*)
+      echo "[deploy] TLS_MODE=live에서는 로컬 테스트 계정(test)을 쓸 수 없다" >&2
+      exit 2
+      ;;
+  esac
+  if [ -z "${TINYAUTH_OAUTH_WHITELIST:-}" ]; then
+    echo "[deploy] TLS_MODE=live에서는 TINYAUTH_OAUTH_WHITELIST가 필요하다" >&2
+    exit 2
+  fi
 fi
 
 # ------------------------------------------------------------------------------

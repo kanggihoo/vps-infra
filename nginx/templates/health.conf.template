@@ -27,5 +27,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # whoami는 받은 헤더를 본문에 그대로 돌려준다. 상위 도메인 세션 쿠키가 반사되지 않게 지운다.
+        proxy_set_header Cookie "";
     }
 }

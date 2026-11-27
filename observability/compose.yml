@@ -58,8 +58,8 @@ services:
     environment:
       CONFIG_SUM: ${ALLOY_CONFIG_SUM:-}
       # config.alloy의 blackbox probe 주소를 만든다(<PROBE_SCHEME>://health.<BASE_DOMAIN>/).
-      # 로컬 http·localhost, VPS https·kkh-hub.tech. 값은 루트 .env에서 온다.
-      BASE_DOMAIN: ${BASE_DOMAIN:-localhost}
+      # 로컬 http·vps.localhost, VPS https·kkh-hub.tech. 값은 루트 .env에서 온다.
+      BASE_DOMAIN: ${BASE_DOMAIN:-vps.localhost}
       PROBE_SCHEME: ${HEALTHCHECK_SCHEME:-http}
     volumes:
       # 설정 폴더. 파일이 아니라 폴더를 마운트한다. git pull은 파일을 새로 만들어 바꿔치기하므로
@@ -164,17 +164,25 @@ services:
       # GF_<섹션>_<키>는 grafana.ini의 [섹션] 키를 덮어쓴다(예: GF_SECURITY_ADMIN_USER = [security] admin_user).
       #
       # Grafana가 만드는 링크(알림 메시지의 "Source:" 등)의 기준 주소.
-      GF_SERVER_ROOT_URL: ${HEALTHCHECK_SCHEME:-http}://grafana.${BASE_DOMAIN:-localhost}/
-      # Grafana 자체 로그인(ADR 0016). Basic Auth와 같은 계정을 SOPS에 둔다.
-      # 계정은 최초 기동 때만 적용된다(grafana-data 볼륨에 저장). 이후 비밀번호는 Grafana 화면의
-      # 프로필에서 바꾼다. 잊었을 때만 `grafana cli admin reset-admin-password`를 쓴다.
+      GF_SERVER_ROOT_URL: ${HEALTHCHECK_SCHEME:-http}://grafana.${BASE_DOMAIN:-vps.localhost}/
+      # 기본 admin 계정. 최초 기동 때만 적용된다(grafana-data 볼륨에 저장).
+      # 로그인 폼과 Basic Auth를 끄므로 이 계정으로 직접 로그인하지 않는다. 사람은 아래 Auth Proxy로 들어온다.
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
-      # 로그인 쿠키를 HTTPS에서만 보낸다. VPS(https)는 true, 로컬(http)은 false여야 로그인된다.
+      # 세션 쿠키를 HTTPS에서만 보낸다. VPS(https)는 true, 로컬(http)은 false여야 로그인된다.
       GF_SECURITY_COOKIE_SECURE: ${GRAFANA_COOKIE_SECURE:-false}
       # 가입 화면과 익명 접근을 끈다. 계정은 위 admin 하나다.
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Tinyauth SSO(Auth Proxy). nginx가 Remote-User를 Tinyauth 결과로 덮어써 넘긴다.
+      # 처음 보는 사용자는 자동으로 만들고 Admin으로 둔다(로컬 계정과 Google 계정은 별도 사용자가 된다).
+      # Grafana는 vps_proxy 안에서 이 헤더를 그대로 믿는다. 포트를 publish하지 않는다는 전제다.
+      GF_AUTH_PROXY_ENABLED: "true"
+      GF_AUTH_PROXY_HEADER_NAME: Remote-User
+      GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_BASIC_ENABLED: "false"
       # 사용 통계 전송과 업데이트 확인을 끈다(외부로 나가는 요청을 줄인다).
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"

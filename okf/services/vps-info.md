@@ -9,7 +9,7 @@ timestamp: 2026-11-20T00:00:00+09:00
 # 개요
 
 `kanggihoo/vps-info`(Signal Archive)는 [프로젝트별 독립 Compose](/adr/0007-per-project-compose.md)를
-처음 적용한 외부 프로젝트다. `info.kkh-hub.tech`로 노출되며 공용 Basic Auth(`secrets/basic-auth.htpasswd.sops.txt`)를 쓴다.
+처음 적용한 외부 프로젝트다. `info.kkh-hub.tech`로 노출되며 nginx의 Tinyauth SSO 뒤에 있다([ADR 0022](/adr/0022-tinyauth-sso.md)).
 
 # 소유 경계
 

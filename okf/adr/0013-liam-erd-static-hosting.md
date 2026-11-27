@@ -11,6 +11,8 @@ timestamp: 2026-09-30T00:00:00+09:00
 **빌드 주체만 바뀜.** vps-info는 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md) 이후 Jenkins stage가 아니라
 배포 스크립트(`scripts/deploy.sh` → `scripts/erd.sh`)가 ERD를 만든다. 산출물 위치(`vps_erd_site:/<프로젝트>/`)와 nginx 서빙은 그대로다.
 
+**인증이 바뀜.** [ADR 0022](/adr/0022-tinyauth-sso.md)로 Basic Auth 대신 Tinyauth SSO 뒤에서 서빙한다.
+
 # 결정
 
 프로젝트의 DB 스키마 ERD는 [Liam ERD](https://github.com/liam-hq/liam) CLI로 빌드한다. 빌드는 각 프로젝트의

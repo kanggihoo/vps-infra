@@ -34,10 +34,11 @@ nginx(otel 모듈) ─ span ─┐
 | `observability/grafana/dashboards/<폴더>/*.json` | 대시보드. 하위 폴더 이름이 Grafana 폴더 | git pull 후 30초 안에 자동 반영 |
 
 admin 계정(`GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`)과 알림 webhook(`GRAFANA_ALERT_WEBHOOK_URL`)은
-`secrets/env.<환경>.sops.env`에 있다. 운영 계정은 Basic Auth(와 지금은 없는 Jenkins 로그인)와 같은 값을 복사해 둔 것이다.
-연동이 아니라 복사이므로 Basic Auth를 바꿔도 Grafana는 따라오지 않는다. 계정은 Grafana 최초 기동 때만
-적용된다. 이후 비밀번호는 Grafana 화면의 프로필 → Change password로 바꾸고, 기록을 맞추려면 SOPS 값도 고친다.
-비밀번호를 잊었을 때만 VPS에서 `docker exec vps-grafana grafana cli admin reset-admin-password <새 비밀번호>`를 쓴다.
+`secrets/env.<환경>.sops.env`에 있다. 사람은 이 계정으로 로그인하지 않는다. Grafana는 Auth Proxy로 동작하고
+(`GF_AUTH_PROXY_ENABLED`), nginx가 Tinyauth 로그인 결과를 `Remote-User`로 넘긴다. 처음 보는 사용자는 Admin으로
+자동 가입되며, 로그인 폼과 Basic Auth API는 꺼져 있다([ADR 0022](/adr/0022-tinyauth-sso.md)).
+같은 사람이라도 로컬 계정(아이디)과 Google 계정(이메일)으로 들어오면 Grafana 사용자가 따로 생긴다.
+Grafana 생존 확인은 공개 이름 대신 `http://grafana:3000/api/health`를 vps_proxy 안에서 본다.
 
 # 조회
 

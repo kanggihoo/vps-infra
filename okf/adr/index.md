@@ -23,3 +23,4 @@
 * [vps-info 배포를 GitHub Actions + GHCR + SSH forced command로 옮기고 Jenkins job을 없앤다](0019-vps-info-cd-on-github-actions.md) - Actions가 이미지를 GHCR에 올리고, forced command로 묶인 key로 VPS의 deploy.sh에 SHA만 넘긴다.
 * [vps-infra 배포를 GitHub Actions + SSH forced command로 옮긴다](0020-infra-cd-on-github-actions.md) - validate 뒤 forced command로 VPS의 ci-deploy.sh에 SHA와 대상만 넘긴다. Jenkinsfile의 순서를 그 스크립트가 실행한다.
 * [Jenkins를 VPS에서 걷어낸다](0021-remove-jenkins.md) - 배포가 모두 Actions로 옮겨 Jenkins가 할 일이 없다. `jenkins/`, nginx 라우팅, 관측 스택의 Jenkins 수집을 지우고 컨테이너를 멈춘다.
+* [보호 서브도메인을 Basic Auth 대신 Tinyauth SSO로 지킨다](0022-tinyauth-sso.md) - erd·notes·info·grafana를 nginx auth_request + Tinyauth 24시간 쿠키 세션으로 묶고, Grafana는 Auth Proxy로 바꾼다.

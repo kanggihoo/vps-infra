@@ -1,5 +1,9 @@
 # 변경 기록
 
+## 2026-11-27
+* **결정**: [ADR 0022](/adr/0022-tinyauth-sso.md)로 Basic Auth를 Tinyauth SSO로 바꾼다. `tinyauth` 서비스와 `vps_tinyauth_data` volume, `auth.<도메인>` 라우팅·alias·인증서 도메인, nginx `snippets/tinyauth.conf`를 추가했다. Grafana는 Auth Proxy로 바꾸고 로그인 폼을 껐다. `secrets/basic-auth.htpasswd.sops.txt`, `nginx/test-fixtures/basic-auth.htpasswd`, `scripts/set-basic-auth.sh`를 지웠다. 로컬 `BASE_DOMAIN`은 `vps.localhost`가 되었다.
+* **갱신**: [nginx](/services/nginx.md), [ERD](/services/erd.md), [vps-info](/services/vps-info.md), [관측 스택](/services/observability.md), [ADR 0010](/adr/0010-sops-secrets.md), [ADR 0013](/adr/0013-liam-erd-static-hosting.md) 상태, `INFRA.md`.
+
 ## 2026-11-22
 * **변경**: [배포](/services/deploy.md) pipeline을 CI, GHCR 게시, CD로 나눴다. 최종 gate, Gitleaks와 Lefthook, Portal digest 배포 및 SHA 검증을 코드에 반영했다. VPS 전환은 repository variable로 활성화한다.
 

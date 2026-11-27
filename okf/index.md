@@ -39,6 +39,7 @@ Hostinger VPS 인프라 프로젝트의 핵심 지식을 담는 OKF 번들.
 * [vps-info 배포를 GitHub Actions + GHCR + SSH forced command로 옮기고 Jenkins job을 없앤다](adr/0019-vps-info-cd-on-github-actions.md) - 이미지는 Actions가 GHCR에 올리고, VPS는 forced command로 받은 SHA를 pull해 배포한다.
 * [vps-infra 배포를 GitHub Actions + SSH forced command로 옮긴다](adr/0020-infra-cd-on-github-actions.md) - validate 뒤 VPS의 ci-deploy.sh가 Jenkinsfile 순서대로 배포한다.
 * [Jenkins를 VPS에서 걷어낸다](adr/0021-remove-jenkins.md) - 배포가 모두 Actions로 옮겨 Jenkins와 그 설정·라우팅·관측 수집을 지운다.
+* [보호 서브도메인을 Tinyauth SSO로 지킨다](adr/0022-tinyauth-sso.md) - Basic Auth를 걷어내고 erd·notes·info·grafana를 로컬 계정+Google OAuth 24시간 SSO로 묶는다.
 * [PR 생성 webhook이 유실되어 PR이 Jenkins에 나타나지 않는다](troubleshooting/webhook-pr-event-lost.md) - 연결 단계 실패로 PR #3만 누락된 사례의 조사 과정과 진단 순서.
 * [관측 스택](services/observability.md) - Grafana·Prometheus·Loki·Tempo·Alloy로 메트릭·로그·트레이스를 모은다.
 * [ERD 서빙 (Liam ERD)](services/erd.md) - 프로젝트 DB 스키마의 ER 다이어그램을 erd 서브도메인에서 정적 파일로 제공한다.

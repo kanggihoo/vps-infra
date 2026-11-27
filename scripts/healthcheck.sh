@@ -10,11 +10,12 @@ if [ -f .env ]; then
 fi
 
 # 도메인과 스킴을 환경변수로 받는다. 하드코딩하면 로컬에서 항상 실패한다.
-#   로컬  HEALTHCHECK_HOST=health.localhost  HEALTHCHECK_SCHEME=http
+#   로컬  HEALTHCHECK_HOST=health.vps.localhost  HEALTHCHECK_SCHEME=http
 #   VPS   HEALTHCHECK_HOST=health.kkh-hub.tech HEALTHCHECK_SCHEME=https
-health_host="${HEALTHCHECK_HOST:-health.localhost}"
+base_domain="${BASE_DOMAIN:-vps.localhost}"
+health_host="${HEALTHCHECK_HOST:-health.${base_domain}}"
 health_scheme="${HEALTHCHECK_SCHEME:-http}"
-portal_host="${PORTAL_HEALTHCHECK_HOST:-portal.${BASE_DOMAIN:-localhost}}"
+portal_host="${PORTAL_HEALTHCHECK_HOST:-portal.${base_domain}}"
 
 public_curl() {
   local host="$1" path="$2"
@@ -68,8 +69,33 @@ check_public_route() {
 # whoami는 DNS, TLS, nginx 경로를 확인하고 portal은 실제 배포 대상을 확인한다.
 check_public_route "health" "$health_host"
 check_public_route "portal" "$portal_host" "${EXPECTED_PORTAL_SHA:-}"
-# 관측 스택(ADR 0016). 별도 compose 프로젝트라 nginx 라우팅과 함께 확인한다.
-# 루트는 /login으로 302를 주며, -f는 3xx를 실패로 보지 않는다.
-check_public_route "grafana" "grafana.${BASE_DOMAIN:-localhost}"
+# Tinyauth 로그인 포털. 공개 서브도메인이라 200이어야 한다.
+check_public_route "auth" "auth.${base_domain}"
+
+# 보호 서브도메인은 미인증 요청을 auth 로그인으로 302 보내야 한다.
+# 200이면 인증이 빠진 것이고, 5xx면 Tinyauth나 nginx 연결이 깨진 것이다.
+login_prefix="${health_scheme}://auth.${base_domain}/login?"
+for name in erd notes info grafana; do
+  host="${name}.${base_domain}"
+  echo "[healthcheck] ${name} redirects to login (${health_scheme}://${host})"
+  got="$(public_curl "$host" / -sS -o /dev/null -w '%{http_code} %{redirect_url}' || true)"
+  case "$got" in
+    "302 ${login_prefix}"*) ;;
+    *) echo "[healthcheck] ${name} want 302 to ${login_prefix}..., got: ${got}" >&2; exit 1 ;;
+  esac
+done
+
+# Grafana 생존은 인증 뒤 공개 이름 대신 vps_proxy 안에서 직접 본다(ADR 0016, 별도 compose 프로젝트).
+echo "[healthcheck] grafana internal health (http://grafana:3000/api/health)"
+for attempt in $(seq 1 12); do
+  if docker compose exec -T nginx wget -qO- http://grafana:3000/api/health >/dev/null 2>&1; then
+    break
+  fi
+  if [ "$attempt" = 12 ]; then
+    echo "[healthcheck] grafana internal health failed after ${attempt} attempts" >&2
+    exit 1
+  fi
+  sleep 5
+done
 
 echo "[healthcheck] ok"

@@ -2,8 +2,9 @@
 # grafana.${BASE_DOMAIN} -> grafana 컨테이너 (ADR 0016)
 #
 # 기본 구조는 portal.conf.template과 동일. 상세 주석은 그쪽 참고.
-# 인증은 Grafana 자체 로그인이 맡는다. Basic Auth를 겹치면 Grafana가
-# Authorization 헤더를 자기 basic auth로 해석해 로그인이 꼬인다.
+# 인증은 Tinyauth SSO가 맡고, Grafana는 Auth Proxy로 Remote-User 헤더를 믿는다.
+# 그래서 Remote-User는 반드시 Tinyauth 결과로 덮어쓰고, Authorization은 비운다.
+# 둘 중 하나라도 빠지면 클라이언트가 보낸 헤더로 Grafana에 로그인할 수 있다.
 #
 # grafana는 observability/compose.yml이 띄우는 별도 compose 프로젝트다.
 # 변수 upstream으로 두어, 관측 스택이 없어도 nginx는 기동하고
@@ -18,6 +19,10 @@ server {
 
     resolver 127.0.0.11 valid=10s ipv6=off;
 
+    include /etc/nginx/conf.d/snippets/tinyauth.conf;
+    # Tinyauth가 200 응답에 준 Remote-User(로그인한 사용자 이름).
+    auth_request_set $tinyauth_user $upstream_http_remote_user;
+
     location / {
         set $grafana_upstream "grafana:3000";
         proxy_pass http://$grafana_upstream$request_uri;
@@ -26,6 +31,8 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Remote-User $tinyauth_user;
+        proxy_set_header Authorization "";
     }
 
     # Grafana Live(대시보드 실시간 갱신, Explore live tail)는 WebSocket을 쓴다.
@@ -37,5 +44,7 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
+        proxy_set_header Remote-User $tinyauth_user;
+        proxy_set_header Authorization "";
     }
 }

@@ -9,7 +9,7 @@ timestamp: 2026-08-23T00:00:00+09:00
 # 상태
 
 **key 위치와 대상이 바뀜.** [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins가 없어져 `jenkins/.env`의 `SOPS_AGE_KEY_CONTENT` 사본을 지웠다.
-Jenkins checkout용 `github-pat`도 대상에서 빼고 `secrets/github-pat.sops.txt`를 지웠다. 복호화 대상은 `.env`와 Basic Auth 파일이다.
+Jenkins checkout용 `github-pat`도 대상에서 빼고 `secrets/github-pat.sops.txt`를 지웠다. [ADR 0022](/adr/0022-tinyauth-sso.md)로 Basic Auth 파일(`secrets/basic-auth.htpasswd.sops.txt`)도 지웠다. 복호화 대상은 환경별 `.env` 하나다.
 배포가 쓰는 복호화 key는 `~/.config/sops/age/keys.txt` 하나이고,
 배포 스크립트가 `tools` 컨테이너로 읽는다([ADR 0020](/adr/0020-infra-cd-on-github-actions.md)). 나머지 결정은 유효하다.
 
@@ -21,10 +21,10 @@ GitHub Secrets에는 그 key 하나만 저장한다.
 암호화 대상:
 
 ```txt
-.env               DB 비밀번호 등 런타임 secret
-basic-auth.htpasswd     notes 서브도메인 Basic Auth
-github-pat         Jenkins가 checkout에 사용하는 credential
+.env               DB 비밀번호, Tinyauth 계정·OAuth client 등 런타임 secret
 ```
+
+처음에는 `basic-auth.htpasswd`(Basic Auth)와 `github-pat`(Jenkins checkout)도 대상이었다. 둘 다 지웠다(상태 참고).
 
 VPS의 age key 원본은 `~/.config/sops/age/keys.txt`에 둔다. 홈 디렉터리이므로 `sudo`가
 필요 없다. Jenkins는 이 파일을 직접 읽지 않는다. 같은 key를 base64 한 줄로 만들어
