@@ -65,8 +65,10 @@ services:
     restart: unless-stopped
     environment:
       TINYAUTH_APPURL: ${TINYAUTH_APPURL:-http://auth.vps.localhost}
-      # user:bcrypt 쉼표 구분. 로컬은 test 계정, live 배포는 deploy.sh가 test 계정을 거부한다.
-      TINYAUTH_AUTH_USERS: ${TINYAUTH_AUTH_USERS:?TINYAUTH_AUTH_USERS is required}
+      # user:bcrypt 쉼표 구분. 로컬은 test 계정, live 배포는 deploy.sh가 빈 값과 test 계정을 거부한다.
+      # :?(필수)로 두지 않는다. ci-deploy.sh는 secrets.sh decrypt 전에 `docker compose build tools`를 부르는데,
+      # 그 시점의 VPS .env는 이전 배포의 것이라 새 변수가 없어 compose 전체가 interpolation 오류로 멈춘다.
+      TINYAUTH_AUTH_USERS: ${TINYAUTH_AUTH_USERS:-}
       # 24시간(초). spec D-8로 고정한 값이며 .env 계약에 포함된다.
       TINYAUTH_AUTH_SESSIONEXPIRY: ${TINYAUTH_AUTH_SESSIONEXPIRY:-86400}
       # VPS(https)에서만 true. 로컬(http)에서 true면 쿠키가 전송되지 않는다.
