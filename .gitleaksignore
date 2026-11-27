@@ -1,0 +1,4 @@
+# gitleaks 오탐 기록. 형식: <commit>:<file>:<rule>:<line>
+# 5cb5c2d의 test-routing.sh WebSocket 핸드셰이크 키는 RFC 6455 예시 nonce("the sample nonce")다. secret이 아니다.
+# 이후 commit은 키를 실행 시 무작위로 만든다. PR CI가 이 commit을 다시 검사하므로 남겨 둔다.
+5cb5c2df489b5865a40293e030b806279f7d0963:scripts/test-routing.sh:generic-api-key:89

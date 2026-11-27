@@ -86,7 +86,8 @@ login_redirect() {
   fi
 }
 
-ws=(-H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==")
+# Sec-WebSocket-Key는 매 요청 무작위 16바이트(base64)다. 고정 문자열을 두면 gitleaks가 API key로 오인한다.
+ws=(-H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: $(openssl rand -base64 16)")
 
 echo "--- probe 파일 준비 ---"
 # nginx는 정적 볼륨을 :ro로 마운트하므로 쓰기는 별도 컨테이너로 한다.
