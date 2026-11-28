@@ -11,7 +11,7 @@ timestamp: 2026-11-20T00:00:00+09:00
 Jenkins를 VPS 인프라에서 완전히 없앤다.
 
 - `jenkins/` 디렉터리 전체를 지운다(`Dockerfile`, `compose.yml`, `casc/jenkins.yaml`, `casc/jobs.groovy`,
-  shared library `notifyMattermost`, `plugins.txt`, `start.sh`, README). `Jenkinsfile`은 [ADR 0020](/adr/0020-infra-cd-on-github-actions.md)에서 이미 지웠다.
+  shared library `notifyMattermost`, `plugins.txt`, `start.sh`, README). `Jenkinsfile`은 [ADR 0020](0020-infra-cd-on-github-actions.md)에서 이미 지웠다.
 - nginx의 `nginx/templates/jenkins.conf.template`과 `vps_proxy`의 `jenkins.<도메인>` alias를 지운다.
   `jenkins.kkh-hub.tech` 요청은 이제 nginx default server(444)로 떨어진다.
 - 관측 스택에서 Alloy의 Jenkins blackbox probe, Grafana 알림 규칙 "Jenkins 큐 적체", `Jenkins overview` 대시보드를 지운다.
@@ -27,16 +27,16 @@ vps-infra main push -> validate -> ssh forced command ~/app/vps-infra/scripts/ci
 
 # 이유
 
-- [ADR 0006](/adr/0006-jenkins-builds-on-vps.md)이 Jenkins를 둔 근거는 학습이었고, 그 목적은 달성했다.
+- [ADR 0006](0006-jenkins-builds-on-vps.md)이 Jenkins를 둔 근거는 학습이었고, 그 목적은 달성했다.
 - Jenkins는 VPS에서 가장 큰 메모리 소비자였다(2026-11-20 1.41GiB / 상한 2GiB).
-- [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)·[ADR 0020](/adr/0020-infra-cd-on-github-actions.md) 이후 Jenkins가 실행하는 job이 없다.
+- [ADR 0019](0019-vps-info-cd-on-github-actions.md)·[ADR 0020](0020-infra-cd-on-github-actions.md) 이후 Jenkins가 실행하는 job이 없다.
   띄워 두면 메모리와 `docker.sock` 권한만 남는다.
 
 # 결과
 
 - Grafana에서 Jenkins OTel trace·메트릭·빌드 로그가 사라진다. 배포 로그는 각 레포의 Actions run에서 본다.
 - Jenkins UI와 JUnit 결과 화면이 없어진다. 테스트 결과는 Actions 로그로 본다.
-- 빌드 알림은 각 레포 workflow의 `notify` job이 보낸다([ADR 0012](/adr/0012-mattermost-build-notification.md)의 shared library는 지웠다).
+- 빌드 알림은 각 레포 workflow의 `notify` job이 보낸다([ADR 0012](0012-mattermost-build-notification.md)의 shared library는 지웠다).
 - 빌드 기록은 volume과 함께 지웠다. 되돌릴 수 없다.
 - 같은 날 정리를 마쳤다: VPS `jenkins/.env`(age key·PAT·관리자 비밀번호 평문 사본), 제한 없는 옛 배포 key(`github-actions-vps-infra`)와
   vps-infra secret `VPS_HOST`·`VPS_PORT`·`VPS_SSH_KEY`·`VPS_USER`, Jenkins checkout용 `secrets/github-pat.sops.txt`,
@@ -47,7 +47,7 @@ vps-infra main push -> validate -> ssh forced command ~/app/vps-infra/scripts/ci
 
 # 관련 개념
 
-- [vps-infra 배포를 GitHub Actions + SSH forced command로 옮긴다](/adr/0020-infra-cd-on-github-actions.md)
-- [vps-info 배포를 GitHub Actions + GHCR + SSH forced command로 옮긴다](/adr/0019-vps-info-cd-on-github-actions.md)
-- [Jenkins가 VPS에서 이미지를 빌드한다](/adr/0006-jenkins-builds-on-vps.md)
-- [배포](/services/deploy.md)
+- [vps-infra 배포를 GitHub Actions + SSH forced command로 옮긴다](0020-infra-cd-on-github-actions.md)
+- [vps-info 배포를 GitHub Actions + GHCR + SSH forced command로 옮긴다](0019-vps-info-cd-on-github-actions.md)
+- [Jenkins가 VPS에서 이미지를 빌드한다](0006-jenkins-builds-on-vps.md)
+- [배포](../../okf/services/deploy.md)

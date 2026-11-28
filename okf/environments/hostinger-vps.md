@@ -60,5 +60,5 @@ private key는 각 레포 secret `VPS_DEPLOY_KEY`에만 두고 repository에 저
 
 - [배포](/services/deploy.md)
 - [nginx 리버스 프록시](/services/nginx.md)
-- [서브도메인 라우팅](/adr/0005-subdomain-routing.md)
+- [서브도메인 라우팅](../../docs/adr/0005-subdomain-routing.md)
 - [초기 배포 검증](/runbooks/initial-deployment-validation.md)

@@ -8,7 +8,7 @@ timestamp: 2026-09-29T00:00:00+09:00
 
 # 상태
 
-**폐기.** Jenkins를 [ADR 0021](/adr/0021-remove-jenkins.md)로 걷어내면서 `jenkins/`(JCasC, job-dsl, `plugins.txt`)를 모두 지웠다. 아래는 기록으로 남긴다.
+**폐기.** Jenkins를 [ADR 0021](0021-remove-jenkins.md)로 걷어내면서 `jenkins/`(JCasC, job-dsl, `plugins.txt`)를 모두 지웠다. 아래는 기록으로 남긴다.
 
 # 결정
 
@@ -76,7 +76,7 @@ token reload endpoint(`CASC_RELOAD_TOKEN`)로 JCasC를 다시 읽힌다. reload�
 - 제거: `ws-cleanup`(`cleanWs()`를 쓰지 않음), `build-timeout`(freestyle용. pipeline `timeout()`은
   기본 스텝), `docker-workflow`(docker를 `sh`로만 호출).
 - 추가: `pipeline-graph-view`(단계별 그래프), `ansicolor`(콘솔 색상), `junit`(테스트 결과 추이,
-  [ADR 0012](/adr/0012-mattermost-build-notification.md)의 실패 테스트 요약). `junit`은 이미 하위
+  [ADR 0012](0012-mattermost-build-notification.md)의 실패 테스트 요약). `junit`은 이미 하위
   의존성으로 설치되어 있었지만 직접 쓰므로 최상위에 고정한다.
 - **기동마다 volume의 `plugins/`를 비운다(`jenkins/start.sh`).** Jenkins는 plugin을 `JENKINS_HOME/plugins`에서만
   읽고, 공식 `jenkins.sh`는 이미지의 `/usr/share/jenkins/ref/plugins`를 그곳으로 복사만 하고 지우지 않는다.
@@ -92,6 +92,6 @@ token reload endpoint(`CASC_RELOAD_TOKEN`)로 JCasC를 다시 읽힌다. reload�
 
 # 관련 개념
 
-- [배포](/services/deploy.md)
-- [Jenkins가 VPS에서 이미지를 빌드한다](/adr/0006-jenkins-builds-on-vps.md)
-- [SOPS 기반 secret 관리](/adr/0010-sops-secrets.md)
+- [배포](../../okf/services/deploy.md)
+- [Jenkins가 VPS에서 이미지를 빌드한다](0006-jenkins-builds-on-vps.md)
+- [SOPS 기반 secret 관리](0010-sops-secrets.md)

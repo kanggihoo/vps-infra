@@ -8,18 +8,18 @@ timestamp: 2026-07-20T00:00:00+09:00
 
 # 상태
 
-**폐기.** 배포는 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)·[ADR 0020](/adr/0020-infra-cd-on-github-actions.md)으로 각 레포의 GitHub Actions에 옮겼고,
-Jenkins는 [ADR 0021](/adr/0021-remove-jenkins.md)로 걷어냈다. 아래는 기록으로 남긴다.
+**폐기.** 배포는 [ADR 0019](0019-vps-info-cd-on-github-actions.md)·[ADR 0020](0020-infra-cd-on-github-actions.md)으로 각 레포의 GitHub Actions에 옮겼고,
+Jenkins는 [ADR 0021](0021-remove-jenkins.md)로 걷어냈다. 아래는 기록으로 남긴다.
 
 폐기 전에 다음 항목은 이미 이후 결정으로 대체되어 있었다.
 
 - 배포 경로가 `/opt/vps-infra`에서 홈 디렉터리 아래 `app/`으로 바뀐다. root 소유
   경로가 권한 문제를 일으켰기 때문이다.
-- Jenkins 설정과 Job은 [Jenkins 설정을 코드로 관리](/adr/0009-jenkins-config-as-code.md)로
+- Jenkins 설정과 Job은 [Jenkins 설정을 코드로 관리](0009-jenkins-config-as-code.md)로
   레포에서 관리한다.
-- 각 프로젝트 배포는 [프로젝트별 독립 Compose](/adr/0007-per-project-compose.md)를 따른다.
+- 각 프로젝트 배포는 [프로젝트별 독립 Compose](0007-per-project-compose.md)를 따른다.
 - Jenkins가 이미지 빌드까지 수행하는 근거는
-  [Jenkins가 VPS에서 이미지를 빌드한다](/adr/0006-jenkins-builds-on-vps.md)에 있다.
+  [Jenkins가 VPS에서 이미지를 빌드한다](0006-jenkins-builds-on-vps.md)에 있다.
 
 # 결정
 
@@ -44,5 +44,5 @@ webhook을 받아 repository를 checkout하고, VPS Docker daemon에서 배포 s
 
 # 관련 개념
 
-- [배포](/services/deploy.md)
-- [시스템 아키텍처 개요](/architecture/system-overview.md)
+- [배포](../../okf/services/deploy.md)
+- [시스템 아키텍처 개요](../../okf/architecture/system-overview.md)

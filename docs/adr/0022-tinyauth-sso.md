@@ -8,7 +8,7 @@ timestamp: 2026-11-27T00:00:00+09:00
 
 # 상태
 
-채택. [ADR 0013](/adr/0013-liam-erd-static-hosting.md)의 "공용 Basic Auth를 건다"와 [ADR 0010](/adr/0010-sops-secrets.md)의
+채택. [ADR 0013](0013-liam-erd-static-hosting.md)의 "공용 Basic Auth를 건다"와 [ADR 0010](0010-sops-secrets.md)의
 Basic Auth 암호화 대상을 대체한다. 스펙과 결정 로그는 레포의 `docs/specs/tinyauth-sso/`에 있다.
 
 # 결정
@@ -80,8 +80,8 @@ Basic Auth 암호화 대상을 대체한다. 스펙과 결정 로그는 레포�
 
 # 관련 개념
 
-- [nginx 리버스 프록시](/services/nginx.md)
-- [ERD 서빙](/services/erd.md)
-- [관측 스택](/services/observability.md)
-- [SOPS 기반 secret 관리](/adr/0010-sops-secrets.md)
-- [nginx 설정의 환경 템플릿화](/adr/0008-nginx-env-templates.md)
+- [nginx 리버스 프록시](../../okf/services/nginx.md)
+- [ERD 서빙](../../okf/services/erd.md)
+- [관측 스택](../../okf/services/observability.md)
+- [SOPS 기반 secret 관리](0010-sops-secrets.md)
+- [nginx 설정의 환경 템플릿화](0008-nginx-env-templates.md)

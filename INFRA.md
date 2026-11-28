@@ -127,7 +127,7 @@ secrets/env.prod.sops.env
 ```
 
 Tinyauth 계정(`TINYAUTH_AUTH_USERS`), Google OAuth client와 허용 이메일(`TINYAUTH_OAUTH_*`)도 이 `.env`에 있다.
-bcrypt 해시처럼 `$`가 든 값은 작은따옴표로 감싼다([ADR 0022](okf/adr/0022-tinyauth-sso.md)).
+bcrypt 해시처럼 `$`가 든 값은 작은따옴표로 감싼다([ADR 0022](docs/adr/0022-tinyauth-sso.md)).
 
 - SOPS: 암호화·복호화 관리 도구
 - age: 복호화 key backend
@@ -176,7 +176,7 @@ validate job은 PR과 main에서 다음을 검증한다.
 `~/app/vps-infra/scripts/ci-deploy.sh <sha> all`로 한다.
 
 `ci-deploy.sh`를 바꾸면 그 변경은 **다음 배포부터** 적용된다. VPS에 이미 있는 버전이 먼저 실행돼
-새 커밋을 checkout하기 때문이다. 상세는 `okf/services/deploy.md`와 `okf/adr/0020-infra-cd-on-github-actions.md`에 있다.
+새 커밋을 checkout하기 때문이다. 상세는 `okf/services/deploy.md`와 `docs/adr/0020-infra-cd-on-github-actions.md`에 있다.
 
 ## 6. 신규 서비스 추가
 
@@ -263,9 +263,9 @@ docker compose config
 - `okf/architecture/system-overview.md`
 - `okf/services/nginx.md`
 - `okf/services/deploy.md`
-- `okf/adr/0021-remove-jenkins.md`
+- `docs/adr/0021-remove-jenkins.md`
 - `okf/runbooks/local-first-handover.md`
 - `okf/runbooks/failure-diagnosis.md`
-- `okf/adr/0007-per-project-compose.md`
-- `okf/adr/0008-nginx-env-templates.md`
-- `okf/adr/0010-sops-secrets.md`
+- `docs/adr/0007-per-project-compose.md`
+- `docs/adr/0008-nginx-env-templates.md`
+- `docs/adr/0010-sops-secrets.md`

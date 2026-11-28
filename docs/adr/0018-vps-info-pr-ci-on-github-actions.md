@@ -8,13 +8,13 @@ timestamp: 2026-11-20T00:00:00+09:00
 
 # 상태
 
-**확장.** 같은 날 main 배포도 [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md)로 Actions에 옮겼다. 아래의 "main 배포는 Jenkins" 부분은 그 ADR이 대체한다.
+**확장.** 같은 날 main 배포도 [ADR 0019](0019-vps-info-cd-on-github-actions.md)로 Actions에 옮겼다. 아래의 "main 배포는 Jenkins" 부분은 그 ADR이 대체한다.
 
 # 결정
 
 `vps-info`의 PR 검증을 Jenkins multibranch PR 빌드에서 vps-info 레포의 `.github/workflows/ci.yml`로 옮긴다.
 main 배포(`vps-info/main`의 Test → Decrypt → Deploy → ERD)는 그대로 Jenkins가 한다.
-[ADR 0014](/adr/0014-multibranch-pr-ci.md)의 PR 검증 부분을 대체하고, main 배포 부분은 유지한다.
+[ADR 0014](0014-multibranch-pr-ci.md)의 PR 검증 부분을 대체하고, main 배포 부분은 유지한다.
 
 ```txt
 PR 생성·갱신 -> GitHub Actions CI (job `check:task`) -> 병합 필수 check
@@ -38,14 +38,14 @@ main 병합   -> GitHub webhook(push) -> Jenkins vps-info/main
 # 배경
 
 PR이 실패하면 GitHub check의 Details가 Jenkins 빌드 페이지로 연결되어, 로그를 보려면 Jenkins로 넘어가 로그인해야 했다.
-Jenkins는 2026-08-22 실측으로 VPS 사용 메모리 2.0GB 중 1.0GB를 차지하는 가장 큰 소비자이고([ADR 0006](/adr/0006-jenkins-builds-on-vps.md)),
+Jenkins는 2026-08-22 실측으로 VPS 사용 메모리 2.0GB 중 1.0GB를 차지하는 가장 큰 소비자이고([ADR 0006](0006-jenkins-builds-on-vps.md)),
 ADR 0006이 Jenkins를 둔 이유였던 학습 목적은 어느 정도 달성했다고 판단했다.
 CD 이전(Actions 빌드 + GHCR + SSH 배포)과 Jenkins 제거는 이후 별도 결정으로 다루고, 이번에는 범위가 작은 CI부터 옮긴다.
 
 # 이유
 
 - **로그가 PR 화면에 있다.** 실패 로그, 재실행, 실패 step이 PR의 Checks 탭 안에 있다.
-- **PR 검증이 외부 webhook 전달에 의존하지 않는다.** [ADR 0015](/adr/0015-multibranch-periodic-scan.md)의 PR #3 사례처럼
+- **PR 검증이 외부 webhook 전달에 의존하지 않는다.** [ADR 0015](0015-multibranch-periodic-scan.md)의 PR #3 사례처럼
   `pull_request` webhook이 연결 단계에서 실패해 필수 check가 `Expected`에 멈추는 일이 Actions에서는 생기지 않는다.
 - **VPS가 PR 빌드를 하지 않는다.** test image 빌드(`npm ci` 포함)가 VPS 밖에서 돌고, `numExecutors: 1`을 PR 빌드가 점유해
   main 배포가 대기하는 일도 없어진다.
@@ -59,7 +59,7 @@ CD 이전(Actions 빌드 + GHCR + SSH 배포)과 Jenkins 제거는 이후 별도
 - CI 알림이 단순해진다. 실패 단계·실패 테스트·로그 꼬리 대신 Actions run 링크를 싣는다. 새 push로 취소된 실행은 알리지 않는다.
 - hosted runner는 빌드 캐시가 없어 매 PR마다 test image를 처음부터 빌드한다. 느려지면 buildx `type=gha` 캐시를 붙인다.
 - Jenkins main 빌드의 Test는 배포 직전 재검증으로 남는다. `CHECK_BASE`는 `origin/main`으로 고정한다.
-- [ADR 0015](/adr/0015-multibranch-periodic-scan.md)의 15분 스캔은 놓친 main push를 보완하는 용도로만 남는다.
+- [ADR 0015](0015-multibranch-periodic-scan.md)의 15분 스캔은 놓친 main push를 보완하는 용도로만 남는다.
 - **적용 순서**. 순서를 바꾸면 PR이 `Expected` 상태로 병합이 막히거나 검증 없이 병합될 수 있다.
   1. vps-info에 `ci.yml` PR을 올린다. 이 PR에는 Jenkins `pr-merge`와 Actions `check:task`가 둘 다 뜬다.
   2. Actions check가 한 번 보고된 뒤 branch protection의 필수 check를 `check:task`로 바꾼다.
@@ -69,7 +69,7 @@ CD 이전(Actions 빌드 + GHCR + SSH 배포)과 Jenkins 제거는 이후 별도
 
 # 관련 개념
 
-- [vps-info는 multibranch job으로 PR을 검증하고 main에서만 배포한다](/adr/0014-multibranch-pr-ci.md)
-- [vps-info multibranch가 15분마다 스캔해 유실된 webhook을 보완한다](/adr/0015-multibranch-periodic-scan.md)
-- [빌드 결과를 Shared Library로 Mattermost에 알린다](/adr/0012-mattermost-build-notification.md)
-- [vps-info (Signal Archive)](/services/vps-info.md)
+- [vps-info는 multibranch job으로 PR을 검증하고 main에서만 배포한다](0014-multibranch-pr-ci.md)
+- [vps-info multibranch가 15분마다 스캔해 유실된 webhook을 보완한다](0015-multibranch-periodic-scan.md)
+- [빌드 결과를 Shared Library로 Mattermost에 알린다](0012-mattermost-build-notification.md)
+- [vps-info (Signal Archive)](../../okf/services/vps-info.md)

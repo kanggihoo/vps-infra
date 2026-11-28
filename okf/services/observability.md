@@ -9,7 +9,7 @@ timestamp: 2026-11-27T00:00:00+09:00
 # 개요
 
 `observability/compose.yml`이 띄우는 별도 Compose project(`vps-observability`)다. 결정과 근거는
-[ADR 0016](/adr/0016-self-hosted-observability.md), 트레이스 규칙은 [ADR 0017](/adr/0017-nginx-starts-traces.md)에 있다.
+[ADR 0016](../../docs/adr/0016-self-hosted-observability.md), 트레이스 규칙은 [ADR 0017](../../docs/adr/0017-nginx-starts-traces.md)에 있다.
 외부에는 `grafana.kkh-hub.tech`만 노출되고 Grafana 자체 로그인(admin)으로 들어간다.
 
 ```txt
@@ -36,7 +36,7 @@ nginx(otel 모듈) ─ span ─┐
 admin 계정(`GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`)과 알림 webhook(`GRAFANA_ALERT_WEBHOOK_URL`)은
 `secrets/env.<환경>.sops.env`에 있다. 사람은 이 계정으로 로그인하지 않는다. Grafana는 Auth Proxy로 동작하고
 (`GF_AUTH_PROXY_ENABLED`), nginx가 Tinyauth 로그인 결과를 `Remote-User`로 넘긴다. 처음 보는 사용자는 Admin으로
-자동 가입되며, 로그인 폼과 Basic Auth API는 꺼져 있다([ADR 0022](/adr/0022-tinyauth-sso.md)).
+자동 가입되며, 로그인 폼과 Basic Auth API는 꺼져 있다([ADR 0022](../../docs/adr/0022-tinyauth-sso.md)).
 같은 사람이라도 로컬 계정(아이디)과 Google 계정(이메일)으로 들어오면 Grafana 사용자가 따로 생긴다.
 Grafana 생존 확인은 공개 이름 대신 `http://grafana:3000/api/health`를 vps_proxy 안에서 본다.
 
@@ -55,7 +55,7 @@ Grafana 생존 확인은 공개 이름 대신 `http://grafana:3000/api/health`�
   (vps-info collector·llm의 console.log)은 unknown이다.
 - nginx 로그 줄의 `trace_id`는 Tempo 트레이스로 링크된다.
 - 배포 로그는 여기 없다. 각 레포의 GitHub Actions run에서 본다([배포](/services/deploy.md)).
-  Jenkins OTel trace·메트릭·빌드 로그는 [ADR 0021](/adr/0021-remove-jenkins.md)로 끊겼다.
+  Jenkins OTel trace·메트릭·빌드 로그는 [ADR 0021](../../docs/adr/0021-remove-jenkins.md)로 끊겼다.
 - 대시보드는 모두 공개 대시보드를 받아 우리 라벨·메트릭에 맞춘 것이다. 직접 만든 것은 없다.
 
 | 대시보드 | 출처 | 맞춘 내용 |
@@ -107,8 +107,8 @@ VPS 전체 다운은 외부 UptimeRobot이 `health.kkh-hub.tech`를 5분마다 �
 
 # 관련 개념
 
-- [관측 스택을 VPS에 셀프호스팅하고 Alloy 하나로 수집한다](/adr/0016-self-hosted-observability.md)
-- [외부 요청의 trace는 nginx가 시작한다](/adr/0017-nginx-starts-traces.md)
+- [관측 스택을 VPS에 셀프호스팅하고 Alloy 하나로 수집한다](../../docs/adr/0016-self-hosted-observability.md)
+- [외부 요청의 trace는 nginx가 시작한다](../../docs/adr/0017-nginx-starts-traces.md)
 - [nginx 리버스 프록시](/services/nginx.md)
 - [배포](/services/deploy.md)
-- [Jenkins를 VPS에서 걷어낸다](/adr/0021-remove-jenkins.md)
+- [Jenkins를 VPS에서 걷어낸다](../../docs/adr/0021-remove-jenkins.md)

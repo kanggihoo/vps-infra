@@ -8,8 +8,8 @@ timestamp: 2026-11-27T00:00:00+09:00
 
 # 개요
 
-`kanggihoo/vps-info`(Signal Archive)는 [프로젝트별 독립 Compose](/adr/0007-per-project-compose.md)를
-처음 적용한 외부 프로젝트다. `info.kkh-hub.tech`로 노출되며 nginx의 Tinyauth SSO 뒤에 있다([ADR 0022](/adr/0022-tinyauth-sso.md)).
+`kanggihoo/vps-info`(Signal Archive)는 [프로젝트별 독립 Compose](../../docs/adr/0007-per-project-compose.md)를
+처음 적용한 외부 프로젝트다. `info.kkh-hub.tech`로 노출되며 nginx의 Tinyauth SSO 뒤에 있다([ADR 0022](../../docs/adr/0022-tinyauth-sso.md)).
 
 # 소유 경계
 
@@ -51,7 +51,7 @@ vps-info main push -> GitHub Actions (ADR 0019)
 
 # 관련 개념
 
-- [vps-info 배포를 GitHub Actions로 옮긴다](/adr/0019-vps-info-cd-on-github-actions.md)
+- [vps-info 배포를 GitHub Actions로 옮긴다](../../docs/adr/0019-vps-info-cd-on-github-actions.md)
 - [nginx 리버스 프록시](/services/nginx.md)
 - [PostgreSQL](/services/postgresql.md)
-- [SOPS 기반 secret 관리](/adr/0010-sops-secrets.md)
+- [SOPS 기반 secret 관리](../../docs/adr/0010-sops-secrets.md)

@@ -6,11 +6,11 @@ tags: [runbook, local-development, sops, jenkins, handover]
 timestamp: 2026-11-27T00:00:00+09:00
 ---
 
-> [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어냈다. 아래 Jenkins 관련 절차(`jenkins/.env`, 로컬 Jenkins, JCasC)는 기록이며 현재 절차가 아니다. 현재 배포는 [배포](/services/deploy.md)를 본다.
+> [ADR 0021](../../docs/adr/0021-remove-jenkins.md)로 Jenkins를 걷어냈다. 아래 Jenkins 관련 절차(`jenkins/.env`, 로컬 Jenkins, JCasC)는 기록이며 현재 절차가 아니다. 현재 배포는 [배포](/services/deploy.md)를 본다.
 
 # 이 문서의 범위
 
-[spec 0001](/spec/0001-local-first-infra.md)의 **단계 0~5**가 구현된 상태에서,
+spec 0001의 **단계 0~5**가 구현된 상태에서,
 사용자만 할 수 있는 작업(키 생성, 실제 secret 값)과 로컬 검증 명령을 정리한다.
 
 단계 6~8(VPS 적용, Quartz 이미지화, 신규 프로젝트)은 미구현이다.
@@ -25,13 +25,13 @@ age key 생성과 secret 암호화는 **완료되었다.** 아래는 현재 상�
 | 공개키 | `.sops.yaml`에 반영됨 |
 | `.env` (로컬) | `secrets/env.local.sops.env`로 암호화 |
 | `.env` (VPS) | `secrets/env.prod.sops.env`로 암호화, 운영 DB 값 보존 |
-| 보호 서브도메인 인증 | Tinyauth SSO. 계정은 `.env`의 `TINYAUTH_AUTH_USERS`([ADR 0022](/adr/0022-tinyauth-sso.md)). Basic Auth 파일은 지웠다 |
+| 보호 서브도메인 인증 | Tinyauth SSO. 계정은 `.env`의 `TINYAUTH_AUTH_USERS`([ADR 0022](../../docs/adr/0022-tinyauth-sso.md)). Basic Auth 파일은 지웠다 |
 | `github-pat` | **미암호화.** PAT 발급이 필요하다(아래 참조) |
 
 ## ⚠️ age key 백업 (남은 필수 작업)
 
 **key를 분실하면 secret을 복호화할 수 없다.** 백업이 운영 요구사항이다
-([ADR 0010](/adr/0010-sops-secrets.md)). `~/.config/sops/age/keys.txt`를
+([ADR 0010](../../docs/adr/0010-sops-secrets.md)). `~/.config/sops/age/keys.txt`를
 비밀번호 관리자나 오프라인 매체에 보관한다.
 
 VPS 적용(단계 6) 시 같은 파일을 VPS의 `~/.config/sops/age/keys.txt`에 두고,
@@ -154,7 +154,7 @@ cd jenkins && docker compose down -v
 
 - **GUI에서 바꾼 Jenkins 설정은 reload나 재기동 시 사라진다.** JCasC가 그때마다
   덮어쓴다. 설정 변경은 `jenkins/casc/` 수정 → 커밋 → push로 한다
-  ([ADR 0009](/adr/0009-jenkins-config-as-code.md)).
+  ([ADR 0009](../../docs/adr/0009-jenkins-config-as-code.md)).
 - **빈 diff는 배포하지 않고 실패한다.** 판정 불가를 "portal만 변경"으로
   해석하면 인프라 변경이 조용히 누락되기 때문이다. 의도적 배포는
   `DEPLOY_TARGET`으로 override한다.
@@ -207,7 +207,6 @@ checkout하므로 로컬과 달리 PAT가 실제로 쓰인다.
 
 # 관련 개념
 
-- [로컬 우선 인프라 재구성](/spec/0001-local-first-infra.md)
-- [nginx 설정의 환경 템플릿화](/adr/0008-nginx-env-templates.md)
-- [Jenkins 설정을 코드로 관리](/adr/0009-jenkins-config-as-code.md)
-- [SOPS 기반 secret 관리](/adr/0010-sops-secrets.md)
+- [nginx 설정의 환경 템플릿화](../../docs/adr/0008-nginx-env-templates.md)
+- [Jenkins 설정을 코드로 관리](../../docs/adr/0009-jenkins-config-as-code.md)
+- [SOPS 기반 secret 관리](../../docs/adr/0010-sops-secrets.md)

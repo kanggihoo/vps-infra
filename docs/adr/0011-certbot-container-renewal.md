@@ -8,7 +8,7 @@ timestamp: 2026-09-28T00:00:00+09:00
 
 # 결정
 
-인증서 갱신을 Compose 안에서 끝낸다. [spec 0002](/spec/0002-infra-review-remediation.md)의
+인증서 갱신을 Compose 안에서 끝낸다. spec 0002의
 호스트 systemd timer 방식을 대체한다.
 
 - `certbot` 서비스가 상주하며 12시간마다 `certbot renew`를 실행한다. 만료 30일 이내일 때만
@@ -45,6 +45,5 @@ certbot 컨테이너가 nginx를 직접 reload하려면 Docker socket이나 PID 
 
 # 관련 개념
 
-- [nginx 리버스 프록시](/services/nginx.md)
-- [nginx 설정의 환경 템플릿화](/adr/0008-nginx-env-templates.md)
-- [Jenkins·nginx 리뷰 보완](/spec/0002-infra-review-remediation.md)
+- [nginx 리버스 프록시](../../okf/services/nginx.md)
+- [nginx 설정의 환경 템플릿화](0008-nginx-env-templates.md)

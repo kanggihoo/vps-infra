@@ -44,5 +44,5 @@ A      jenkins    187.77.114.68
 
 # 관련 개념
 
-- [nginx 리버스 프록시](/services/nginx.md)
-- [whoami Health Target](/services/whoami.md)
+- [nginx 리버스 프록시](../../okf/services/nginx.md)
+- [whoami Health Target](../../okf/services/whoami.md)

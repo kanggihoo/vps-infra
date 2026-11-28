@@ -6,9 +6,9 @@ tags: [jenkins, github, webhook, multibranch, troubleshooting]
 timestamp: 2026-10-03T00:00:00+09:00
 ---
 
-> [ADR 0018](/adr/0018-vps-info-pr-ci-on-github-actions.md) 이후 vps-info PR 검증은 GitHub Actions가 하므로 `pull_request` webhook을 쓰지 않는다.
-> [ADR 0019](/adr/0019-vps-info-cd-on-github-actions.md) 이후 vps-info는 배포도 Actions가 하므로 이 webhook을 전혀 쓰지 않는다.
-> [ADR 0021](/adr/0021-remove-jenkins.md)로 Jenkins를 걷어내 이제 어떤 레포도 Jenkins webhook을 쓰지 않는다. 아래는 기록으로만 남긴다.
+> [ADR 0018](../../docs/adr/0018-vps-info-pr-ci-on-github-actions.md) 이후 vps-info PR 검증은 GitHub Actions가 하므로 `pull_request` webhook을 쓰지 않는다.
+> [ADR 0019](../../docs/adr/0019-vps-info-cd-on-github-actions.md) 이후 vps-info는 배포도 Actions가 하므로 이 webhook을 전혀 쓰지 않는다.
+> [ADR 0021](../../docs/adr/0021-remove-jenkins.md)로 Jenkins를 걷어내 이제 어떤 레포도 Jenkins webhook을 쓰지 않는다. 아래는 기록으로만 남긴다.
 
 # 증상
 
@@ -45,7 +45,7 @@ GitHub는 실패한 webhook을 자동으로 재시도하지 않고, 수동 Redel
 
 - 즉시: GitHub 저장소 Settings → Webhooks → Recent Deliveries에서 실패한 `pull_request` 건을 Redeliver 했다.
   `PR-3`이 생기고 빌드가 시작됐다.
-- 재발 방지: `vps-info` multibranch에 15분 주기 스캔을 추가했다([ADR 0015](/adr/0015-multibranch-periodic-scan.md)).
+- 재발 방지: `vps-info` multibranch에 15분 주기 스캔을 추가했다([ADR 0015](../../docs/adr/0015-multibranch-periodic-scan.md)).
 
 # 다음에 같은 증상이면
 
